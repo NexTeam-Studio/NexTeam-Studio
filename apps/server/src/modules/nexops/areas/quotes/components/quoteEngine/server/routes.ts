@@ -225,7 +225,8 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
         expiresAt: input.expiresAt ?? existing.quote.expiresAt,
         expiryDays: input.expiryDays,
         terms: input.terms ?? existing.quote.terms,
-        intake: existing.quote.intake
+        intake: existing.quote.intake,
+        customFields: input.customFields ?? existing.quote.customFields
       }, {
         existingId: existing.quote.id,
         existingNumber: existing.quote.number,

@@ -396,7 +396,7 @@ registerContentRoutes(app, { repository: contentRepository, approvalQueue, event
 registerNexReachRoutes(app, { service: nexReachService, eventBus, env: process.env });
 registerCampaignRoutes(app, { repository: campaignRepository, approvalQueue, env: process.env });
 registerReputationRoutes(app, { repository: reputationRepository, approvalQueue, eventBus, gbpProvider: gbpReviewProvider, env: process.env });
-registerSchedulingRoutes(app, { repository: schedulingRepository, approvalQueue, env: process.env, jobLifecycleService });
+registerSchedulingRoutes(app, { repository: schedulingRepository, approvalQueue, crmRepository: nativeCrmRepository, env: process.env, jobLifecycleService });
 registerEvaporationRoutes(app, {
   repository: evaporationRepository,
   crmRepository: nativeCrmRepository,

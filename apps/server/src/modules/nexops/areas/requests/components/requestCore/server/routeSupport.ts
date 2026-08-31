@@ -50,6 +50,7 @@ export function createRequestRouteSupport(input: {
       selectedPropertyId: request.selectedPropertyId,
       consent: request.consent,
       allowIncomplete: request.allowIncomplete,
+      customFields: request.customFields,
       fieldValues: request.fieldValues.map((field) => ({
         key: field.key,
         value: field.value,

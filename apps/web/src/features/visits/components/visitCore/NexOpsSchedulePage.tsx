@@ -123,6 +123,12 @@ interface FieldDocsReportRecord {
   evaporationReportId?: string;
 }
 
+interface ScheduleDisplaySettings {
+  showWeekends: boolean;
+  calendarColors: boolean;
+  daySheet: { showPropertyMap: boolean; showNotes: boolean; showCustomInfo: boolean };
+}
+
 interface FieldDocsReportsListResponse {
   ok: boolean;
   reports?: FieldDocsReportRecord[];
@@ -367,6 +373,11 @@ export function NexOpsSchedulePage(props: {
   const [anchorDate, setAnchorDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [anchorDateDraft, setAnchorDateDraft] = useState(() => new Date().toISOString().slice(0, 10));
   const [workspace, setWorkspace] = useState<ScheduleWorkspace | null>(null);
+  const [displaySettings, setDisplaySettings] = useState<ScheduleDisplaySettings>({
+    showWeekends: true,
+    calendarColors: true,
+    daySheet: { showPropertyMap: true, showNotes: true, showCustomInfo: true }
+  });
   const [jobOptions, setJobOptions] = useState<JobSummary[]>([]);
   const [status, setStatus] = useState("Loading schedule...");
   const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
@@ -398,7 +409,13 @@ export function NexOpsSchedulePage(props: {
 
   const range = useMemo(() => dateRange(anchorDate, view, scope), [anchorDate, scope, view]);
   const groupedByDay = useMemo(() => byDay(workspace?.visits ?? []), [workspace?.visits]);
-  const weekDays = useMemo(() => Array.from({ length: 7 }, (_, index) => addDays(dayKey(range.from), index)), [range.from]);
+  const weekDays = useMemo(() => {
+    const days = Array.from({ length: 7 }, (_, index) => addDays(dayKey(range.from), index));
+    return displaySettings.showWeekends ? days : days.filter((day) => {
+      const weekday = new Date(`${day}T12:00:00.000Z`).getUTCDay();
+      return weekday !== 0 && weekday !== 6;
+    });
+  }, [displaySettings.showWeekends, range.from]);
   const hours = useMemo(() => Array.from({ length: 12 }, (_, index) => index + 7), []);
 
   function commitAnchorDate(): void {
@@ -449,6 +466,18 @@ export function NexOpsSchedulePage(props: {
     }
   }
 
+  async function loadDisplaySettings(): Promise<void> {
+    try {
+      const body = await fetch(`/api/crm/settings?tenantId=${encodeURIComponent(props.tenantId)}`)
+        .then((response) => response.json() as Promise<{ ok: boolean; settings?: { workspaceSettings?: { schedule?: ScheduleDisplaySettings } } }>);
+      if (body.ok && body.settings?.workspaceSettings?.schedule) {
+        setDisplaySettings(body.settings.workspaceSettings.schedule);
+      }
+    } catch {
+      // The schedule remains usable with safe display defaults if settings are unavailable.
+    }
+  }
+
   useEffect(() => {
     if (props.initialScope) {
       setScope(props.initialScope);
@@ -475,6 +504,7 @@ export function NexOpsSchedulePage(props: {
 
   useEffect(() => {
     void loadJobs();
+    void loadDisplaySettings();
   }, [props.tenantId]);
 
   useEffect(() => {
@@ -864,7 +894,7 @@ export function NexOpsSchedulePage(props: {
         navigation={<><button type="button" className={visitDetailSection === "overview" ? "active" : ""} aria-current={visitDetailSection === "overview" ? "page" : undefined} onClick={() => setVisitDetailSection("overview")}>Visit</button><button type="button" className={visitDetailSection === "measurements" ? "active" : ""} aria-current={visitDetailSection === "measurements" ? "page" : undefined} onClick={() => { setVisitDetailSection("measurements"); void loadEvaporationWorkspace(detail); }}>Measurements</button><button type="button" className={visitDetailSection === "files" ? "active" : ""} aria-current={visitDetailSection === "files" ? "page" : undefined} onClick={() => setVisitDetailSection("files")}>Files</button><button type="button" className={visitDetailSection === "nexcam" ? "active" : ""} aria-current={visitDetailSection === "nexcam" ? "page" : undefined} onClick={() => setVisitDetailSection("nexcam")}>NexCam</button></>}
       >
         <section className="nexops-module-card nexops-visit-detail-card">
-          {visitDetailSection === "overview" ? <><p className="eyebrow">Visit context</p><h2>{detail.jobTitle}</h2><dl className="nexops-visit-detail-facts"><div><dt>Client</dt><dd>{detail.clientName}</dd></div><div><dt>Property</dt><dd>{detail.propertyAddress}</dd></div><div><dt>Schedule</dt><dd>{new Date(detail.start).toLocaleString()} – {new Date(detail.end).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</dd></div><div><dt>Team</dt><dd>{detail.assignedTeam.map((member) => member.name).join(", ") || "Unassigned"}</dd></div></dl>{detail.details ? <p>{detail.details}</p> : <p className="nexops-empty-copy">No additional visit instructions are recorded.</p>}</> : null}
+          {visitDetailSection === "overview" ? <><p className="eyebrow">Visit context</p><h2>{detail.jobTitle}</h2><dl className="nexops-visit-detail-facts"><div><dt>Client</dt><dd>{detail.clientName}</dd></div><div><dt>Property</dt><dd>{detail.propertyAddress}</dd></div><div><dt>Schedule</dt><dd>{new Date(detail.start).toLocaleString()} – {new Date(detail.end).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</dd></div><div><dt>Team</dt><dd>{detail.assignedTeam.map((member) => member.name).join(", ") || "Unassigned"}</dd></div>{displaySettings.daySheet.showPropertyMap ? <div><dt>Property map</dt><dd>Map context is enabled for this day sheet.</dd></div> : null}{displaySettings.daySheet.showCustomInfo ? <div><dt>Custom information</dt><dd>{detail.source ?? "Standard visit"}</dd></div> : null}</dl>{displaySettings.daySheet.showNotes ? (detail.details ? <p>{detail.details}</p> : <p className="nexops-empty-copy">No additional visit instructions are recorded.</p>) : null}</> : null}
           {visitDetailSection === "measurements" ? <div className="nexops-evaporation-workspace"><header><p className="eyebrow">Measurements → Environment → Calculation → Review → Report</p><h2>Evaporation review</h2><p>Use a linked NexDocs measurement artifact when available, or enter and correct the field measurements manually.</p></header><div className="nexops-evaporation-grid"><section><h3>Measurements</h3><p className="nexops-empty-copy">Original Moasure evidence stays in NexDocs. Upload it from Files, then select it here when it is linked to this Visit.</p><label>Measurement evidence<select aria-label="Measurement evidence" value={selectedMeasurementDocumentId} onChange={(event) => { setSelectedMeasurementDocumentId(event.target.value); setEvaporationPreview(null); setEvaporationReviewToken(""); }}><option value="">Manual entry / no linked document</option>{measurementDocuments.map((entry) => <option key={entry.id} value={entry.id}>{entry.label || entry.fileName}</option>)}</select></label><button type="button" onClick={() => setVisitDetailSection("files")}>Upload Moasure report in Files</button><label>Surface area (sq ft)<input inputMode="decimal" value={evaporationDraft.surfaceAreaFt2} onChange={(event) => { setEvaporationDraft((current) => ({ ...current, surfaceAreaFt2: event.target.value })); setEvaporationPreview(null); setEvaporationReviewToken(""); }} /></label><label>Water temperature (°F)<input inputMode="decimal" value={evaporationDraft.waterTempF} onChange={(event) => { setEvaporationDraft((current) => ({ ...current, waterTempF: event.target.value })); setEvaporationPreview(null); setEvaporationReviewToken(""); }} /></label><label>Observed loss (in/day, optional)<input inputMode="decimal" value={evaporationDraft.observedLossInches} onChange={(event) => { setEvaporationDraft((current) => ({ ...current, observedLossInches: event.target.value })); setEvaporationPreview(null); setEvaporationReviewToken(""); }} /></label></section><section><h3>Environment</h3><label>ZIP (optional)<input inputMode="numeric" value={evaporationDraft.zip} onChange={(event) => { setEvaporationDraft((current) => ({ ...current, zip: event.target.value })); setEvaporationPreview(null); setEvaporationReviewToken(""); }} /></label><label>Wind override (mph, optional)<input inputMode="decimal" value={evaporationDraft.windMphOverride} onChange={(event) => { setEvaporationDraft((current) => ({ ...current, windMphOverride: event.target.value })); setEvaporationPreview(null); setEvaporationReviewToken(""); }} /></label><p className="nexops-empty-copy">Current air temperature, humidity, and wind are retrieved from the validated weather service at calculation time and remain visible for technician review.</p><button className="nexops-primary-inline-button" type="button" disabled={evaporationBusy !== "" || !detail.propertyId} onClick={() => void previewEvaporation(detail)}>{evaporationBusy === "preview" ? "Calculating…" : "Calculate expected evaporation"}</button></section></div>{evaporationPreview ? <section className="nexops-evaporation-review"><p className="eyebrow">Technician review</p><h3>{evaporationPreview.result.evapInchesPerDay} in/day · {evaporationPreview.result.evapGallonsPerDay} gal/day</h3><p>{evaporationPreview.result.note}</p><dl className="nexops-visit-detail-facts"><div><dt>Weather source</dt><dd>{evaporationPreview.currentWeather.city}</dd></div><div><dt>Air / humidity</dt><dd>{evaporationPreview.currentWeather.airTempF}°F · {evaporationPreview.currentWeather.relativeHumidityPct}%</dd></div><div><dt>Wind</dt><dd>{evaporationPreview.currentWeather.windMph} mph</dd></div><div><dt>Possible loss after evaporation</dt><dd>{evaporationPreview.result.leakInchesPerDay === null ? "Not provided" : `${evaporationPreview.result.leakInchesPerDay} in/day · ${evaporationPreview.result.leakGallonsPerDay} gal/day`}</dd></div></dl><button className="nexops-primary-inline-button" type="button" disabled={evaporationBusy !== "" || !detail.propertyId} onClick={() => void finalizeEvaporation(detail)}>{evaporationBusy === "finalize" ? "Generating…" : "Generate evaporation report"}</button></section> : null}<p className="nexops-module-status" role="status">{evaporationStatus}</p></div> : null}
           {visitDetailSection === "files" ? <NexDocsClientWorkspace tenantId={props.tenantId} clientId={detail.clientId} clientName={detail.clientName} role={props.role} jobId={detail.jobId} visitId={detail.id} contextLabel={`Visit ${detail.id} files`} nexcamCounts={{ media: fieldDocsMedia.length, reports: fieldDocsReports.length, signedDocuments: 0 }} /> : null}
           {visitDetailSection === "nexcam" ? <><p className="eyebrow"><ProductInlineLabel product="nexcam" /></p><h2>Visit media and reports</h2><p>Open the visual documentation rail for this Visit.</p><button type="button" onClick={() => { setVisitDetail(null); void openFieldDocsRail(detail); }}>Open NexCam</button></> : null}

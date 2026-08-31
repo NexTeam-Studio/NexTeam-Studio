@@ -3,7 +3,8 @@ import {
   platformModuleSchema,
   productServiceCatalogItemSchema,
   quoteApprovalRulesSchema,
-  tenantOnboardingStepSchema
+  tenantOnboardingStepSchema,
+  workspaceSettingsSchema
 } from "@nexteam/core";
 import { z } from "zod";
 
@@ -114,6 +115,7 @@ export const crmSettingsPatchSchema = z.object({
     reportRequired: z.boolean().optional(),
     signatureRequired: z.boolean().optional()
   }).optional(),
+  workspaceSettings: workspaceSettingsSchema.optional(),
   propertyAssetDefinitions: z.array(z.object({
     kind: z.string().min(1).max(80),
     label: z.string().min(1).max(120),

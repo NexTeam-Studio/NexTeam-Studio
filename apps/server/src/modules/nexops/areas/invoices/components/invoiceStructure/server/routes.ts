@@ -200,7 +200,8 @@ export function registerInvoiceStructureRoutes(context: CrmRouteContext): void {
         ...(input.dueAt !== undefined ? { dueAt: input.dueAt } : {}),
         ...(input.terms !== undefined ? { terms: input.terms } : {}),
         ...(input.paymentSchedule !== undefined ? { paymentSchedule: input.paymentSchedule } : {}),
-        ...(input.deliveryDefaults !== undefined ? { deliveryDefaults: input.deliveryDefaults } : {})
+        ...(input.deliveryDefaults !== undefined ? { deliveryDefaults: input.deliveryDefaults } : {}),
+        ...(input.customFields !== undefined ? { customFields: input.customFields } : {})
       });
       res.json({ ok: true, tenantId, actorRole: access.role, invoice });
     } catch (error) {

@@ -54,6 +54,7 @@ export interface CreateJobInput {
   lineItems?: LineItem[] | undefined;
   paymentSchedule?: Job["paymentSchedule"] | undefined;
   intake?: Job["intake"] | undefined;
+  customFields?: Job["customFields"] | undefined;
   createdBy?: string | undefined;
   assignedOwnerId?: string | undefined;
 }
@@ -1003,6 +1004,7 @@ export class JobLifecycleService {
       totals: buildTotals(lineItems),
       ...(input.paymentSchedule ? { paymentSchedule: input.paymentSchedule } : {}),
       intake: input.intake,
+      ...(input.customFields ? { customFields: input.customFields } : {}),
       ...(input.assignedOwnerId ? { assignedOwnerId: input.assignedOwnerId } : {}),
       createdAt: timestamp,
       updatedAt: timestamp

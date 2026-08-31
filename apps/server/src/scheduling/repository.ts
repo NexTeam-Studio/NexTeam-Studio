@@ -14,6 +14,7 @@ const scheduledVisitSchema = z.object({
   checklistRef: z.string().min(1).optional(),
   outcome: z.string().optional(),
   intake: intakeSnapshotSchema.optional(),
+  customFields: z.record(z.union([z.string(), z.number(), z.boolean()])).optional(),
   title: z.string().min(1),
   location: z.object({
     label: z.string().min(1),

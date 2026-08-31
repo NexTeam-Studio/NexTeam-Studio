@@ -733,6 +733,7 @@ export interface ServiceRequest {
   narrative: string;
   consent: { email: boolean; sms: boolean; marketing?: boolean | undefined };
   intake: IntakeSnapshot;
+  customFields?: Record<string, string | number | boolean> | undefined;
   match: ServiceRequestMatch;
   selectedClientId?: ID | undefined;
   selectedPropertyId?: ID | undefined;
@@ -790,6 +791,7 @@ export interface Job {
   totals: QuoteTotals;
   paymentSchedule?: PaymentSchedulePlan | undefined;
   intake?: IntakeSnapshot | undefined;
+  customFields?: Record<string, string | number | boolean> | undefined;
   clientVisibility?: {
     hideFieldDocsFromPortal?: boolean | undefined;
   } | undefined;
@@ -801,6 +803,7 @@ export interface Visit {
   tenantId: ID;
   jobId: ID;
   requestId?: ID | undefined;
+  customFields?: Record<string, string | number | boolean> | undefined;
   start: string;
   end: string;
   assignedTo: ID[];
@@ -1097,6 +1100,7 @@ export interface Quote {
   createdAt?: string | undefined;
   updatedAt?: string | undefined;
   intake?: IntakeSnapshot | undefined;
+  customFields?: Record<string, string | number | boolean> | undefined;
   externalIds?: { jobber?: string | undefined; stripe?: string | undefined } | undefined;
 }
 
@@ -1231,6 +1235,34 @@ export interface CrmSettings {
   };
   documentDesign: DocumentDesignSettings;
   completionRequirements: { checklistRequired: boolean; photosRequired: boolean; reportRequired: boolean; signatureRequired: boolean; };
+  /**
+   * Tenant-owned settings for the remaining NexOps configuration surfaces.
+   * Keeping this as one explicitly typed record prevents each product rail
+   * from inventing a second, unscoped configuration store.
+   */
+  workspaceSettings: {
+    company: {
+      address?: Address | undefined;
+      addressPrivate: boolean;
+      hideAddressFromAiCrawlers: boolean;
+      currency: string;
+      dateFormat: "MM/DD/YYYY" | "DD/MM/YYYY" | "YYYY-MM-DD";
+      firstWeekday: "monday" | "sunday";
+      logoUrl?: string | undefined;
+      brandColor?: string | undefined;
+      termsUrl?: string | undefined;
+      privacyUrl?: string | undefined;
+    };
+    fieldDocs: { gpsDefault: boolean; timestampDefault: boolean; aiTaggingDefault: boolean; markupSaveMode: "new_copy"; };
+    automations: Array<{ id: ID; title: string; active: boolean; trigger: string; delayMinutes: number; condition: string; action: string; messageTemplateCategory?: string | undefined; stopConditions: string[]; }>;
+    requestsBooking: { bufferMinutes: number; requireApproval: boolean; serviceAreas: string[]; };
+    taxSettings: { calculationMethod: "exclusive" | "inclusive"; rates: Array<{ id: ID; name: string; rate: number; group?: string | undefined; isDefault: boolean; active: boolean; }>; };
+    customFields: Array<{ id: ID; label: string; valueType: "text" | "true_false" | "area" | "numeric" | "dropdown_link"; appliesTo: string; readOnly: boolean; sortOrder: number; archived: boolean; transferable: boolean; options: string[]; }>;
+    schedule: { showWeekends: boolean; calendarColors: Record<string, string>; calendarSyncEnabled: boolean; daySheet: { showPropertyMap: boolean; showNotes: boolean; showCustomInfo: boolean; }; };
+    portal: { defaultDocumentVisibility: "job" | "global"; tipPromptEnabled: boolean; tipPresetPercentages: number[]; allowCustomTip: boolean; };
+    payments: { receiptsEnabled: boolean; paymentNotificationsEnabled: boolean; achEnabled: boolean; transactionLimit?: number | undefined; bankAccountsConfigured: boolean; requireTwoFactor: boolean; };
+    integrations: { enabled: false; };
+  };
   propertyAssetDefinitions: PropertyAssetDefinition[];
   catalogItems: ProductServiceCatalogItem[];
   communicationTemplates: CommunicationTemplateRecord[];
@@ -1507,6 +1539,7 @@ export interface Invoice {
   statusHistory?: LedgerStatusEntry<InvoiceStatus>[] | undefined;
   ledger?: InvoiceLedgerSummary | undefined;
   intake?: IntakeSnapshot | undefined;
+  customFields?: Record<string, string | number | boolean> | undefined;
   externalIds?: { jobber?: string | undefined; stripe?: string | undefined } | undefined;
 }
 

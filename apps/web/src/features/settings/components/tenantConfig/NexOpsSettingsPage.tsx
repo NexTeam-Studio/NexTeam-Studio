@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import type { CrmSettings } from "@nexteam/core";
 import {
   NexOpsCatalogEditorModal,
   blankCatalogItemDraft,
@@ -9,6 +10,7 @@ import {
 } from "../catalog/NexOpsCatalog";
 import { ModuleHeroCard } from "../../../../shared/ui/NexOpsBusinessTemplates";
 import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
+import { RemainingSettingsSections } from "./RemainingSettingsSections";
 
 type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
 
@@ -128,6 +130,7 @@ interface CrmSettingsRecord {
     reportRequired: boolean;
     signatureRequired: boolean;
   };
+  workspaceSettings: CrmSettings["workspaceSettings"];
   documentDesign: { quote: { referToAsEstimate: boolean; showQuantity: boolean; showUnitPrice: boolean; showLineTotal: boolean; showTotalsAndTax: boolean; showSignatureLine: boolean; disclaimer: string; depositLanguage: string; }; job: { showSignatureLine: boolean; disclaimer: string; }; invoice: { showQuantity: boolean; showUnitPrice: boolean; showLineTotal: boolean; showReturnPaymentStub: boolean; showLateStamp: boolean; showAccountBalance: boolean; showPaidDate: boolean; disclaimer: string; }; style: { headerLayout: "basic" | "compact" | "envelope_dual" | "envelope_single"; headerStyle: "modern" | "clean"; logoSize: number; themeColor: "default" | "blue" | "red" | "green" | "orange" | "purple"; footerFontSize: number; showCompanyName: boolean; showCompanyPhone: boolean; showCompanyEmail: boolean; showCompanyWebsite: boolean; showClientPhone: boolean; }; };
   createdAt: string;
   updatedAt: string;
@@ -417,6 +420,23 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
     } finally {
       setBusy("");
     }
+  }
+
+  async function saveWorkspaceSettings(): Promise<void> {
+    if (!settings) return;
+    setBusy("save-workspace-settings");
+    setStatusMessage("Saving workspace settings...");
+    try {
+      const body = await fetch("/api/crm/settings", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tenantId: props.tenantId, workspaceSettings: settings.workspaceSettings })
+      }).then((response) => response.json() as Promise<CrmSettingsMutationResponse>);
+      if (!body.ok || !body.settings) { setStatusMessage(body.error ?? "Workspace settings could not be saved."); return; }
+      setSettings(body.settings);
+      setStatusMessage("Workspace settings saved.");
+      props.onCrmMutation?.();
+    } catch { setStatusMessage("Workspace settings save failed."); } finally { setBusy(""); }
   }
 
   async function saveDocumentDesign(): Promise<void> {
@@ -1103,6 +1123,13 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
           </div>
         </article>
       </div>
+
+      {settings ? <RemainingSettingsSections
+        value={settings.workspaceSettings}
+        onChange={(workspaceSettings) => setSettings((current) => current ? { ...current, workspaceSettings } : current)}
+        onSave={() => void saveWorkspaceSettings()}
+        saving={busy === "save-workspace-settings"}
+      /> : null}
 
       <article className="nexops-module-card">
         <div className="nexops-page-heading"><div><p className="eyebrow">Client documents</p><h2>Document Design</h2><p>PDF layout and wording. Email and SMS delivery copy remains in Templates.</p></div><button type="button" onClick={() => void saveDocumentDesign()} disabled={!settings || busy === "save-document-design"}>{busy === "save-document-design" ? "Saving..." : "Save Document Design"}</button></div>

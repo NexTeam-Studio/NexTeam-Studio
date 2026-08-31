@@ -265,6 +265,7 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
           }
         }
       }
+      const workspaceDefaultTaxRate = input.workspaceSettings?.taxSettings.rates.find((rate) => rate.isDefault && rate.active)?.rate;
       const saved = await repository.saveCrmSettings({
         ...current,
         operatingProfile: {
@@ -282,6 +283,7 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
             ...current.operatingProfile.tax,
             ...(input.operatingProfile?.tax?.enabled !== undefined ? { enabled: input.operatingProfile.tax.enabled } : {}),
             ...(input.operatingProfile?.tax?.defaultRate !== undefined ? { defaultRate: input.operatingProfile.tax.defaultRate } : {}),
+            ...(workspaceDefaultTaxRate !== undefined ? { enabled: true, defaultRate: workspaceDefaultTaxRate } : {}),
             ...(input.operatingProfile?.tax?.registrationId !== undefined ? { registrationId: input.operatingProfile.tax.registrationId } : {})
           },
           communicationIdentity: {
@@ -348,6 +350,7 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
           ...(input.invoiceDefaults?.dueDays !== undefined ? { dueDays: input.invoiceDefaults.dueDays } : {}),
           ...(input.invoiceDefaults?.terms !== undefined ? { terms: input.invoiceDefaults.terms } : {}),
           ...(input.invoiceDefaults?.tippingEnabled !== undefined ? { tippingEnabled: input.invoiceDefaults.tippingEnabled } : {}),
+          ...(input.workspaceSettings ? { tippingEnabled: input.workspaceSettings.portal.tipPromptEnabled } : {}),
           delivery: {
             ...current.invoiceDefaults.delivery,
             ...(input.invoiceDefaults?.delivery?.emailIncludePdf !== undefined ? { emailIncludePdf: input.invoiceDefaults.delivery.emailIncludePdf } : {}),
@@ -361,6 +364,7 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
         portalDefaults: {
           ...current.portalDefaults,
           ...(input.portalDefaults?.keepBusinessAddressPrivate !== undefined ? { keepBusinessAddressPrivate: input.portalDefaults.keepBusinessAddressPrivate } : {}),
+          ...(input.workspaceSettings ? { keepBusinessAddressPrivate: input.workspaceSettings.company.addressPrivate } : {}),
           ...(input.portalDefaults?.hubSessionReverifyDays !== undefined ? { hubSessionReverifyDays: input.portalDefaults.hubSessionReverifyDays } : {})
         },
         reviewDefaults: {
@@ -381,6 +385,7 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
           ...(input.completionRequirements?.reportRequired !== undefined ? { reportRequired: input.completionRequirements.reportRequired } : {}),
           ...(input.completionRequirements?.signatureRequired !== undefined ? { signatureRequired: input.completionRequirements.signatureRequired } : {})
         },
+        ...(input.workspaceSettings ? { workspaceSettings: input.workspaceSettings } : {}),
         ...(input.propertyAssetDefinitions ? { propertyAssetDefinitions: input.propertyAssetDefinitions } : {}),
         ...(input.catalogItems ? { catalogItems: input.catalogItems } : {}),
         ...(input.communicationTemplates ? {

@@ -229,6 +229,7 @@ export function registerJobCoreRoutes(context: CrmRouteContext): void {
         ...(input.lineItems ? { lineItems: input.lineItems } : {}),
         ...(input.paymentSchedule ? { paymentSchedule: input.paymentSchedule } : {}),
         ...(input.intake ? { intake: input.intake } : {}),
+        ...(input.customFields ? { customFields: input.customFields } : {}),
         ...(input.assignedOwnerId ? { assignedOwnerId: input.assignedOwnerId } : {}),
         createdBy: access.tenantUserId
       });
@@ -306,6 +307,7 @@ export function registerJobCoreRoutes(context: CrmRouteContext): void {
         ...(input.paymentSchedule !== undefined ? { paymentSchedule: input.paymentSchedule } : {}),
         ...(input.clientVisibility !== undefined ? { clientVisibility: input.clientVisibility } : {}),
         ...(input.assignedOwnerId !== undefined ? { assignedOwnerId: input.assignedOwnerId ?? undefined } : {}),
+        ...(input.customFields !== undefined ? { customFields: input.customFields } : {}),
         updatedAt: new Date().toISOString()
       });
       const job = await jobLifecycle().getJobDetail(tenantId, jobId);

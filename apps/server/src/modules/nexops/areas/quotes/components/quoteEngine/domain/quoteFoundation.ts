@@ -58,7 +58,8 @@ export const quoteComposerInputSchema = z.object({
   terms: z.string().optional(),
   paymentSchedule: paymentSchedulePlanSchema.optional(),
   delivery: quoteDeliverySelectionSchema.optional(),
-  intake: z.custom<IntakeSnapshot>().optional()
+  intake: z.custom<IntakeSnapshot>().optional(),
+  customFields: z.record(z.union([z.string(), z.number(), z.boolean()])).optional()
 });
 
 export const quoteCreateApprovalArgsSchema = z.object({
@@ -307,7 +308,8 @@ export async function materializeQuoteRecord(
     changeRequests: [],
     createdAt: timestamp,
     updatedAt: timestamp,
-    ...(options.intake ?? input.intake ? { intake: options.intake ?? input.intake } : {})
+    ...(options.intake ?? input.intake ? { intake: options.intake ?? input.intake } : {}),
+    ...(input.customFields ? { customFields: input.customFields } : {})
   };
   return quoteSchema.parse(quote) as Quote;
 }

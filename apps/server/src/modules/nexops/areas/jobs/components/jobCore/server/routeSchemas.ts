@@ -10,7 +10,8 @@ export const createJobBodySchema = z.object({
   title: z.string().min(1),
   lineItems: z.array(lineItemSchema).optional(),
   paymentSchedule: paymentSchedulePlanSchema.optional(),
-  intake: intakeSnapshotSchema.optional()
+  intake: intakeSnapshotSchema.optional(),
+  customFields: z.record(z.union([z.string(), z.number(), z.boolean()])).optional()
   ,assignedOwnerId: z.string().min(1).optional()
 });
 export const updateJobBodySchema = z.object({
@@ -20,7 +21,8 @@ export const updateJobBodySchema = z.object({
   clientVisibility: z.object({
     hideFieldDocsFromPortal: z.boolean().optional()
   }).optional(),
-  assignedOwnerId: z.string().min(1).nullable().optional()
+  assignedOwnerId: z.string().min(1).nullable().optional(),
+  customFields: z.record(z.union([z.string(), z.number(), z.boolean()])).optional()
 });
 
 export const jobActionSchema = z.object({

@@ -217,6 +217,7 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
         selectedClientId: input.selectedClientId,
         selectedPropertyId: input.selectedPropertyId,
         reviewedAt: input.reviewedAt,
+        customFields: input.customFields,
         fieldPatches: input.fieldPatches?.map((field) => ({
           key: field.key,
           ...(field.value !== undefined ? { value: field.value } : {}),

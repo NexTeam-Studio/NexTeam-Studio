@@ -8,6 +8,7 @@ export const schedulingModule: ServerModule = {
     registerSchedulingRoutes(app, {
       repository: runtime.schedulingRepository,
       approvalQueue: runtime.approvalQueue,
+      crmRepository: runtime.nativeCrmRepository,
       env: runtime.env
     });
   },

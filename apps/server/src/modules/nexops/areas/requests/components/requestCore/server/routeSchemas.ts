@@ -23,6 +23,7 @@ export const createRequestBodySchema = z.object({
   selectedPropertyId: z.string().min(1).optional(),
   consent: z.object({ email: z.boolean().optional(), sms: z.boolean().optional(), marketing: z.boolean().optional() }).optional(),
   allowIncomplete: z.boolean().optional(),
+  customFields: z.record(z.union([z.string(), z.number(), z.boolean()])).optional(),
   fieldValues: z.array(requestFieldInputSchema).default([])
 });
 
@@ -42,7 +43,8 @@ export const updateRequestBodySchema = z.object({
       invoice: z.boolean().optional()
     }).optional(),
     value: z.union([z.string(), z.number(), z.boolean(), z.array(z.string().min(1))]).optional()
-  })).optional()
+  })).optional(),
+  customFields: z.record(z.union([z.string(), z.number(), z.boolean()])).optional()
 });
 
 export const requestFormBodySchema = z.object({

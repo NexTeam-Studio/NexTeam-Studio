@@ -442,6 +442,59 @@ test("the ledger model already accepts PayPal and Venmo slots even though the li
   assert.equal(recorded.invoice.status, "paid");
 });
 
+test("Payment settings actively gate ACH, transaction limits, and receipt delivery", async () => {
+  const fixture = makeFixture();
+  const invoice = await createInvoice(fixture, { id: "invoice_payment_settings" });
+  await fixture.ledgerService.syncInvoiceAfterCreate(invoice);
+
+  const initialSettings = await fixture.repository.getCrmSettings("aquatrace");
+  await fixture.repository.saveCrmSettings({
+    ...initialSettings,
+    workspaceSettings: {
+      ...initialSettings.workspaceSettings,
+      payments: {
+        ...initialSettings.workspaceSettings.payments,
+        achEnabled: false,
+        transactionLimit: 75,
+        receiptsEnabled: false
+      }
+    }
+  });
+
+  await assert.rejects(
+    () => fixture.ledgerService.recordInvoicePayment({ tenantId: "aquatrace", invoiceId: invoice.id, amount: 50, provider: "manual", method: "ach", actorId: "office_1" }),
+    /ACH is disabled/
+  );
+  await assert.rejects(
+    () => fixture.ledgerService.recordInvoicePayment({ tenantId: "aquatrace", invoiceId: invoice.id, amount: 80, provider: "manual", method: "other", actorId: "office_1" }),
+    /exceeds the tenant transaction limit/
+  );
+
+  const review = await fixture.ledgerRepository.upsertReceiptReview({
+    id: "receipt_payment_settings",
+    tenantId: "aquatrace",
+    clientId: "client_1",
+    invoiceId: invoice.id,
+    kind: "payment",
+    number: "RCT-9001",
+    status: "draft",
+    subject: "Receipt",
+    bodyText: "Receipt body",
+    emailRecipients: [],
+    smsRecipients: [],
+    sendChannels: [],
+    attachments: [],
+    statusHistory: [],
+    hostedLink: "/receipt/receipt_payment_settings",
+    createdAt: "2026-07-13T13:00:00.000Z",
+    updatedAt: "2026-07-13T13:00:00.000Z"
+  });
+  await assert.rejects(
+    () => fixture.ledgerService.sendReceiptReview({ tenantId: "aquatrace", receiptReviewId: review.id, actorId: "office_1", publicBaseUrl: "https://example.test" }),
+    /Receipts are disabled/
+  );
+});
+
 test("draft invoices stay draft and failed payments do not settle the invoice", async () => {
   const fixture = makeFixture();
   const draftInvoice = await createInvoice(fixture, {

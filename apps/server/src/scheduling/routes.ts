@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { z } from "zod";
 import { type ApprovalQueueService, RailError } from "@nexteam/core";
+import type { NativeCrmRepository } from "@nexteam/providers";
 import type { JobLifecycleService } from "../crm/jobLifecycle.js";
 import { configuredTenantId } from "../core/tenantConfig.js";
 import { requireTenantRole } from "../auth/accessContext.js";
@@ -41,6 +42,7 @@ const bookVisitSchema = z.object({
   start: z.string(),
   end: z.string(),
   assignedTo: z.array(z.string()).default(["crew-1"]),
+  customFields: z.record(z.union([z.string(), z.number(), z.boolean()])).optional(),
   notifyTo: z.string().email().optional()
 });
 
@@ -68,6 +70,7 @@ function visitFromInput(input: z.infer<typeof bookVisitSchema>): ScheduledVisit 
     start: input.start,
     end: input.end,
     assignedTo: input.assignedTo,
+    ...(input.customFields ? { customFields: input.customFields } : {}),
     location: input.location as ScheduleLocation,
     status: "scheduled"
   };
@@ -76,8 +79,18 @@ function visitFromInput(input: z.infer<typeof bookVisitSchema>): ScheduledVisit 
 export interface SchedulingRouteDeps {
   repository: SchedulingRepository;
   approvalQueue: ApprovalQueueService;
+  crmRepository?: Pick<NativeCrmRepository, "getCrmSettings"> | undefined;
   jobLifecycleService?: JobLifecycleService | undefined;
   env?: NodeJS.ProcessEnv | undefined;
+}
+
+function bookingAreaMatches(input: z.infer<typeof bookVisitSchema>, serviceAreas: string[]): boolean {
+  if (!serviceAreas.length) return true;
+  const address = input.location.address;
+  const candidates = [input.location.label, address?.city, address?.province, address ? `${address.city}, ${address.province}` : undefined]
+    .filter((value): value is string => Boolean(value?.trim()))
+    .map((value) => value.trim().toLowerCase());
+  return serviceAreas.some((area) => candidates.includes(area.trim().toLowerCase()));
 }
 
 export function registerSchedulingRoutes(app: Express, deps: SchedulingRouteDeps): void {
@@ -135,9 +148,18 @@ export function registerSchedulingRoutes(app: Express, deps: SchedulingRouteDeps
         tenantId: req.body?.tenantId ?? configuredTenantId(deps.env ?? process.env, "schedulingBookVisit")
       }) as z.infer<typeof bookVisitSchema> & { tenantId: string };
       await requireTenantRole(req, deps.env ?? process.env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: input.tenantId, op: "bookVisit" });
-      const visit = visitFromInput(input);
-      const conflicts = detectConflicts(await deps.repository.listVisits(input.tenantId, { from: input.start, to: input.end }), visit);
-      const saved = deps.jobLifecycleService
+      const bookingSettings = deps.crmRepository ? (await deps.crmRepository.getCrmSettings(input.tenantId)).workspaceSettings.requestsBooking : undefined;
+      if (bookingSettings && !bookingAreaMatches(input, bookingSettings.serviceAreas)) {
+        throw new RailError("This booking is outside the configured service areas.", { provider: "native", op: "bookVisit", status: 409 });
+      }
+      const visit = { ...visitFromInput(input), ...(bookingSettings?.requireApproval ? { status: "pending_approval" as const } : {}) };
+      const bufferMs = (bookingSettings?.bufferMinutes ?? 0) * 60_000;
+      const bufferedCandidate = bufferMs ? { ...visit, start: new Date(new Date(visit.start).getTime() - bufferMs).toISOString(), end: new Date(new Date(visit.end).getTime() + bufferMs).toISOString() } : visit;
+      const conflicts = detectConflicts(await deps.repository.listVisits(input.tenantId, { from: bufferedCandidate.start, to: bufferedCandidate.end }), bufferedCandidate);
+      if (conflicts.length) {
+        throw new RailError(`This booking conflicts with ${conflicts.length} visit(s), including the configured buffer.`, { provider: "native", op: "bookVisit", status: 409 });
+      }
+      const saved = deps.jobLifecycleService && !bookingSettings?.requireApproval
         ? await deps.jobLifecycleService.scheduleVisit({
           tenantId: input.tenantId,
           jobId: input.jobId,

@@ -10,6 +10,7 @@ import { queueScheduleNotification } from "../dist/scheduling/notifications.js";
 import { InMemorySchedulingRepository } from "../dist/scheduling/repository.js";
 import { registerSchedulingRoutes } from "../dist/scheduling/routes.js";
 import { detectConflicts, suggestSlots } from "../dist/scheduling/schedulingEngine.js";
+import { MemoryNativeCrmRepository, defaultCrmSettings } from "@nexteam/providers";
 
 function tenant() {
   return {
@@ -141,6 +142,27 @@ test("bookVisit parks the visit and queues a notification instead of sending", a
   const pending = await approvalQueue.listPending("aquatrace");
   assert.equal(pending.length, 1);
   assert.equal(pending[0].id, output.result.approval.id);
+});
+
+test("booking route enforces service area, buffer, and approval settings", async () => {
+  const repository = new InMemorySchedulingRepository();
+  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
+  const settings = defaultCrmSettings("aquatrace");
+  settings.workspaceSettings.requestsBooking = { bufferMinutes: 30, requireApproval: true, serviceAreas: ["Seneca, SC"] };
+  const crmRepository = new MemoryNativeCrmRepository({ crmSettings: [settings] });
+  await repository.saveVisit(visit({ id: "buffer_source", title: "Existing", start: "2026-07-09T10:00:00.000Z", end: "2026-07-09T11:00:00.000Z", assignedTo: ["crew-1"], location: { label: "Seneca, SC" } }));
+  const app = express(); app.use(express.json());
+  registerSchedulingRoutes(app, { repository, approvalQueue, crmRepository, env: { NEXI_FIREBASE_AUTH_REQUIRED: "false" } });
+  const server = app.listen(0);
+  try {
+    const port = server.address().port;
+    const outside = await fetch(`http://127.0.0.1:${port}/api/scheduling/book-visit`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tenantId: "aquatrace", jobId: "job_1", title: "Outside", location: { label: "Asheville", address: { street1: "1 Main", city: "Asheville", province: "NC", postalCode: "28801", country: "US" } }, start: "2026-07-09T12:00:00.000Z", end: "2026-07-09T13:00:00.000Z" }) });
+    assert.equal(outside.status, 409);
+    const buffered = await fetch(`http://127.0.0.1:${port}/api/scheduling/book-visit`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tenantId: "aquatrace", jobId: "job_2", title: "Buffered", location: { label: "Seneca, SC", address: { street1: "1 Main", city: "Seneca", province: "SC", postalCode: "29678", country: "US" } }, start: "2026-07-09T11:15:00.000Z", end: "2026-07-09T12:15:00.000Z" }) });
+    assert.equal(buffered.status, 409);
+    const allowed = await fetch(`http://127.0.0.1:${port}/api/scheduling/book-visit`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tenantId: "aquatrace", jobId: "job_3", title: "Approved", location: { label: "Seneca, SC", address: { street1: "1 Main", city: "Seneca", province: "SC", postalCode: "29678", country: "US" } }, start: "2026-07-09T13:00:00.000Z", end: "2026-07-09T14:00:00.000Z" }) });
+    const body = await allowed.json(); assert.equal(allowed.status, 201); assert.equal(body.visit.status, "pending_approval");
+  } finally { await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve())); }
 });
 
 test("whatsMyDay reads native visits for the requested technician", async () => {

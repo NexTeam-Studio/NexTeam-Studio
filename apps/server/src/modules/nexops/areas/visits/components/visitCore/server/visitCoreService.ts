@@ -14,6 +14,7 @@ export interface ScheduleJobVisitInput {
   end: string;
   assignedTo?: string[] | undefined;
   details?: string | undefined;
+  customFields?: ScheduledVisit["customFields"] | undefined;
 }
 
 export interface ScheduleJobVisitSeriesInput {
@@ -185,7 +186,8 @@ export class VisitCoreService {
       location: { label: jobLocationLabel(job), ...(job.property?.address ? { address: job.property.address } : {}) },
       status: "scheduled",
       ...(job.intake ? { intake: job.intake } : {}),
-      ...(input.details?.trim() ? { details: input.details.trim() } : {})
+      ...(input.details?.trim() ? { details: input.details.trim() } : {}),
+      ...(input.customFields ? { customFields: input.customFields } : {})
     };
     const saved = await this.deps.schedulingRepository.saveVisit(visit);
     await this.regenerateReminders(input.tenantId, input.jobId, saved);

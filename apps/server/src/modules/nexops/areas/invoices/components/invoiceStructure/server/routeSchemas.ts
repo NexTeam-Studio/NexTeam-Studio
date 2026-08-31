@@ -10,7 +10,8 @@ export const updateInvoiceDraftBodySchema = z.object({
   dueAt: z.string().optional(),
   terms: z.string().optional(),
   paymentSchedule: paymentSchedulePlanSchema.optional(),
-  deliveryDefaults: invoiceDeliveryPreferencesSchema.optional()
+  deliveryDefaults: invoiceDeliveryPreferencesSchema.optional(),
+  customFields: z.record(z.union([z.string(), z.number(), z.boolean()])).optional()
 });
 export const sendInvoiceBodySchema = z.object({
   tenantId: z.string().min(1).optional(),

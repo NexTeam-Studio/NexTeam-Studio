@@ -31,6 +31,7 @@ export interface RequestBuildInput {
   selectedPropertyId?: string | undefined;
   consent?: { email?: boolean | undefined; sms?: boolean | undefined; marketing?: boolean | undefined } | undefined;
   allowIncomplete?: boolean | undefined;
+  customFields?: Record<string, string | number | boolean> | undefined;
   fieldValues: Array<{
     key: string;
     value: string | number | boolean | string[];
@@ -539,6 +540,7 @@ export async function buildServiceRequest(repository: NativeCrmRepository, input
       fieldValues,
       fieldIndex
     },
+    ...(input.customFields ? { customFields: input.customFields } : {}),
     match,
     ...(input.selectedClientId ? { selectedClientId: input.selectedClientId } : {}),
     ...(input.selectedPropertyId ? { selectedPropertyId: input.selectedPropertyId } : {}),
@@ -623,6 +625,7 @@ export function updateServiceRequestShape(
     selectedPropertyId?: string | undefined;
     reviewedAt?: string | undefined;
     fieldPatches?: RequestFieldPatch[] | undefined;
+    customFields?: Record<string, string | number | boolean> | undefined;
   }
 ): ServiceRequest {
   const fieldValues = patch.fieldPatches ? mergeFieldValues(request.intake.fieldValues, patch.fieldPatches) : request.intake.fieldValues;
@@ -640,6 +643,7 @@ export function updateServiceRequestShape(
     ...(patch.selectedClientId !== undefined ? { selectedClientId: patch.selectedClientId || undefined } : {}),
     ...(patch.selectedPropertyId !== undefined ? { selectedPropertyId: patch.selectedPropertyId || undefined } : {}),
     ...(patch.reviewedAt ? { reviewedAt: patch.reviewedAt } : {}),
+    ...(patch.customFields !== undefined ? { customFields: patch.customFields } : {}),
     match: {
       ...request.match,
       ...(patch.reviewedAt ? { reviewRequired: false } : {})

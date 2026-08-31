@@ -944,6 +944,7 @@ export const serviceRequestSchema = z.object({
   narrative: z.string(),
   consent: z.object({ email: z.boolean(), sms: z.boolean(), marketing: z.boolean().default(false) }),
   intake: intakeSnapshotSchema,
+  customFields: z.record(z.union([z.string(), z.number(), z.boolean()])).optional(),
   match: serviceRequestMatchSchema,
   selectedClientId: idSchema.optional(),
   selectedPropertyId: idSchema.optional(),
@@ -1037,6 +1038,7 @@ export const jobSchema = z.object({
   totals: quoteTotalsSchema,
   paymentSchedule: paymentSchedulePlanSchema.optional(),
   intake: intakeSnapshotSchema.optional(),
+  customFields: z.record(z.union([z.string(), z.number(), z.boolean()])).optional(),
   clientVisibility: z.object({
     hideFieldDocsFromPortal: z.boolean().optional()
   }).optional(),
@@ -1164,6 +1166,7 @@ export const quoteSchema = z.object({
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
   intake: intakeSnapshotSchema.optional(),
+  customFields: z.record(z.union([z.string(), z.number(), z.boolean()])).optional(),
   externalIds: z.object({ jobber: z.string().optional(), stripe: z.string().optional() }).optional()
 });
 
@@ -1303,6 +1306,47 @@ export const tenantMembershipAuditSchema = z.object({
   subscriptionId: idSchema.optional()
 });
 
+export const workspaceSettingsSchema = z.object({
+  company: z.object({
+    address: addressSchema.optional(),
+    addressPrivate: z.boolean(),
+    hideAddressFromAiCrawlers: z.boolean(),
+    currency: z.string().min(1),
+    dateFormat: z.enum(["MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD"]),
+    firstWeekday: z.enum(["monday", "sunday"]),
+    logoUrl: z.string().url().optional(),
+    brandColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+    termsUrl: z.string().url().optional(),
+    privacyUrl: z.string().url().optional()
+  }),
+  fieldDocs: z.object({ gpsDefault: z.boolean(), timestampDefault: z.boolean(), aiTaggingDefault: z.boolean(), markupSaveMode: z.literal("new_copy") }),
+  automations: z.array(z.object({ id: idSchema, title: z.string().min(1).max(160), active: z.boolean(), trigger: z.string().min(1).max(120), delayMinutes: z.number().int().min(0), condition: z.string().min(1).max(240), action: z.string().min(1).max(120), messageTemplateCategory: z.string().min(1).max(120).optional(), stopConditions: z.array(z.string().min(1).max(120)).max(12) })).max(100),
+  requestsBooking: z.object({
+    bufferMinutes: z.number().int().min(0).max(1440),
+    requireApproval: z.boolean(),
+    serviceAreas: z.array(z.string().min(1).max(120)).max(100)
+  }),
+  taxSettings: z.object({ calculationMethod: z.enum(["exclusive", "inclusive"]), rates: z.array(z.object({ id: idSchema, name: z.string().min(1).max(120), rate: z.number().min(0).max(100), group: z.string().min(1).max(120).optional(), isDefault: z.boolean(), active: z.boolean() })).max(100) }),
+  customFields: z.array(z.object({ id: idSchema, label: z.string().min(1).max(120), valueType: z.enum(["text", "true_false", "area", "numeric", "dropdown_link"]), appliesTo: z.string().min(1).max(80), readOnly: z.boolean(), sortOrder: z.number().int().min(0), archived: z.boolean(), transferable: z.boolean(), options: z.array(z.string().min(1).max(120)).max(50) })).max(200),
+  schedule: z.object({ showWeekends: z.boolean(), calendarColors: z.record(z.string(), z.string().regex(/^#[0-9a-fA-F]{6}$/)), calendarSyncEnabled: z.boolean(), daySheet: z.object({ showPropertyMap: z.boolean(), showNotes: z.boolean(), showCustomInfo: z.boolean() }) }),
+  portal: z.object({ defaultDocumentVisibility: z.enum(["job", "global"]), tipPromptEnabled: z.boolean(), tipPresetPercentages: z.array(z.number().min(0).max(100)).min(1).max(5), allowCustomTip: z.boolean() }),
+  payments: z.object({ receiptsEnabled: z.boolean(), paymentNotificationsEnabled: z.boolean(), achEnabled: z.boolean(), transactionLimit: z.number().positive().optional(), bankAccountsConfigured: z.boolean(), requireTwoFactor: z.boolean() }),
+  integrations: z.object({ enabled: z.literal(false) })
+});
+
+export const defaultWorkspaceSettings: z.infer<typeof workspaceSettingsSchema> = {
+  company: { addressPrivate: false, hideAddressFromAiCrawlers: false, currency: "USD", dateFormat: "MM/DD/YYYY", firstWeekday: "monday" },
+  fieldDocs: { gpsDefault: true, timestampDefault: true, aiTaggingDefault: true, markupSaveMode: "new_copy" },
+  automations: [],
+  requestsBooking: { bufferMinutes: 0, requireApproval: true, serviceAreas: [] },
+  taxSettings: { calculationMethod: "exclusive", rates: [] },
+  customFields: [],
+  schedule: { showWeekends: true, calendarColors: {}, calendarSyncEnabled: false, daySheet: { showPropertyMap: true, showNotes: true, showCustomInfo: true } },
+  portal: { defaultDocumentVisibility: "job", tipPromptEnabled: false, tipPresetPercentages: [15, 18, 20], allowCustomTip: true },
+  payments: { receiptsEnabled: true, paymentNotificationsEnabled: true, achEnabled: false, bankAccountsConfigured: false, requireTwoFactor: false },
+  integrations: { enabled: false }
+};
+
 export const crmSettingsSchema = z.object({
   tenantId: idSchema,
   operatingProfile: tenantOperatingProfileSchema.default({
@@ -1376,6 +1420,7 @@ export const crmSettingsSchema = z.object({
     style: z.object({ headerLayout: z.enum(["basic", "compact", "envelope_dual", "envelope_single"]), headerStyle: z.enum(["modern", "clean"]), logoSize: z.number().min(.5).max(2), themeColor: z.enum(["default", "blue", "red", "green", "orange", "purple"]), footerFontSize: z.number().int().min(6).max(10), showCompanyName: z.boolean(), showCompanyPhone: z.boolean(), showCompanyEmail: z.boolean(), showCompanyWebsite: z.boolean(), showClientPhone: z.boolean() })
   }).default({ quote: { referToAsEstimate: false, showQuantity: true, showUnitPrice: true, showLineTotal: true, showTotalsAndTax: true, showSignatureLine: true, disclaimer: "This quote is valid for the next 30 days, after which values may be subject to change.", depositLanguage: "A deposit of {{DEPOSIT_AMOUNT}} will be required to begin." }, job: { showSignatureLine: true, disclaimer: "We can be called for touch-ups and small changes for the next 3 days. After that all work is final." }, invoice: { showQuantity: true, showUnitPrice: true, showLineTotal: true, showReturnPaymentStub: false, showLateStamp: true, showAccountBalance: true, showPaidDate: true, disclaimer: "Thank you for your business. Please contact us with any questions regarding this invoice." }, style: { headerLayout: "basic", headerStyle: "modern", logoSize: 1, themeColor: "default", footerFontSize: 8, showCompanyName: true, showCompanyPhone: true, showCompanyEmail: true, showCompanyWebsite: true, showClientPhone: false } }),
   completionRequirements: z.object({ checklistRequired: z.boolean(), photosRequired: z.boolean(), reportRequired: z.boolean(), signatureRequired: z.boolean() }).default({ checklistRequired: false, photosRequired: false, reportRequired: false, signatureRequired: false }),
+  workspaceSettings: workspaceSettingsSchema.default(defaultWorkspaceSettings),
   propertyAssetDefinitions: z.array(propertyAssetDefinitionSchema).default([]),
   catalogItems: z.array(productServiceCatalogItemSchema).default([]),
   communicationTemplates: z.array(communicationTemplateRecordSchema).default([]),
@@ -1654,6 +1699,7 @@ export const invoiceSchema = z.object({
   statusHistory: z.array(ledgerStatusEntrySchema).optional(),
   ledger: invoiceLedgerSummarySchema.optional(),
   intake: intakeSnapshotSchema.optional(),
+  customFields: z.record(z.union([z.string(), z.number(), z.boolean()])).optional(),
   externalIds: z.object({ jobber: z.string().optional(), stripe: z.string().optional() }).optional()
 });
 
@@ -1668,6 +1714,7 @@ export const visitSchema = z.object({
   checklistRef: idSchema.optional(),
   outcome: z.string().optional(),
   intake: intakeSnapshotSchema.optional()
+  ,customFields: z.record(z.union([z.string(), z.number(), z.boolean()])).optional()
 });
 
 export const mediaSchema = z.object({

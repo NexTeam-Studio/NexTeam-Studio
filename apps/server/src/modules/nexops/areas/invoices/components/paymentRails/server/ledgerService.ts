@@ -1036,6 +1036,7 @@ export class LedgerService {
     terms?: string | undefined;
     paymentSchedule?: PaymentSchedulePlan | undefined;
     deliveryDefaults?: Invoice["deliveryDefaults"] | undefined;
+    customFields?: Invoice["customFields"] | undefined;
   }): Promise<Invoice> {
     const invoice = requireLedgerRecord(await this.getInvoice(input.tenantId, input.invoiceId), `Invoice ${input.invoiceId} was not found.`, "updateInvoiceDraft");
     if (invoice.status !== "draft" && input.lineItems) {
@@ -1053,6 +1054,7 @@ export class LedgerService {
       ...(input.terms !== undefined ? { terms: input.terms } : {}),
       ...(input.paymentSchedule !== undefined ? { paymentSchedule: input.paymentSchedule } : {}),
       ...(input.deliveryDefaults !== undefined ? { deliveryDefaults: input.deliveryDefaults } : {}),
+      ...(input.customFields !== undefined ? { customFields: input.customFields } : {}),
       updatedAt: now(),
       ledger: {
         ...(invoice.ledger ?? { depositApplied: 0, creditApplied: 0, paymentApplied: 0, refundedAmount: 0, balanceDue: totals.total, overdue: false }),
@@ -1236,6 +1238,10 @@ export class LedgerService {
     sendChannels?: ReceiptReviewChannel[] | undefined;
     attachmentIds?: string[] | undefined;
   }): Promise<{ receiptReview: ReceiptReview; invoice?: Invoice | undefined }> {
+    const paymentSettings = (await this.deps.crmRepository.getCrmSettings(input.tenantId)).workspaceSettings.payments;
+    if (!paymentSettings.receiptsEnabled) {
+      throw new RailError("Receipts are disabled in this tenant's Payment settings.", { provider: "native", op: "sendReceiptReview", status: 409 });
+    }
     const review = await this.updateReceiptReviewDraft({
       tenantId: input.tenantId,
       receiptReviewId: input.receiptReviewId,
@@ -1362,6 +1368,13 @@ export class LedgerService {
   }
 
   async recordInvoicePayment(input: RecordInvoicePaymentInput): Promise<{ payment: Payment; invoice: Invoice; credit?: Credit | undefined; receiptReview?: ReceiptReview | undefined }> {
+    const workspaceSettings = (await this.deps.crmRepository.getCrmSettings(input.tenantId)).workspaceSettings;
+    if (input.method === "ach" && !workspaceSettings.payments.achEnabled) {
+      throw new RailError("ACH is disabled in this tenant's Payment settings.", { provider: "native", op: "recordInvoicePayment", status: 409 });
+    }
+    if (workspaceSettings.payments.transactionLimit !== undefined && input.amount > workspaceSettings.payments.transactionLimit) {
+      throw new RailError("This payment exceeds the tenant transaction limit.", { provider: "native", op: "recordInvoicePayment", status: 409 });
+    }
     const invoice = await this.getInvoice(input.tenantId, input.invoiceId);
     if (!invoice) {
       throw new RailError(`Invoice ${input.invoiceId} was not found.`, { provider: "native", op: "recordInvoicePayment", status: 404 });
