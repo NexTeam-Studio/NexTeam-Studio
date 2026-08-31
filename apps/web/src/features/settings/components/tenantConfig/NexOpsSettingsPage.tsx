@@ -573,7 +573,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
           title="Settings"
           detail="Configure the business rules, documents, team access, and client experience your office uses every day."
           icon={<NexOpsNavGlyph module="settings" />}
-          primaryAction={<button type="button" onClick={() => openSettingsArea("company")}>Open Company Settings</button>}
+          primaryAction={<button className="nexops-hero-primary-button" type="button" onClick={() => openSettingsArea("company")}>Open Company Settings</button>}
           className="module-hero-card--quote"
         />
         <nav className="nexops-settings-navigation-grid" aria-label="Settings areas">
@@ -600,7 +600,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
         title={selectedSettingsArea.label}
         detail={selectedSettingsArea.detail}
         icon={<NexOpsNavGlyph module="settings" />}
-        primaryAction={<button type="button" onClick={() => { window.history.pushState({}, "", "/nexops/settings"); setActiveSettingsArea(null); window.scrollTo({ top: 0, left: 0, behavior: "auto" }); }}>All Settings</button>}
+        primaryAction={<button className="nexops-hero-primary-button" type="button" onClick={() => { window.history.pushState({}, "", "/nexops/settings"); setActiveSettingsArea(null); window.scrollTo({ top: 0, left: 0, behavior: "auto" }); }}>All Settings</button>}
         className="module-hero-card--quote"
       />
 

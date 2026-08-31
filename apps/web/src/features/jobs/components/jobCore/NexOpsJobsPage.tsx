@@ -1788,8 +1788,8 @@ export function NexOpsJobsPage(props: {
         detail={workspaceView === "builder" ? "Choose the client, define the work, and set the billing plan." : "Manage active work, visits, reminders, documents, and closeout from one connected operational rail."}
         icon={<NexOpsNavGlyph module="jobs" />}
         primaryAction={workspaceView === "builder"
-          ? <button className="nexops-quote-primary-button nexops-quote-back-to-roster" type="button" onClick={() => setWorkspaceView("roster")}>← Jobs</button>
-          : <button className="nexops-quote-primary-button" type="button" onClick={() => setWorkspaceView("builder")}>+ New Job</button>}
+          ? <button className="nexops-hero-primary-button nexops-quote-back-to-roster" type="button" onClick={() => setWorkspaceView("roster")}>← Jobs</button>
+          : <button className="nexops-hero-primary-button" type="button" onClick={() => setWorkspaceView("builder")}>+ New Job</button>}
         heroClassName="module-hero-card--quote"
         showHero={workspaceView !== "builder"}
         metrics={undefined}
@@ -1799,7 +1799,7 @@ export function NexOpsJobsPage(props: {
         detail="Choose the client, define the work, and set the billing plan."
         icon={<NexOpsNavGlyph module="jobs" />}
         heroClassName="module-hero-card--quote"
-        backAction={<button className="nexops-quote-primary-button nexops-quote-back-to-roster" type="button" onClick={() => setWorkspaceView("roster")}>← Jobs</button>}
+        backAction={<button className="nexops-hero-primary-button nexops-quote-back-to-roster" type="button" onClick={() => setWorkspaceView("roster")}>← Jobs</button>}
       ><section className="nexops-jobs-layout">
         <article className="nexops-module-card nexops-jobs-create-card">
           <p className="eyebrow">Manual Create</p>

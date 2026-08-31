@@ -102,7 +102,7 @@ export function NexOpsLegacyLifecyclePage(props: {
   };
   return (
     <section className="nexops-module-page">
-      <ModuleHeroCard title={page.title} detail={page.subtitle} icon={<NexOpsNavGlyph module={module} />} primaryAction={<button type="button">{page.primaryAction}</button>} />
+      <ModuleHeroCard title={page.title} detail={page.subtitle} icon={<NexOpsNavGlyph module={module} />} primaryAction={<button className="nexops-hero-primary-button" type="button">{page.primaryAction}</button>} />
       <div className="nexops-module-grid nexops-module-grid-wide">
         <article className="nexops-module-card">
           <p className="eyebrow">Live native records</p>

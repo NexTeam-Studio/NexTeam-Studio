@@ -919,7 +919,7 @@ export function NexOpsSchedulePage(props: {
         title="Visits"
         detail="Place approved work on the board, shift future visits cleanly, and keep unscheduled jobs visible."
         icon={<NexOpsNavGlyph module="schedule" />}
-        primaryAction={<button className="nexops-primary-inline-button" type="button" onClick={() => openComposer()}>New Visit</button>}
+        primaryAction={<button className="nexops-hero-primary-button" type="button" onClick={() => openComposer()}>New Visit</button>}
         metrics={(
           <>
             <article><span>Scheduled</span><strong>{workspace?.visits.length ?? 0}</strong><small>In this view</small></article>

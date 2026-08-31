@@ -1254,7 +1254,7 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
       detail="Choose completed work, set the billing terms, and create the invoice without losing its job links."
       icon={<NexOpsNavGlyph module="invoices" />}
       heroClassName="module-hero-card--quote"
-      backAction={<button className="nexops-quote-primary-button nexops-quote-back-to-roster" type="button" onClick={() => setInvoiceCreationOpen(false)}>← Invoices</button>}
+      backAction={<button className="nexops-hero-primary-button nexops-quote-back-to-roster" type="button" onClick={() => setInvoiceCreationOpen(false)}>← Invoices</button>}
     >
       <article className="nexops-module-card nexops-quote-composer-card">
         <section className="nexops-quote-panel">
@@ -1273,7 +1273,7 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
             <PaymentScheduleEditor value={combineDraft.paymentSchedule} onChange={(paymentSchedule) => setCombineDraft((current) => ({ ...current, paymentSchedule }))} title="Invoice Payment Schedule" hint="Use this when the grouped jobs need a deposit or staged balance plan." />
           </div>
         </section>
-        <section className="nexops-quote-final-action"><button className="nexops-quote-primary-button" type="button" onClick={() => void combineSelectedJobs()} disabled={Boolean(busy) || !combineSelection.length}>{busy === "combine" ? "Creating..." : "Create Invoice"}</button><small>{statusMessage}</small></section>
+        <section className="nexops-quote-final-action"><button className="nexops-hero-primary-button" type="button" onClick={() => void combineSelectedJobs()} disabled={Boolean(busy) || !combineSelection.length}>{busy === "combine" ? "Creating..." : "Create Invoice"}</button><small>{statusMessage}</small></section>
       </article>
     </NexOpsCreationTemplate></section>;
   }
@@ -1284,7 +1284,7 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
         title={props.entryPoint === "payments" ? "Payments" : "Invoices"}
         detail={clientContext ? `Draft, send, collect, recover, and pause at receipt review before anything goes out the door. Client context: ${clientDisplayName(clientContext)}.` : "Draft, send, collect, recover, and pause at receipt review before anything goes out the door."}
         icon={<NexOpsNavGlyph module={props.entryPoint === "payments" ? "payments" : "invoices"} />}
-        primaryAction={<button className="nexops-roster-primary-button" type="button" onClick={() => setInvoiceCreationOpen(true)}>+ New Invoice</button>}
+        primaryAction={<button className="nexops-hero-primary-button" type="button" onClick={() => setInvoiceCreationOpen(true)}>+ New Invoice</button>}
         secondaryActions={detail?.invoice ? <a href={`/api/crm/invoices/${encodeURIComponent(detail.invoice.id)}/pdf?tenantId=${encodeURIComponent(props.tenantId)}`} rel="noreferrer" target="_blank">Open PDF</a> : undefined}
         heroClassName="module-hero-card--quote"
       >

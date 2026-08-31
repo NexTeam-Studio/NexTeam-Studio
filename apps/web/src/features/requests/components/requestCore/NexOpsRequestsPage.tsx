@@ -869,7 +869,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
       detail="Capture the client, service location, and intake details without losing downstream context."
       icon={<NexOpsNavGlyph module="requests" />}
       heroClassName="module-hero-card--quote"
-      backAction={<button className="nexops-quote-primary-button nexops-quote-back-to-roster" type="button" onClick={() => setRequestCreationOpen(false)}>← Requests</button>}
+      backAction={<button className="nexops-hero-primary-button nexops-quote-back-to-roster" type="button" onClick={() => setRequestCreationOpen(false)}>← Requests</button>}
     >
       <article className="nexops-module-card nexops-quote-composer-card">
         <form className="nexops-request-builder" onSubmit={(event) => void createRequest(event)}>
@@ -891,7 +891,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
             </div>
           </section>
           {selectedForm ? <section className="nexops-quote-panel"><div className="nexops-quote-simple-heading nexops-quote-details-banner"><h3>Request Details</h3><span>Complete the selected intake form before saving the request.</span></div><div className="nexops-quote-setup-body">{selectedForm.fieldDefinitions.map((field) => <label className={`nexops-field ${field.prominent ? "nexops-request-prominent" : ""}`} key={field.key}><span>{field.label}</span>{field.type === "textarea" ? <textarea rows={4} value={String(currentFieldValue(field))} onChange={(event) => updateFieldValue(field.key, event.target.value)} /> : field.type === "select" || field.key === "salesperson_user_id" ? <select value={String(currentFieldValue(field))} onChange={(event) => updateFieldValue(field.key, event.target.value)}><option value="">Select</option>{field.key === "salesperson_user_id" ? activeTenantUsers.map((user) => <option value={user.id} key={user.id}>{user.displayName}</option>) : field.options?.map((option) => <option value={option} key={option}>{titleCaseUiLabel(option)}</option>)}</select> : field.type === "boolean" ? <span className="nexops-check-field inline"><input checked={Boolean(currentFieldValue(field))} type="checkbox" onChange={(event) => updateFieldValue(field.key, event.target.checked)} />{Boolean(currentFieldValue(field)) ? "Flagged" : "Not flagged"}</span> : <input type={field.type === "email" ? "email" : field.type === "phone" ? "tel" : "text"} value={String(currentFieldValue(field))} onChange={(event) => updateFieldValue(field.key, event.target.value)} />}{field.helpText ? <small>{field.helpText}</small> : null}</label>)}</div></section> : <p className="nexops-empty-copy">Create a form in the library first so the office and website can use the same intake definitions.</p>}
-          <section className="nexops-quote-final-action"><button className="nexops-quote-primary-button" type="submit" disabled={Boolean(actionBusy) || !selectedForm}>{actionBusy === "create-request" ? "Saving..." : "Create Request"}</button><small>{statusMessage}</small></section>
+          <section className="nexops-quote-final-action"><button className="nexops-hero-primary-button" type="submit" disabled={Boolean(actionBusy) || !selectedForm}>{actionBusy === "create-request" ? "Saving..." : "Create Request"}</button><small>{statusMessage}</small></section>
         </form>
       </article>
     </NexOpsCreationTemplate>;
@@ -905,7 +905,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
         heroClassName="module-hero-card--quote"
       primaryAction={(
         <div className="nexops-inline-actions">
-          <button type="button" onClick={() => setRequestCreationOpen(true)}>+ New Request</button>
+          <button className="nexops-hero-primary-button" type="button" onClick={() => setRequestCreationOpen(true)}>+ New Request</button>
           <button type="button" onClick={() => void refresh()} disabled={Boolean(actionBusy)}>Refresh</button>
           <button type="button" onClick={() => void backfillLeads()} disabled={Boolean(actionBusy)}>
             {actionBusy === "backfill" ? "Backfilling..." : "Backfill Legacy Leads"}

@@ -50,7 +50,7 @@ export function NexCamPage(props: { auth: Auth | null; user: User }) {
         title="Create Field Checklist"
         detail="Start from the property and visit rail, record the field evidence, and carry property facts forward."
         icon={<NexOpsNavGlyph module="capture" />}
-        backAction={<button type="button" onClick={() => setModule("overview")}>NexCam Overview</button>}
+        backAction={<button className="nexops-hero-primary-button" type="button" onClick={() => setModule("overview")}>NexCam Overview</button>}
         heroClassName="module-hero-card--quote"
       >
         <NexCamOverviewSurface workspace={workspace} embedded />

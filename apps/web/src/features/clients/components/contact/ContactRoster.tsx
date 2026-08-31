@@ -58,7 +58,7 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
         title="Clients"
         detail={`${props.status} Open any row to move into the full Client workspace.`}
         icon={<NexOpsNavGlyph module="clients" />}
-        primaryAction={<button className="nexops-client-primary-action" type="button" onClick={props.onNewClient}>New Client</button>}
+        primaryAction={<button className="nexops-hero-primary-button" type="button" onClick={props.onNewClient}>New Client</button>}
         secondaryActions={<div className="nexops-client-actions">
           <button type="button" onClick={props.onImport}>Import CSV</button>
           <button type="button" onClick={props.onRefresh}>Refresh</button>

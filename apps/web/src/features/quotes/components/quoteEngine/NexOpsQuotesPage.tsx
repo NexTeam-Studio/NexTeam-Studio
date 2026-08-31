@@ -1789,7 +1789,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
         icon={<NexOpsNavGlyph module="quotes" />}
         heroClassName="module-hero-card--quote"
         showHero={workspaceView !== "builder"}
-        primaryAction={workspaceView === "builder" ? <button className="nexops-quote-primary-button nexops-quote-back-to-roster" type="button" onClick={() => { setWorkspaceView("roster"); setQuoteBuilderMode(null); }}>← Quotes</button> : <button className="nexops-quote-primary-button" type="button" onClick={openBuilder} disabled={Boolean(busy)}>+ New Quote</button>}
+        primaryAction={workspaceView === "builder" ? <button className="nexops-hero-primary-button nexops-quote-back-to-roster" type="button" onClick={() => { setWorkspaceView("roster"); setQuoteBuilderMode(null); }}>← Quotes</button> : <button className="nexops-hero-primary-button" type="button" onClick={openBuilder} disabled={Boolean(busy)}>+ New Quote</button>}
         metrics={undefined}
       >
       {workspaceView === "roster" ? <NexOpsRosterSurface ariaLabel="Search and filter quotes" searchTitle="Search Quotes" resultNoun="Quote" resultCount={filteredQuotes.length} search={<label className="nexops-quote-roster-search"><span className="sr-only">Search quotes</span><input placeholder="Search quotes" value={quoteSearch} onChange={(event) => setQuoteSearch(event.target.value)} /></label>} filter={<button className="nexops-jobs-filter-pill nexops-quote-filter-trigger" type="button" aria-expanded={quoteRosterFilterOpen} aria-controls="quote-status-filter-options" onClick={() => setQuoteRosterFilterOpen((current) => !current)}><span className="nexops-quote-filter-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M4 7h16" /><path d="M7 12h10" /><path d="M10 17h4" /></svg></span><span className="nexops-quote-filter-label">Filter</span>{quoteRosterFilters.length ? <small>{filteredQuotes.length}</small> : null}</button>} filterOptions={quoteRosterFilterOpen ? <div className="nexops-quote-filter-options" id="quote-status-filter-options" aria-label="Quote status filters">{QUOTE_ROSTER_FILTERS.map((filter) => { const selected = quoteRosterFilters.includes(filter.value); return <button key={filter.value} type="button" role="checkbox" aria-checked={selected} className={`nexops-jobs-filter-pill${selected ? " active" : ""}`} onClick={() => setQuoteRosterFilters((current) => selected ? current.filter((value) => value !== filter.value) : [...current, filter.value])}><span className="nexops-quote-filter-check" aria-hidden="true">{selected ? "✓" : ""}</span><span>{filter.label}</span><small>{quoteRosterCounts[filter.value]}</small></button>; })}</div> : undefined} empty={!filteredQuotes.length ? <div className="nexops-quote-filtered-empty"><h2>No Quotes Match This View Yet</h2><p>Adjust the selected statuses or search terms to see quotes here.</p></div> : undefined}>
@@ -1821,7 +1821,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
         detail={quoteCreationLine}
         icon={<NexOpsNavGlyph module="quotes" />}
         heroClassName="module-hero-card--quote"
-        backAction={<button className="nexops-quote-primary-button nexops-quote-back-to-roster" type="button" onClick={() => { setWorkspaceView("roster"); setQuoteBuilderMode(null); }}>← Quotes</button>}
+        backAction={<button className="nexops-hero-primary-button nexops-quote-back-to-roster" type="button" onClick={() => { setWorkspaceView("roster"); setQuoteBuilderMode(null); }}>← Quotes</button>}
       >
 
       <div className="nexops-module-grid nexops-module-grid-wide">
@@ -1963,7 +1963,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
             </section>
 
             <section className="nexops-quote-final-action">
-              <button className="nexops-quote-primary-button" type="button" onClick={() => void saveQuote()} disabled={Boolean(busy) || !canSaveComposer(composer)}>{busy === "save-quote" ? "Saving..." : "Review & Send"}</button>
+              <button className="nexops-hero-primary-button" type="button" onClick={() => void saveQuote()} disabled={Boolean(busy) || !canSaveComposer(composer)}>{busy === "save-quote" ? "Saving..." : "Review & Send"}</button>
             </section>
             </> : null}
           </div>
@@ -2125,7 +2125,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
             title={selectedQuote?.number ?? "Quote"}
             detail={selectedQuote ? `${selectedQuote.title} · ${clientDisplayName(selectedClient)}` : "Choose a quote from the roster."}
             status={selectedQuote ? <NexopsStatusPill label={quoteStatusLabel(selectedQuote.status)} tone={quoteStatusTone(selectedQuote.status)} /> : undefined}
-            actions={<button className="nexops-quote-primary-button" type="button" onClick={() => { if (selectedQuote) { setComposer(composerFromQuote(selectedQuote, selectedClient)); setWorkspaceView("builder"); } }}>Edit Quote</button>}
+            actions={<button className="nexops-hero-primary-button" type="button" onClick={() => { if (selectedQuote) { setComposer(composerFromQuote(selectedQuote, selectedClient)); setWorkspaceView("builder"); } }}>Edit Quote</button>}
             navigation={<><button className="active" type="button" aria-current="page">Overview</button><button type="button" onClick={() => { if (selectedQuote) { setComposer(composerFromQuote(selectedQuote, selectedClient)); setWorkspaceView("builder"); } }}>Pricing</button><button type="button" onClick={() => selectedQuote && runQuoteAction("send")}>Approval &amp; Send</button></>}
           >{null}</NexOpsDetailTemplate> : null}
           {selectedQuote ? (
@@ -2573,10 +2573,10 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
               <label className="nexops-check-field inline"><input type="checkbox" checked={newPropertyDraft.gateCodeNeeded} onChange={(event) => setNewPropertyDraft((current) => ({ ...current, gateCodeNeeded: event.target.checked, gateCode: event.target.checked ? current.gateCode : "" }))} />Gate code needed</label>
               {newPropertyDraft.gateCodeNeeded ? <label className="nexops-field"><span>Gate Code</span><input value={newPropertyDraft.gateCode} onChange={(event) => setNewPropertyDraft((current) => ({ ...current, gateCode: event.target.value }))} /></label> : null}
               {newPropertyStatus ? <p className="nexops-form-note">{newPropertyStatus}</p> : null}
-              <button className="nexops-quote-primary-button" type="button" onClick={() => void createPropertyForQuote()} disabled={newPropertyBusy}>{newPropertyBusy ? "Saving Property..." : "Save New Property"}</button>
+              <button className="nexops-hero-primary-button" type="button" onClick={() => void createPropertyForQuote()} disabled={newPropertyBusy}>{newPropertyBusy ? "Saving Property..." : "Save New Property"}</button>
             </div>}
             {newPropertyStatus ? <p className="nexops-form-note">{newPropertyStatus}</p> : null}
-            <button className="nexops-quote-primary-button" type="button" onClick={saveClientSelection}>Save Client Selection</button>
+            <button className="nexops-hero-primary-button" type="button" onClick={saveClientSelection}>Save Client Selection</button>
           </div>
         </section>
       </div> : null}
@@ -2608,7 +2608,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
           <p><strong>{pendingCatalogCreateSeed}</strong> is not in the library. Save it now so it can be reused on future quotes?</p>
           <div className="nexops-inline-actions">
             <button type="button" onClick={() => { addCustomLine(pendingCatalogCreateSeed); setPendingCatalogCreateSeed(""); }}>Use as Custom Line</button>
-            <button className="nexops-quote-primary-button" type="button" onClick={() => { setCatalogDraft(blankCatalogItemDraft(pendingCatalogCreateSeed)); setPendingCatalogCreateSeed(""); setCatalogEditorOpen(true); }}>Yes, Save New Line Item</button>
+            <button className="nexops-hero-primary-button" type="button" onClick={() => { setCatalogDraft(blankCatalogItemDraft(pendingCatalogCreateSeed)); setPendingCatalogCreateSeed(""); setCatalogEditorOpen(true); }}>Yes, Save New Line Item</button>
           </div>
         </section>
       </div> : null}
