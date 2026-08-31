@@ -1,6 +1,7 @@
 import React, { Suspense, useEffect, useState } from "react";
 import { type Auth, type User } from "firebase/auth";
 import { tenantDisplayName } from "../../shared/branding/ProductBranding";
+import { NexOpsSharedWebTopbar } from "./components/NexOpsHeader";
 import { NexSuiteHeader } from "../../shared/ui/NexSuiteHeader";
 import { NexSuiteSidebar, type NexSuiteSidebarItem } from "../../shared/ui/NexSuiteSidebar";
 import { NexTeamApplicationShell } from "../../shared/ui/NexTeamApplicationShell";
