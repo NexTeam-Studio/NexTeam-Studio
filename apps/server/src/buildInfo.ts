@@ -3,12 +3,13 @@ import { readFileSync } from "node:fs";
 
 // Replaced only in the temporary source archive used by the guarded staging upload.
 const uploadedArchiveSha = "__NEXTEAM_UPLOAD_SHA__";
+const uploadArchiveMarker = process.env.NEXTEAM_UPLOAD_MARKER ?? "__NEXTEAM_UPLOAD_SHA__";
 
 function readGitSha(env: NodeJS.ProcessEnv): string {
   // Staging uploads receive a fresh, non-secret identity in their temporary
   // source archive. Prefer it over a linked-source SHA, which Railway can
   // retain from an older GitHub deployment after an upload deploy.
-  if (uploadedArchiveSha !== "__NEXTEAM_UPLOAD_SHA__") {
+  if (uploadedArchiveSha !== uploadArchiveMarker) {
     return uploadedArchiveSha;
   }
   try {
