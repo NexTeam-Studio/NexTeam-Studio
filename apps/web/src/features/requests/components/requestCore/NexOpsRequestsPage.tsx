@@ -903,15 +903,13 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
         detail="Capture, review, and move verified service requests into quotes or jobs without losing their client and property context."
         icon={<NexOpsNavGlyph module="requests" />}
         heroClassName="module-hero-card--quote"
-      primaryAction={(
-        <div className="nexops-inline-actions">
-          <button className="nexops-hero-primary-button" type="button" onClick={() => setRequestCreationOpen(true)}>+ New Request</button>
+      primaryAction={<button className="nexops-hero-primary-button" type="button" onClick={() => setRequestCreationOpen(true)}>+ New Request</button>}
+      secondaryActions={<>
           <button type="button" onClick={() => void refresh()} disabled={Boolean(actionBusy)}>Refresh</button>
           <button type="button" onClick={() => void backfillLeads()} disabled={Boolean(actionBusy)}>
             {actionBusy === "backfill" ? "Backfilling..." : "Backfill Legacy Leads"}
           </button>
-        </div>
-      )}
+        </>}
       metrics={undefined}
     >
 

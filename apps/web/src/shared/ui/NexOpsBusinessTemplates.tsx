@@ -194,8 +194,8 @@ export function ModuleHeroCard(props: {
       </div>
       {props.primaryAction || props.secondaryActions ? (
         <div className="nexops-business-hero-action module-hero-card__actions">
-          {props.primaryAction}
-          {props.secondaryActions}
+          {props.primaryAction ? <div className="module-hero-card__primary-action">{props.primaryAction}</div> : null}
+          {props.secondaryActions ? <div className="module-hero-card__secondary-actions">{props.secondaryActions}</div> : null}
         </div>
       ) : null}
     </header>

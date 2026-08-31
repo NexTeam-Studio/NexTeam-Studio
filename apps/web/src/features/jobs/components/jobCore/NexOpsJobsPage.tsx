@@ -1782,7 +1782,7 @@ export function NexOpsJobsPage(props: {
   }
 
   return (
-    <section className="nexops-module-page">
+    <section>
       <NexOpsRosterTemplate
         title={workspaceView === "builder" ? "Create Job" : "Jobs"}
         detail={workspaceView === "builder" ? "Choose the client, define the work, and set the billing plan." : "Manage active work, visits, reminders, documents, and closeout from one connected operational rail."}

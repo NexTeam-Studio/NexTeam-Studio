@@ -1782,7 +1782,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
   const selectedQuoteCarryForwardFacts = intakeDetailFacts(selectedQuote?.intake, "quote", 10);
 
   return (
-    <section className="nexops-module-page quote-engine-page">
+    <section className="quote-engine-page">
       <NexOpsRosterTemplate
         title={workspaceView === "builder" ? "Create Quote" : "Quotes"}
         detail={workspaceView === "builder" ? quoteCreationLine : "Build clear client-ready proposals, keep pricing in one place, and move the approved work forward."}

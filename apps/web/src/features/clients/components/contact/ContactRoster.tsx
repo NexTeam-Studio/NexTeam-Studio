@@ -53,16 +53,15 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
   }), [props.clients, props.clientDisplayName, sort, statusFilter, tagFilter]);
 
   return (
-    <section className="nexops-clients-workspace">
       <NexOpsRosterTemplate
         title="Clients"
         detail={`${props.status} Open any row to move into the full Client workspace.`}
         icon={<NexOpsNavGlyph module="clients" />}
         primaryAction={<button className="nexops-hero-primary-button" type="button" onClick={props.onNewClient}>New Client</button>}
-        secondaryActions={<div className="nexops-client-actions">
+        secondaryActions={<>
           <button type="button" onClick={props.onImport}>Import CSV</button>
           <button type="button" onClick={props.onRefresh}>Refresh</button>
-        </div>}
+        </>}
       >
       <NexOpsRosterSurface ariaLabel="Search and filter clients" searchTitle="Search Clients" resultCount={visibleClients.length} resultNoun="Client"
         search={<label className="nexops-quote-roster-search"><span className="sr-only">Search Clients</span><input value={props.query} placeholder="Search Clients" onChange={(event) => props.onQueryChange(event.target.value)} /></label>}
@@ -75,6 +74,5 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
           </article>)}
       </NexOpsRosterSurface>
       </NexOpsRosterTemplate>
-    </section>
   );
 }

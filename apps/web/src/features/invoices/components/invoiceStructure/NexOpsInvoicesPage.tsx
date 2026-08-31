@@ -1279,7 +1279,7 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
   }
 
   return (
-    <section className="nexops-module-page">
+    <section>
       <NexOpsRosterTemplate
         title={props.entryPoint === "payments" ? "Payments" : "Invoices"}
         detail={clientContext ? `Draft, send, collect, recover, and pause at receipt review before anything goes out the door. Client context: ${clientDisplayName(clientContext)}.` : "Draft, send, collect, recover, and pause at receipt review before anything goes out the door."}
