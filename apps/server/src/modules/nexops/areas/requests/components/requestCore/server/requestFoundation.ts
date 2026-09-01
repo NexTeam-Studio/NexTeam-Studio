@@ -819,7 +819,7 @@ function propertyContactsFromRequest(
   }];
 }
 
-async function materializeRequestClient(repository: NativeCrmRepository, request: ServiceRequest): Promise<{ client: Client; property?: Property | undefined }> {
+export async function materializeRequestClient(repository: NativeCrmRepository, request: ServiceRequest): Promise<{ client: Client; property?: Property | undefined }> {
   const existingClient = await resolveExistingClient(repository, request);
   if (existingClient) {
     const existingProperty = await resolveExistingProperty(repository, request, existingClient.id);
@@ -859,10 +859,17 @@ async function materializeRequestClient(repository: NativeCrmRepository, request
     return { client: existingClient };
   }
 
+  const firstName = valueAsString(request.intake.fieldIndex, "first_name");
+  const lastName = valueAsString(request.intake.fieldIndex, "last_name");
+  const company = valueAsString(request.intake.fieldIndex, "company_name");
+  const primaryContact = propertyContactsFromRequest(request, { mirrorPrimaryIfBlank: true })?.[0];
   const client = await repository.createClient({
     id: `client_${randomUUID()}`,
     tenantId: request.tenantId,
     name: request.clientName,
+    ...(company ? { company } : {}),
+    ...((firstName || lastName) ? { personName: { ...(firstName ? { firstName } : {}), ...(lastName ? { lastName } : {}) } } : {}),
+    ...(primaryContact ? { contacts: [{ ...primaryContact, role: "Primary contact", billingContact: true, correspondenceContact: true }], primaryContactId: primaryContact.id, billingContactId: primaryContact.id, correspondenceContactId: primaryContact.id } : {}),
     emails: request.email ? [request.email] : [],
     phones: request.phone ? [request.phone] : [],
     tags: ["request"],

@@ -10,7 +10,7 @@ import { NexOpsImportPage } from "./components/NexOpsImportPage";
 import { NexOpsLegacyLifecyclePage } from "./components/NexOpsLegacyLifecyclePage";
 import { NexOpsModuleSwitcher } from "./components/NexOpsModuleSwitcher";
 
-import { buildClientProfilePath, buildNewClientPath, buildModulePath, buildWorkspaceSwitchPath, createMenuPresentation, isDismissKey, NEXOPS_MODULES, parseNexOpsLocation, type ClientProfileTab, type NexOpsCreateOption, type NexOpsModule } from "./domain/nexopsNavigation";
+import { buildClientProfilePath, buildNewClientPath, buildModulePath, buildRequestDetailPath, buildWorkspaceSwitchPath, createMenuPresentation, isDismissKey, NEXOPS_MODULES, parseNexOpsLocation, type ClientProfileTab, type NexOpsCreateOption, type NexOpsModule } from "./domain/nexopsNavigation";
 import type { ClientProfileMobileBucket } from "../../features/clients/components/contact/domain/clientProfile";
 import { getMobileCreateFabScrollIntent, mobileFabShouldHideOverlays, mobileFabVisibleForViewport, NEXOPS_MOBILE_CREATE_FAB_IDLE_MS, NEXOPS_MOBILE_CREATE_FAB_PULSE_KEY, NexOpsMobileCreateFab, shouldPulseMobileCreateFab } from "./components/NexOpsMobileCreateFab";
 import { ContactRoster } from "../clients/components/contact/ContactRoster";
@@ -110,7 +110,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
   const [catalogFocusNonce, setCatalogFocusNonce] = useState(0);
   const [settingsRouteNonce, setSettingsRouteNonce] = useState(0);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [focusedRequestId, setFocusedRequestId] = useState("");
+  const [focusedRequestId, setFocusedRequestId] = useState(initialPathState.requestId ?? "");
   const [focusedQuoteId, setFocusedQuoteId] = useState("");
   const [focusedJobId, setFocusedJobId] = useState("");
   const [focusedInvoiceId, setFocusedInvoiceId] = useState("");
@@ -512,7 +512,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
           setRequestFilterIntent(target.filterValue as "all" | "new" | "archived" | "converted_to_quote" | "converted_to_job");
         }
         setActiveModule("requests");
-        window.history.pushState({}, "", "/nexops/requests");
+        window.history.pushState({}, "", target.objectId ? buildRequestDetailPath(target.objectId) : "/nexops/requests");
         return;
       case "quotes":
         if (target.objectId) {
@@ -591,6 +591,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
       setActiveClientProfileTab(nextLocation.clientTab);
       setCreatingClientPage(nextLocation.clientDraft === "new");
       setSelectedClientId(nextLocation.clientId ?? "");
+      setFocusedRequestId(nextLocation.requestId ?? "");
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
@@ -850,6 +851,17 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
           properties={properties}
           tenantUsers={tenantUsers}
           focusedRequestId={focusedRequestId}
+          onOpenRequest={(requestId) => {
+            clearWorkspaceTargets();
+            setFocusedRequestId(requestId);
+            window.history.pushState({}, "", buildRequestDetailPath(requestId));
+            window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+          }}
+          onReturnToRequestRoster={() => {
+            setFocusedRequestId("");
+            window.history.pushState({}, "", buildModulePath("requests"));
+            window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+          }}
           initialClientId={createClientContextId || undefined}
           initialFilter={requestFilterIntent}
           captureIntent={captureRequestIntent}

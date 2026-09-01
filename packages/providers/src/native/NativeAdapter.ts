@@ -33,6 +33,7 @@ export interface NativeCrmRepository {
   listRequests(tenantId: string): Promise<ServiceRequest[]>;
   getRequest(tenantId: string, id: string): Promise<ServiceRequest | null>;
   createRequest(request: ServiceRequest): Promise<ServiceRequest>;
+  deleteRequest(tenantId: string, requestId: string): Promise<void>;
   updateRequest(id: string, patch: TenantOwnedPatch<ServiceRequest>): Promise<ServiceRequest>;
   listRequestForms(tenantId: string): Promise<RequestForm[]>;
   getRequestForm(tenantId: string, id: string): Promise<RequestForm | null>;
@@ -677,6 +678,14 @@ export class MemoryNativeCrmRepository implements NativeCrmRepository {
   async createRequest(request: ServiceRequest): Promise<ServiceRequest> {
     this.records.requests.push(request);
     return request;
+  }
+
+  async deleteRequest(tenantId: string, requestId: string): Promise<void> {
+    const exists = this.records.requests.some((request) => request.tenantId === tenantId && request.id === requestId);
+    if (!exists) {
+      throw new RailError(`Native request ${requestId} was not found.`, { provider: "native", op: "deleteRequest", status: 404 });
+    }
+    this.records.requests = this.records.requests.filter((request) => !(request.tenantId === tenantId && request.id === requestId));
   }
 
   async updateRequest(id: string, patch: TenantOwnedPatch<ServiceRequest>): Promise<ServiceRequest> {

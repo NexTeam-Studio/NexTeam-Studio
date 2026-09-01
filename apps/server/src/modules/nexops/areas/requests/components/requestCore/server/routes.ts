@@ -299,6 +299,31 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
     }
   });
 
+  app.delete("/api/crm/requests/:id", async (req: Request, res: Response) => {
+    try {
+      const requestId = req.params.id;
+      if (!requestId) {
+        throw new RailError("Request id is required.", { provider: "native", op: "deleteRequest", status: 400 });
+      }
+      const tenantId = typeof req.body?.tenantId === "string" && req.body.tenantId.trim()
+        ? req.body.tenantId
+        : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "deleteRequest" });
+      const request = await getRequestOrThrow(tenantId, requestId);
+      if (request.status === "converted_to_quote" || request.status === "converted_to_job") {
+        throw new RailError("Converted requests remain as a read-only intake record and cannot be deleted.", {
+          provider: "native",
+          op: "deleteRequest",
+          status: 409
+        });
+      }
+      await repositoryForTenant().deleteRequest(tenantId, requestId);
+      res.json({ ok: true, deletedRequestId: requestId, preservedClientId: request.selectedClientId ?? request.match.matchedClientId ?? null });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
   app.post("/api/crm/requests/:id/convert-to-quote", async (req: Request, res: Response) => {
     try {
       const requestId = req.params.id;

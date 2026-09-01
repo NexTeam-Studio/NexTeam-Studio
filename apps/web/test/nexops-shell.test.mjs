@@ -7,6 +7,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import {
   buildClientProfilePath,
   buildNewClientPath,
+  buildRequestDetailPath,
   buildWorkspaceSwitchPath,
   createMenuPresentation,
   isDismissKey,
@@ -25,19 +26,30 @@ test("client profile paths round-trip through the NexOps location parser", () =>
     module: "clients",
     clientId: "client_123",
     clientTab: "overview",
-    clientDraft: null
+    clientDraft: null,
+    requestId: null
   });
   assert.deepEqual(parseNexOpsLocation(paymentsPath), {
     module: "clients",
     clientId: "client_123",
     clientTab: "payments",
-    clientDraft: null
+    clientDraft: null,
+    requestId: null
   });
   assert.deepEqual(parseNexOpsLocation(newClientPath), {
     module: "clients",
     clientId: null,
     clientTab: null,
-    clientDraft: "new"
+    clientDraft: "new",
+    requestId: null
+  });
+
+  assert.deepEqual(parseNexOpsLocation(buildRequestDetailPath("request_123")), {
+    module: "requests",
+    clientId: null,
+    clientTab: null,
+    clientDraft: null,
+    requestId: "request_123"
   });
 });
 

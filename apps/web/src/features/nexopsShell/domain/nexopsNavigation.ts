@@ -214,6 +214,10 @@ export function buildNewClientPath(): string {
   return "/nexops/clients/new";
 }
 
+export function buildRequestDetailPath(requestId: string): string {
+  return `/nexops/requests/${encodeURIComponent(requestId)}`;
+}
+
 export function buildWorkspaceSwitchPath(
   product: NexTeamWorkspaceProduct,
   tenantId: string,
@@ -255,13 +259,25 @@ export function parseNexOpsLocation(pathname: string): {
   clientId: string | null;
   clientTab: ClientProfileTab | null;
   clientDraft: "new" | null;
+  requestId: string | null;
 } {
+  const requestMatch = pathname.match(/^\/nexops\/requests\/([^/]+)\/?$/i);
+  if (requestMatch?.[1]) {
+    return {
+      module: "requests",
+      clientId: null,
+      clientTab: null,
+      clientDraft: null,
+      requestId: decodeURIComponent(requestMatch[1])
+    };
+  }
   if (/^\/nexops\/clients\/new\/?$/i.test(pathname)) {
     return {
       module: "clients",
       clientId: null,
       clientTab: null,
-      clientDraft: "new"
+      clientDraft: "new",
+      requestId: null
     };
   }
   const clientProfile = parseClientProfilePath(pathname);
@@ -269,7 +285,8 @@ export function parseNexOpsLocation(pathname: string): {
     module: nexOpsModuleFromPath(pathname),
     clientId: clientProfile?.clientId ?? null,
     clientTab: clientProfile?.tab ?? null,
-    clientDraft: null
+    clientDraft: null,
+    requestId: null
   };
 }
 

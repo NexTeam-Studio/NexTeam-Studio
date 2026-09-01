@@ -2,7 +2,7 @@ import { RailError, type EventBus, type RequestForm, type ServiceRequest } from 
 import type { NativeCrmRepository } from "@nexteam/providers";
 import type { z } from "zod";
 import type { CrmRouteDeps } from "../../../../../shared/runtime/routeComposition.js";
-import { buildServiceRequest, notifyRequestCreated, requestFormEmbedCode, requestFormSharePath, type RequestBuildInput } from "./requestFoundation.js";
+import { buildServiceRequest, materializeRequestClient, notifyRequestCreated, requestFormEmbedCode, requestFormSharePath, type RequestBuildInput } from "./requestFoundation.js";
 import type { createRequestBodySchema } from "./routeSchemas.js";
 
 export function sanitizeFieldVisibility(visibility?: {
@@ -59,18 +59,25 @@ export function createRequestRouteSupport(input: {
       }))
     });
     const created = await repository.createRequest(built);
-    await input.eventBus.emit({
+    const materialized = await materializeRequestClient(repository, created);
+    const linkedRequest = await repository.updateRequest(created.id, {
       tenantId: created.tenantId,
+      selectedClientId: materialized.client.id,
+      ...(materialized.property ? { selectedPropertyId: materialized.property.id } : {}),
+      updatedAt: new Date().toISOString()
+    });
+    await input.eventBus.emit({
+      tenantId: linkedRequest.tenantId,
       type: "request.created",
       payload: {
-        requestId: created.id,
-        clientName: created.clientName,
-        source: created.source,
-        ...(created.email ? { email: created.email } : {}),
-        ...(created.phone ? { phone: created.phone } : {})
+        requestId: linkedRequest.id,
+        clientName: linkedRequest.clientName,
+        source: linkedRequest.source,
+        ...(linkedRequest.email ? { email: linkedRequest.email } : {}),
+        ...(linkedRequest.phone ? { phone: linkedRequest.phone } : {})
       }
     });
-    const notified = await notifyRequestCreated(created, {
+    const notified = await notifyRequestCreated(linkedRequest, {
       approvalQueue: input.deps.approvalQueue,
       commsRail: input.deps.commsRail,
       platformRepository: input.deps.platformRepository,
@@ -78,15 +85,15 @@ export function createRequestRouteSupport(input: {
     });
     if (notified.notifications && (
       notified.notifications.adminNotifiedAt !== created.notifications?.adminNotifiedAt
-      || notified.notifications.clientConfirmationAt !== created.notifications?.clientConfirmationAt
+      || notified.notifications.clientConfirmationAt !== linkedRequest.notifications?.clientConfirmationAt
     )) {
-      return repository.updateRequest(created.id, {
-        tenantId: created.tenantId,
+      return repository.updateRequest(linkedRequest.id, {
+        tenantId: linkedRequest.tenantId,
         notifications: notified.notifications,
         updatedAt: notified.updatedAt
       });
     }
-    return created;
+    return linkedRequest;
   }
 
   function formPresentation(form: RequestForm): { sharePath: string; embedCode: string } {

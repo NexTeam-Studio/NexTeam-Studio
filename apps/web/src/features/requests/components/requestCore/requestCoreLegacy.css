@@ -212,6 +212,31 @@
   font-weight: 850;
 }
 
+.nexops-request-submitted-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.nexops-request-submitted-fields > div {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid rgba(8, 33, 49, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.nexops-request-submitted-fields strong {
+  color: #526675;
+  font-size: 0.8rem;
+}
+
+.nexops-request-submitted-fields span {
+  color: #082131;
+  overflow-wrap: anywhere;
+}
+
 .nexops-request-propagation-table {
   display: grid;
   gap: 0;

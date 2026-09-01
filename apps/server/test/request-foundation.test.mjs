@@ -90,6 +90,23 @@ test("request routes create, update, convert, archive, and reopen while preservi
     assert.equal(publicSubmissionBody.request.consent.sms, true);
     assert.equal(publicSubmissionBody.request.intake.fieldIndex.company_name, "Aquatrace Test Company");
     assert.equal(publicSubmissionBody.request.intake.fieldIndex.marketing_sms_consent, true);
+    assert.ok(publicSubmissionBody.request.selectedClientId, "public submission links to a saved client immediately");
+    const publicClient = (await repository.listClients("aquatrace")).find((client) => client.id === publicSubmissionBody.request.selectedClientId);
+    assert.ok(publicClient, "the linked client is persisted in the tenant client database");
+    assert.equal(publicClient.company, "Aquatrace Test Company");
+    assert.equal(publicClient.personName?.firstName, "Public");
+    assert.equal(publicClient.personName?.lastName, "Intake");
+    assert.deepEqual(publicClient.emails, ["public-intake@example.test"]);
+    assert.deepEqual(publicClient.phones, ["8645551212"]);
+    assert.equal(publicClient.contacts?.[0]?.emails[0]?.value, "public-intake@example.test");
+
+    const archivePublicRequestResponse = await fetch(`${base}/api/crm/requests/${publicSubmissionBody.request.id}/archive`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tenantId: "aquatrace" })
+    });
+    assert.equal((await archivePublicRequestResponse.json()).request.status, "archived");
+    assert.ok((await repository.listClients("aquatrace")).some((client) => client.id === publicSubmissionBody.request.selectedClientId), "archiving a request preserves its linked client");
 
     const requestResponse = await fetch(`${base}/api/crm/requests`, {
       method: "POST",
@@ -181,22 +198,57 @@ test("request routes create, update, convert, archive, and reopen while preservi
     });
     const secondRequestBody = await secondRequestResponse.json();
     assert.equal(secondRequestBody.ok, true);
+    assert.ok(secondRequestBody.request.selectedClientId, "office requests also link to a client at creation");
 
-    const reviewedSecondRequestResponse = await fetch(`${base}/api/crm/requests/${secondRequestBody.request.id}`, {
+    const deleteResponse = await fetch(`${base}/api/crm/requests/${secondRequestBody.request.id}`, {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tenantId: "aquatrace" })
+    });
+    const deleteBody = await deleteResponse.json();
+    assert.equal(deleteBody.ok, true);
+    assert.equal(deleteBody.deletedRequestId, secondRequestBody.request.id);
+    assert.equal(await repository.getRequest("aquatrace", secondRequestBody.request.id), null);
+    assert.ok((await repository.listClients("aquatrace")).some((client) => client.id === secondRequestBody.request.selectedClientId), "deleting a request preserves its linked client");
+
+    const thirdRequestResponse = await fetch(`${base}/api/crm/requests`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        tenantId: "aquatrace",
+        source: "office_new_client",
+        formId: formsBody.forms[0].id,
+        formSlug: formsBody.forms[0].slug,
+        fieldValues: [
+          { key: "client_name", value: "Catherine Sears" },
+          { key: "email", value: "catherine@example.test" },
+          { key: "property_street1", value: "104 Kate Lane" },
+          { key: "property_city", value: "Fair Play" },
+          { key: "property_province", value: "SC" },
+          { key: "property_postal_code", value: "29643" },
+          { key: "pool_configuration", value: "pool_only" },
+          { key: "issue_summary", value: "Need leak detection before resurfacing." }
+        ]
+      })
+    });
+    const thirdRequestBody = await thirdRequestResponse.json();
+    assert.equal(thirdRequestBody.ok, true);
+
+    const reviewedSecondRequestResponse = await fetch(`${base}/api/crm/requests/${thirdRequestBody.request.id}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ tenantId: "aquatrace", reviewedAt: "2026-07-12T12:05:00.000Z" })
     });
     assert.equal((await reviewedSecondRequestResponse.json()).ok, true);
 
-    const jobResponse = await fetch(`${base}/api/crm/requests/${secondRequestBody.request.id}/convert-to-job`, {
+    const jobResponse = await fetch(`${base}/api/crm/requests/${thirdRequestBody.request.id}/convert-to-job`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ tenantId: "aquatrace" })
     });
     const jobBody = await jobResponse.json();
     assert.equal(jobBody.ok, true);
-    assert.equal(jobBody.job.requestId, secondRequestBody.request.id);
+    assert.equal(jobBody.job.requestId, thirdRequestBody.request.id);
     assert.equal(jobBody.job.intake.fieldIndex.pool_configuration, "pool_only");
     assert.equal(jobBody.job.title, secondRequestBody.request.subject);
     assert.equal(jobBody.job.status, "Unscheduled");

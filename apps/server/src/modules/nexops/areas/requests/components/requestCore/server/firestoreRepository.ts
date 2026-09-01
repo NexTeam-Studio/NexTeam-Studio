@@ -3,7 +3,7 @@ import { requestFormSchema, serviceRequestSchema, RailError, type RequestForm, t
 
 
 import { asDocumentData, createTenantFirestoreReader } from "../../../../../shared/persistence/firestoreRepositoryBase.js";
-import { setTenantOwnedDocument, updateTenantOwnedDocument } from "../../../../../../../core/tenantOwnedWrite.js";
+import { deleteTenantOwnedDocument, setTenantOwnedDocument, updateTenantOwnedDocument } from "../../../../../../../core/tenantOwnedWrite.js";
 
 export function createRequestFirestoreRepository(db: Firestore) {
   const { listByTenant } = createTenantFirestoreReader(db);
@@ -26,6 +26,10 @@ export function createRequestFirestoreRepository(db: Firestore) {
         const parsed = serviceRequestSchema.parse(request) as ServiceRequest;
         await setTenantOwnedDocument({ db, collection: "requests", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Request ${parsed.id}` });
         return parsed;
+      },
+
+    async deleteRequest(tenantId: string, requestId: string): Promise<void> {
+        await deleteTenantOwnedDocument({ db, collection: "requests", id: requestId, tenantId, label: `Request ${requestId}` });
       },
 
     async updateRequest(id: string, patch: Partial<ServiceRequest>): Promise<ServiceRequest> {
