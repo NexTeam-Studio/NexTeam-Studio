@@ -10,7 +10,7 @@ const clients = read("apps/web/src/features/clients/components/contact/ContactRo
 const requests = read("apps/web/src/features/requests/components/requestCore/NexOpsRequestsPage.tsx");
 
 test("shared roster template owns the standard responsive page inset", () => {
-  assert.match(styles, /\.nexops-roster-template\s*\{[\s\S]*?width: min\(100%, 1480px\);[\s\S]*?padding: 28px 28px 56px;/);
+  assert.match(styles, /\.nexops-roster-template\s*\{[\s\S]*?box-sizing: border-box;[\s\S]*?width: min\(100%, 1480px\);[\s\S]*?padding: 28px 28px 56px;/);
   assert.match(styles, /@media \(max-width: 700px\)\s*\{[\s\S]*?\.nexops-roster-template\s*\{ padding: 14px 14px 36px; \}/);
   assert.doesNotMatch(clients, /nexops-clients-workspace/);
 });

@@ -4,6 +4,7 @@
   min-width: 0;
 }
 .nexops-roster-template {
+  box-sizing: border-box;
   width: min(100%, 1480px);
   margin: 0 auto;
   padding: 28px 28px 56px;
