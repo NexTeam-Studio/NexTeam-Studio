@@ -55,7 +55,7 @@ test("request routes create, update, convert, archive, and reopen while preservi
     assert.match(publicFormHtml, /Contact Details/);
     assert.match(publicFormHtml, /Is your pool inground or above ground\?/);
     assert.match(publicFormHtml, /Swimming Pool \/ Spa Combo/);
-    assert.match(publicFormHtml, /0 of 10 uploaded/);
+    assert.match(publicFormHtml, /0\/10/);
     assert.match(publicFormHtml, /aquatraceleak\.com\/privacy-policy/);
     assert.match(publicFormHtml, /checked/);
 

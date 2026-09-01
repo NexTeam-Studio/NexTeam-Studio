@@ -1155,7 +1155,7 @@ function fieldInput(field: IntakeFieldDefinition): string {
   }
   if (field.type === "multi_image") {
     const maxItems = field.maxItems ?? 10;
-    return `<label class="request-form-field${layout} request-form-upload${field.prominent ? " prominent" : ""}" data-upload-field="${name}" data-max-items="${maxItems}"><span>${label}${field.required ? " *" : ""}</span><input type="file" accept="image/*" multiple data-upload-input /><input type="hidden" name="${name}" value="[]" /><small data-upload-status>0 of ${maxItems} uploaded</small><div class="request-form-upload-list" data-upload-list></div>${help}</label>`;
+    return `<label class="request-form-field${layout} request-form-upload${field.prominent ? " prominent" : ""}" data-upload-field="${name}" data-max-items="${maxItems}"><span>${label}${field.required ? " *" : ""}</span><input type="file" accept="image/*" multiple data-upload-input /><input type="hidden" name="${name}" value="[]" /><small data-upload-status>0/${maxItems}</small><div class="request-form-upload-list" data-upload-list></div>${help}</label>`;
   }
   const type = field.type === "email" || field.type === "number" ? field.type : "text";
   return `<label class="request-form-field${layout}${field.prominent ? " prominent" : ""}"><span>${label}${field.required ? " *" : ""}</span><input type="${type}" name="${name}"${field.required ? " required" : ""}${placeholder} />${help}</label>`;
@@ -1221,7 +1221,7 @@ export function renderPublicRequestForm(form: RequestForm): string {
       <section class="card">
         <p>Request intake</p>
         <h1>${htmlEscape(form.title)}</h1>
-        <p>${htmlEscape(form.intro ?? "Send the office the job details the first time so nothing gets dropped on transfer.")}</p>
+        ${form.intro?.trim() ? `<p>${htmlEscape(form.intro)}</p>` : ""}
         <form method="post" action="${requestFormSubmitPath(form)}" data-tenant-id="${htmlEscape(form.tenantId)}">
           ${inputs}
           ${footerConsent}
@@ -1245,7 +1245,7 @@ export function renderPublicRequestForm(form: RequestForm): string {
         const updateUploadList = (field, count) => {
           const status = field.querySelector("[data-upload-status]");
           if (status) {
-            status.textContent = count + " of " + field.dataset.maxItems + " uploaded";
+            status.textContent = count + "/" + field.dataset.maxItems;
           }
           const list = field.querySelector("[data-upload-list]");
           if (!list) {
