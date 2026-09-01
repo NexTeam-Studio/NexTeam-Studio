@@ -118,71 +118,49 @@ function activityFilterLabel(filter: "all" | ActivityFilter): string {
   return filter.charAt(0).toUpperCase() + filter.slice(1);
 }
 
-function queueGroupsForRole(home: HomeSnapshot | null): Array<{ key: string; title: string; rows: HomeQueueRow[] }> {
-  if (!home) {
-    return [];
-  }
-  if (home.role === "TECHNICIAN") {
-    return [
-      {
-        key: "today",
-        title: "Today",
-        rows: home.queues.filter((row) => row.key === "today-visits")
-      },
-      {
-        key: "attention",
-        title: "Needs Attention",
-        rows: home.queues.filter((row) => row.key === "late-assigned" || row.key === "unassigned-photo-batches")
-      },
-      {
-        key: "upcoming",
-        title: "Upcoming",
-        rows: home.queues.filter((row) => row.key === "upcoming-assigned")
-      }
-    ].filter((group) => group.rows.length > 0);
-  }
+const QUEUE_URGENCY_ORDER = [
+  "action-required",
+  "past-due",
+  "requires-invoicing",
+  "awaiting-payment",
+  "unassigned-photo-batches",
+  "new-requests",
+  "approved-quotes",
+  "unscheduled-jobs",
+  "today-visits",
+  "late-assigned",
+  "upcoming-assigned",
+  "upcoming-visits"
+];
 
-  return [
-    {
-      key: "today",
-      title: "Today",
-      rows: home.queues.filter((row) => ["today-visits", "new-requests"].includes(row.key))
-    },
-    {
-      key: "upcoming",
-      title: "Upcoming",
-      rows: home.queues.filter((row) => ["upcoming-visits", "approved-quotes"].includes(row.key))
-    },
-    {
-      key: "attention",
-      title: "Needs Attention",
-      rows: home.queues.filter((row) => [
-        "unscheduled-jobs",
-        "action-required",
-        "requires-invoicing",
-        "awaiting-payment",
-        "past-due",
-        "unassigned-photo-batches"
-      ].includes(row.key))
-    }
-  ].filter((group) => group.rows.length > 0);
+function greetingForCurrentTime(date = new Date()): string {
+  const hour = date.getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
 }
 
-function queueGroupHeadline(title: string): string {
-  switch (title) {
-    case "Today":
-      return "Handle the Next Few Hours";
-    case "Upcoming":
-      return "See What Is Coming Next";
-    case "Needs Attention":
-      return "Clear the Blockers";
-    default:
-      return title;
-  }
+function urgencyOrderedQueues(home: HomeSnapshot | null): HomeQueueRow[] {
+  if (!home) return [];
+  return [...home.queues].sort((left, right) => {
+    const leftIndex = QUEUE_URGENCY_ORDER.indexOf(left.key);
+    const rightIndex = QUEUE_URGENCY_ORDER.indexOf(right.key);
+    return (leftIndex === -1 ? Number.MAX_SAFE_INTEGER : leftIndex) - (rightIndex === -1 ? Number.MAX_SAFE_INTEGER : rightIndex);
+  });
+}
+
+function queueIconModule(row: HomeQueueRow): React.ComponentProps<typeof NexOpsNavGlyph>["module"] {
+  if (["new-requests"].includes(row.key)) return "requests";
+  if (["approved-quotes"].includes(row.key)) return "quotes";
+  if (["action-required", "requires-invoicing", "unscheduled-jobs", "late-assigned"].includes(row.key)) return "jobs";
+  if (["awaiting-payment", "past-due"].includes(row.key)) return "payments";
+  if (["today-visits", "upcoming-visits", "upcoming-assigned"].includes(row.key)) return "schedule";
+  return "capture";
 }
 
 export function NexOpsHomePage(props: {
   tenantId: string;
+  operatorName: string;
   onOpenTarget: (target: WorkspaceTarget) => void;
 }): React.ReactElement {
   const [home, setHome] = useState<HomeSnapshot | null>(null);
@@ -192,7 +170,7 @@ export function NexOpsHomePage(props: {
   const [activityStatus, setActivityStatus] = useState("Loading recent activity...");
   const [documentation, setDocumentation] = useState<DocumentationActivitySnapshot | null>(null);
   const [documentationStatus, setDocumentationStatus] = useState("Loading documentation activity...");
-  const queueGroups = useMemo(() => queueGroupsForRole(home), [home]);
+  const liveQueues = useMemo(() => urgencyOrderedQueues(home), [home]);
 
   async function loadDashboard(filter: "all" | ActivityFilter): Promise<void> {
     setHomeStatus("Loading live queues...");
@@ -246,6 +224,64 @@ export function NexOpsHomePage(props: {
         icon={<NexOpsNavGlyph module="home" />}
       />
 
+      <section className="nexops-home-greeting nexops-home-section-head" aria-live="polite">
+        <h2>{greetingForCurrentTime()}, {props.operatorName}</h2>
+      </section>
+
+      <section className="nexops-module-card wide" aria-label="Live Queues">
+        <div className="nexops-home-section-head">
+          <p className="eyebrow">Office Action</p>
+          <h2>Live Queues</h2>
+        </div>
+        <div className="nexops-home-queue-list">
+          {liveQueues.map((row) => (
+            <button
+              className="nexops-home-queue-row"
+              key={row.key}
+              type="button"
+              onClick={() => props.onOpenTarget({
+                module: row.target.module,
+                filterKey: row.target.filterKey,
+                filterValue: row.target.filterValue
+              })}
+            >
+              <span className="nexops-home-queue-icon" aria-hidden="true"><NexOpsNavGlyph module={queueIconModule(row)} /></span>
+              <div className="nexops-home-queue-row-main">
+                <strong><span>{row.count}</span> {titleCaseInterfaceName(row.label)}</strong>
+                {typeof row.totalValue === "number" ? <small>${row.totalValue.toFixed(0)}</small> : null}
+              </div>
+              <span className="nexops-home-queue-chevron" aria-hidden="true">›</span>
+            </button>
+          ))}
+        </div>
+        {homeStatus ? <p className="nexops-module-status">{homeStatus}</p> : null}
+        {home?.role === "TECHNICIAN" && home.technician ? (
+          <section className="nexops-home-technician-rail">
+            <div className="nexops-home-section-head">
+              <p className="eyebrow">Today</p>
+              <h2>Assigned Visits</h2>
+            </div>
+            <div className="nexops-home-visit-list">
+              {home.technician.todayVisits.map((visit) => (
+                <button
+                  className="nexops-home-visit-row"
+                  key={visit.id}
+                  type="button"
+                  onClick={() => props.onOpenTarget({ module: "jobs", objectId: visit.jobId })}
+                >
+                  <div>
+                    <strong>{visit.clientName}</strong>
+                    <p>{visit.jobTitle}</p>
+                    <small>{visit.arrivalWindow} | {visit.propertyAddress}</small>
+                  </div>
+                  <span>{visit.status}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        ) : null}
+      </section>
+
       {home?.health.length ? (
         <section className="nexops-home-health-strip" aria-label="Business Health">
           {home.health.map((metric) => (
@@ -259,71 +295,6 @@ export function NexOpsHomePage(props: {
       ) : null}
 
       <div className="nexops-home-layout">
-        <section className="nexops-module-card wide">
-          <div className="nexops-home-queue-grid">
-            {queueGroups.map((group) => (
-              <section key={group.key} className="nexops-home-queue-group" aria-label={titleCaseInterfaceName(group.title)}>
-                <div className="nexops-home-section-head">
-                  <p className="eyebrow">{titleCaseInterfaceName(group.title)}</p>
-                  <h2>{queueGroupHeadline(group.title)}</h2>
-                </div>
-                <div className="nexops-home-queue-list">
-                  {group.rows.map((row) => (
-                    <button
-                      className="nexops-home-queue-row"
-                      key={row.key}
-                      type="button"
-                      onClick={() => props.onOpenTarget({
-                        module: row.target.module,
-                        filterKey: row.target.filterKey,
-                        filterValue: row.target.filterValue
-                      })}
-                    >
-                      <div className="nexops-home-queue-row-main">
-                        <div>
-                          <strong>{titleCaseInterfaceName(row.label)}</strong>
-                          <p>{row.detail}</p>
-                        </div>
-                        <div className="nexops-home-queue-row-stats">
-                          <span>{row.count}</span>
-                          {typeof row.totalValue === "number" ? <small>${row.totalValue.toFixed(0)}</small> : null}
-                        </div>
-                      </div>
-                      <span className="nexops-home-queue-chevron" aria-hidden="true">›</span>
-                    </button>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-          {homeStatus ? <p className="nexops-module-status">{homeStatus}</p> : null}
-          {home?.role === "TECHNICIAN" && home.technician ? (
-            <section className="nexops-home-technician-rail">
-              <div className="nexops-home-section-head">
-                <p className="eyebrow">Today</p>
-                <h2>Assigned Visits</h2>
-              </div>
-              <div className="nexops-home-visit-list">
-                {home.technician.todayVisits.map((visit) => (
-                  <button
-                    className="nexops-home-visit-row"
-                    key={visit.id}
-                    type="button"
-                    onClick={() => props.onOpenTarget({ module: "jobs", objectId: visit.jobId })}
-                  >
-                    <div>
-                      <strong>{visit.clientName}</strong>
-                      <p>{visit.jobTitle}</p>
-                      <small>{visit.arrivalWindow} | {visit.propertyAddress}</small>
-                    </div>
-                    <span>{visit.status}</span>
-                  </button>
-                ))}
-              </div>
-            </section>
-          ) : null}
-        </section>
-
         <section className="nexops-module-card">
           <div className="nexops-home-section-head">
             <p className="eyebrow">Productivity</p>

@@ -24,7 +24,7 @@
 
 .nexops-home-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
   min-width: 0;
 }
@@ -72,6 +72,10 @@
   gap: 12px;
 }
 
+.nexops-home-greeting {
+  padding: 0 2px;
+}
+
 .nexops-home-section-head {
   margin-bottom: 6px;
 }
@@ -109,12 +113,29 @@
   gap: 4px;
 }
 
+.nexops-home-queue-icon {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  color: #0f6a67;
+}
+
+.nexops-home-queue-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
 .nexops-home-queue-row strong,
 .nexops-home-visit-row strong,
 .nexops-activity-row strong,
 .nexops-notification-row strong {
   color: #0c1825;
   font-size: 1rem;
+}
+
+.nexops-home-queue-row strong span {
+  font-size: 1.35rem;
 }
 
 .nexops-home-queue-row p,
@@ -153,11 +174,14 @@
 
 .nexops-home-filter-row {
   display: flex;
-  flex-wrap: wrap;
+  overflow-x: auto;
+  flex-wrap: nowrap;
   gap: 8px;
+  scrollbar-width: thin;
 }
 
 .nexops-home-filter-row button {
+  flex: 0 0 auto;
   border: 1px solid rgba(12, 17, 24, 0.1);
   border-radius: 999px;
   padding: 9px 14px;

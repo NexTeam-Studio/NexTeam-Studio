@@ -665,7 +665,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
   const moduleTitle = NEXOPS_MODULES.find((module) => module.id === activeModule)?.label ?? "NexOps";
 
   function renderHome(): React.ReactElement {
-    return <NexOpsHomePage tenantId={operatorContext.tenantId} onOpenTarget={openWorkspaceTarget} />;
+    return <NexOpsHomePage tenantId={operatorContext.tenantId} operatorName={profileName} onOpenTarget={openWorkspaceTarget} />;
   }
 
   function renderClients(options?: { compact?: boolean }): React.ReactElement {
