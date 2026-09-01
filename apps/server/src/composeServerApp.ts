@@ -420,6 +420,7 @@ registerMobileRoutes(app, {
 });
 registerPlatformRoutes(app, {
   repository: platformRepository,
+  crmRepository: nativeCrmRepository,
   storage: platformStorage,
   ownerInviteSender: getAdminAuth()
     ? createOwnerInviteSender({ auth: getAdminAuth()!, email: commsRail.sendAdapter, continueUrl: ownerInviteContinueUrl(process.env.PUBLIC_BASE_URL?.trim() || "http://127.0.0.1:4175") })

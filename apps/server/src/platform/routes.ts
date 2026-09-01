@@ -22,6 +22,8 @@ import { buildOnboardingPlanInsights } from "./onboardingInsights.js";
 import { readLiveBuildStatus } from "./liveBuildStatus.js";
 import { newPlatformUserAudit, PLATFORM_CAPABILITIES, platformCapabilitySchema, platformUserSchema, platformUserSummary, resolvePlatformCapabilities, type PlatformCapability, type PlatformUser } from "./team.js";
 import { NEXCOMMAND_IDLE_TIMEOUT_MS, hashSessionToken, newNexCommandSession, newPlatformSecurityAudit, type PlatformSession } from "./sessionSecurity.js";
+import { renderOnboardingTemplate, tenantTemplateSnapshot } from "./templateLibrary.js";
+import type { NativeCrmRepository } from "@nexteam/providers";
 import {
   authorizeStripeConnectCallback,
   createOrReuseStripeConnectOnboarding,
@@ -216,6 +218,8 @@ export interface PlatformRouteDeps {
   platformOperatorAuth?: { verifyIdToken(token: string): Promise<DecodedIdToken> } | undefined;
   /** Enables production-equivalent session-only behavior in isolated route tests. */
   strictNexCommandSession?: boolean | undefined;
+  /** Used only at prospect activation to copy platform master communications into the new tenant. */
+  crmRepository?: Pick<NativeCrmRepository, "getCrmSettings" | "saveCrmSettings"> | undefined;
 }
 
 function requireStripeConnect(deps: PlatformRouteDeps): StripeConnectApi {
@@ -483,6 +487,84 @@ export async function loadTenantFromPlatform(repository: PlatformRepository, ten
 
 export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): void {
   const env = deps.env ?? process.env;
+
+  // Platform-owned communications defaults. These routes deliberately sit behind
+  // NexCommand session/capability checks; tenant routes never read this library.
+  app.get("/api/platform/admin/templates/communications", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformOperator(req, env, deps.repository, deps.platformOperatorAuth);
+      res.json({ ok: true, templates: await deps.repository.listNexCommandCommunicationTemplates() });
+    } catch (error) { sendRouteError(res, error); }
+  });
+  app.put("/api/platform/admin/templates/communications/:category", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformOperator(req, env, deps.repository, deps.platformOperatorAuth);
+      const category = requiredTenantId(req.params.category);
+      const current = (await deps.repository.listNexCommandCommunicationTemplates()).find((template) => template.category === category);
+      if (!current) throw new RailError("That NexCommand communication category does not exist.", { provider: "platform", op: "saveMasterCommunicationTemplate", status: 404 });
+      const patch = z.object({ label: z.string().min(1).optional(), description: z.string().optional(), emailEnabled: z.boolean().optional(), smsEnabled: z.boolean().optional(), emailSubject: z.string().optional(), emailBody: z.string().optional(), smsBody: z.string().optional() }).strict().parse(req.body ?? {});
+      const template = await deps.repository.saveNexCommandCommunicationTemplate({
+        ...current,
+        label: patch.label ?? current.label,
+        description: patch.description ?? current.description,
+        emailEnabled: patch.emailEnabled ?? current.emailEnabled,
+        smsEnabled: patch.smsEnabled ?? current.smsEnabled,
+        emailSubject: patch.emailSubject ?? current.emailSubject,
+        emailBody: patch.emailBody ?? current.emailBody,
+        smsBody: patch.smsBody ?? current.smsBody,
+        updatedAt: new Date().toISOString()
+      });
+      res.json({ ok: true, template });
+    } catch (error) { sendRouteError(res, error); }
+  });
+  app.get("/api/platform/admin/templates/onboarding", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformOperator(req, env, deps.repository, deps.platformOperatorAuth);
+      res.json({ ok: true, templates: await deps.repository.listNexCommandOnboardingTemplates() });
+    } catch (error) { sendRouteError(res, error); }
+  });
+  app.put("/api/platform/admin/templates/onboarding/:flow", async (req: Request, res: Response) => {
+    try {
+      await requirePlatformOperator(req, env, deps.repository, deps.platformOperatorAuth);
+      const current = (await deps.repository.listNexCommandOnboardingTemplates()).find((template) => template.flow === req.params.flow);
+      if (!current) throw new RailError("That NexCommand onboarding template does not exist.", { provider: "platform", op: "saveOnboardingTemplate", status: 404 });
+      const patch = z.object({ label: z.string().min(1).optional(), subject: z.string().min(1).optional(), body: z.string().min(1).optional() }).strict().parse(req.body ?? {});
+      const template = await deps.repository.saveNexCommandOnboardingTemplate({
+        ...current,
+        label: patch.label ?? current.label,
+        subject: patch.subject ?? current.subject,
+        body: patch.body ?? current.body,
+        updatedAt: new Date().toISOString()
+      });
+      res.json({ ok: true, template });
+    } catch (error) { sendRouteError(res, error); }
+  });
+  // NexCommand-owned team onboarding deliberately uses the credential rail
+  // below, but never exposes the tenant Team & Permissions invite route or
+  // its tenant-facing message content to platform operators.
+  app.post("/api/platform/admin/tenants/:tenantId/team-onboarding", async (req: Request, res: Response) => {
+    try {
+      const actor = await requirePlatformOperator(req, env, deps.repository, deps.platformOperatorAuth);
+      const tenantId = requiredTenantId(req.params.tenantId);
+      const input = z.object({ email: z.string().email(), role: z.enum(["OFFICE_ADMIN", "TECHNICIAN"]), displayName: z.string().trim().min(1).max(120).optional() }).strict().parse(req.body ?? {});
+      const auth = deps.firebaseOwnerActivation ?? getAdminAuth(env);
+      if (!auth || !deps.ownerInviteSender) throw new RailError("Team onboarding delivery is not configured.", { provider: "gmail", op: "nexCommandTeamOnboarding", status: 503 });
+      const tenant = await deps.repository.getTenant(tenantId);
+      if (!tenant) throw new RailError("Tenant was not found.", { provider: "platform", op: "nexCommandTeamOnboarding", status: 404 });
+      const existing = (await deps.repository.listTenantUsers(tenantId)).find((member) => member.email?.trim().toLowerCase() === input.email.toLowerCase());
+      if (existing?.active) throw new RailError("That email already has an active team membership.", { provider: "platform", op: "nexCommandTeamOnboarding", status: 409 });
+      const pending = await upsertTenantUser(deps.repository, { tenantId, ...(existing ? { id: existing.id } : {}), email: input.email, displayName: input.displayName ?? input.email, role: input.role, active: false });
+      const firebaseUser = await getOrCreateFirebaseOwner(auth, { email: input.email, displayName: pending.displayName });
+      const user = await upsertTenantUser(deps.repository, { ...pending, authUid: firebaseUser.user.uid, active: false });
+      await applyTenantUserClaims({ auth, user });
+      const onboardingTemplate = (await deps.repository.listNexCommandOnboardingTemplates()).find((template) => template.flow === "team_member_onboarding");
+      if (!onboardingTemplate) throw new RailError("NexCommand team-member onboarding template is unavailable.", { provider: "platform", op: "nexCommandTeamOnboarding", status: 503 });
+      const template = renderOnboardingTemplate(onboardingTemplate, { TENANT_NAME: tenant.name, MEMBER_NAME: user.displayName, ROLE: user.role, SETUP_LINK: "{{SETUP_LINK}}" });
+      const receipt = await deps.ownerInviteSender.send({ tenantId, ownerEmail: input.email, ownerName: user.displayName, tenantName: tenant.name, template });
+      await deps.repository.saveTenantMembershipAudit({ id: `membership_audit_${randomUUID()}`, tenantId, action: "member.upserted", actorId: actor.uid, targetUserId: user.id, detail: `nexcommand_team_onboarding=true; role=${user.role}; authUid=${firebaseUser.user.uid}; claims=applied; delivery=${receipt.provider}`, createdAt: new Date().toISOString() });
+      res.status(201).json({ ok: true, invite: { ...user, status: "PENDING" }, delivery: { status: "SENT_TO_PROVIDER", provider: receipt.provider, messageId: receipt.messageId } });
+    } catch (error) { sendRouteError(res, error); }
+  });
 
   app.post("/api/platform/admin/session", async (req: Request, res: Response) => {
     try {
@@ -1332,7 +1414,22 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
       }).strict().parse(req.body ?? {});
       const auth = deps.firebaseOwnerActivation ?? getAdminAuth(env);
       if (!auth) throw new RailError("Firebase owner activation is not configured.", { provider: "firebase", op: "activateTenant", status: 503 });
-      const activated = await activateProspectTenant(deps.repository, auth, { prospectId, ...input }, deps.ownerInviteSender ?? null);
+      const onboardingTemplate = (await deps.repository.listNexCommandOnboardingTemplates()).find((template) => template.flow === "tenant_onboarding");
+      if (!onboardingTemplate) throw new RailError("NexCommand tenant onboarding template is unavailable.", { provider: "platform", op: "activateTenant", status: 503 });
+      const renderedOnboarding = renderOnboardingTemplate(onboardingTemplate, {
+        TENANT_NAME: input.tenantId ?? "your NexTeam workspace",
+        OWNER_NAME: input.ownerDisplayName,
+        SETUP_LINK: "{{SETUP_LINK}}"
+      });
+      const activated = await activateProspectTenant(deps.repository, auth, { prospectId, ...input, onboardingTemplate: renderedOnboarding }, deps.ownerInviteSender ?? null);
+      // Copy once at activation. The tenant copies are intentionally detached;
+      // later NexCommand edits affect only future onboarding/reset actions.
+      if (deps.crmRepository) {
+        const settings = await deps.crmRepository.getCrmSettings(activated.tenant.id);
+        const masters = await deps.repository.listNexCommandCommunicationTemplates();
+        const copied = masters.map((template) => tenantTemplateSnapshot(activated.tenant.id, template));
+        await deps.crmRepository.saveCrmSettings({ ...settings, communicationTemplates: copied, updatedAt: new Date().toISOString() });
+      }
       res.status(201).json({
         ok: true,
         tenant: { id: activated.tenant.id, name: activated.tenant.name },

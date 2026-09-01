@@ -16,6 +16,7 @@ import { PlatformTenantOnboardingPanel } from "../components/PlatformTenantOnboa
 import { NexCommandNavGlyph, nexCommandNavigation, type NexCommandArea } from "../components/NexCommandSidebar";
 import { NexSuiteSidebar, type NexSuiteSidebarItem } from "../../../shared/ui/NexSuiteSidebar";
 import { TemplatesRoster } from "../components/TemplatesRoster";
+import { NexCommandCommunicationsTemplatesPanel } from "../components/NexCommandCommunicationsTemplatesPanel";
 import { usePlatformPlans } from "../hooks/usePlatformPlans";
 import { usePathname } from "../../../shared/router/usePathname";
 import "../../tenantOverview/styles/tenantOverview.css";
@@ -86,7 +87,9 @@ function NexCommandArea(props: { area: Area; rows: ReturnType<typeof useTenantOv
   if (props.area === "migrations") return <PlatformMigrationsPanel user={props.user} />;
   if (props.area === "support") return <PlatformSupportPanel user={props.user} />;
   if (props.area === "modules") return <Directory title="Module directory" items={moduleDirectory} />;
-  if (props.area === "templates") return <TemplatesRoster rosterId={new URLSearchParams(window.location.search).get("template")} />;
+  if (props.area === "templates") return new URLSearchParams(window.location.search).get("template") === "design"
+    ? <TemplatesRoster rosterId="design" />
+    : <NexCommandCommunicationsTemplatesPanel user={props.user} />;
   if (props.area === "integrations") return <ProviderCredentialsPanel user={props.user} />;
   if (props.area === "system") return <section className="nexcommand__panel"><p>Current system identity, diagnostics, provider health, and green-gate evidence belong here. Embedded build controls are intentionally not enabled in this release.</p><dl className="nexcommand__facts"><div><dt>Staging</dt><dd>nexstage.nexteam.studio</dd></div><div><dt>Production</dt><dd>nexapp.nexteam.studio</dd></div><div><dt>Global Control</dt><dd>Local diagnostic access available to authorized operators.</dd></div></dl></section>;
   if (props.area === "security") return <section className="nexcommand__panel"><p>NexCommand is for authorized NexTeam platform personnel. Tenant ownership alone does not grant NexCommand access. Provider credentials and tenant secrets remain masked.</p><p>Support access is not active. A future request-and-approval session will require tenant approval, explicit scope, a time limit, revocation, and audit history.</p></section>;

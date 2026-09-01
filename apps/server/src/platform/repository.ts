@@ -46,6 +46,7 @@ import { assertTenantDocumentOwner, setPlatformOwnedDocument, setTenantOwnedDocu
 import type { TenantOwnerInvite } from "./tenantOwnerInvite.js";
 import { platformUserAuditSchema, platformUserSchema, type PlatformUser, type PlatformUserAudit } from "./team.js";
 import { platformSecurityAuditSchema, platformSessionSchema, type PlatformSecurityAudit, type PlatformSession } from "./sessionSecurity.js";
+import { defaultNexCommandCommunicationTemplates, defaultNexCommandOnboardingTemplates, nexCommandCommunicationTemplateSchema, nexCommandOnboardingTemplateSchema, type NexCommandCommunicationTemplate, type NexCommandOnboardingTemplate } from "./templateLibrary.js";
 
 function defaultApproval(): Tenant["approval"] {
   return {
@@ -164,6 +165,10 @@ function assertAuthUidAvailable(input: { authUid: string | undefined; platformUs
 }
 
 export interface PlatformRepository {
+  listNexCommandCommunicationTemplates(): Promise<NexCommandCommunicationTemplate[]>;
+  saveNexCommandCommunicationTemplate(template: NexCommandCommunicationTemplate): Promise<NexCommandCommunicationTemplate>;
+  listNexCommandOnboardingTemplates(): Promise<NexCommandOnboardingTemplate[]>;
+  saveNexCommandOnboardingTemplate(template: NexCommandOnboardingTemplate): Promise<NexCommandOnboardingTemplate>;
   listPlatformUsers(): Promise<PlatformUser[]>;
   getPlatformUser(userId: string): Promise<PlatformUser | null>;
   getPlatformUserByAuthUid(authUid: string): Promise<PlatformUser | null>;
@@ -262,6 +267,8 @@ function starterSubscription(tenant: Tenant): TenantSubscription {
 }
 
 export class InMemoryPlatformRepository implements PlatformRepository {
+  private readonly nexCommandCommunicationTemplates = new Map<string, NexCommandCommunicationTemplate>();
+  private readonly nexCommandOnboardingTemplates = new Map<string, NexCommandOnboardingTemplate>();
   private readonly platformUsers = new Map<string, PlatformUser>();
   private readonly platformUserAudits: PlatformUserAudit[] = [];
   private readonly platformSessions = new Map<string, PlatformSession>();
@@ -294,6 +301,27 @@ export class InMemoryPlatformRepository implements PlatformRepository {
       this.subscriptions.set(subscription.id, subscription);
       this.tenantUsers.set(tenant.id, defaultTenantUsers(tenant.id).map((user) => tenantUserSchema.parse(user) as TenantUser));
     }
+  }
+
+  async listNexCommandCommunicationTemplates(): Promise<NexCommandCommunicationTemplate[]> {
+    return this.nexCommandCommunicationTemplates.size
+      ? [...this.nexCommandCommunicationTemplates.values()].map(firestoreDoc)
+      : defaultNexCommandCommunicationTemplates();
+  }
+  async saveNexCommandCommunicationTemplate(template: NexCommandCommunicationTemplate): Promise<NexCommandCommunicationTemplate> {
+    const parsed = nexCommandCommunicationTemplateSchema.parse(template) as NexCommandCommunicationTemplate;
+    this.nexCommandCommunicationTemplates.set(parsed.category, firestoreDoc(parsed));
+    return firestoreDoc(parsed);
+  }
+  async listNexCommandOnboardingTemplates(): Promise<NexCommandOnboardingTemplate[]> {
+    return this.nexCommandOnboardingTemplates.size
+      ? [...this.nexCommandOnboardingTemplates.values()].map(firestoreDoc)
+      : defaultNexCommandOnboardingTemplates();
+  }
+  async saveNexCommandOnboardingTemplate(template: NexCommandOnboardingTemplate): Promise<NexCommandOnboardingTemplate> {
+    const parsed = nexCommandOnboardingTemplateSchema.parse(template) as NexCommandOnboardingTemplate;
+    this.nexCommandOnboardingTemplates.set(parsed.flow, firestoreDoc(parsed));
+    return firestoreDoc(parsed);
   }
 
   async listTenants(): Promise<Tenant[]> {
@@ -690,6 +718,25 @@ export class InMemoryPlatformRepository implements PlatformRepository {
 
 export class FirestorePlatformRepository implements PlatformRepository {
   constructor(private readonly db: Firestore) {}
+
+  async listNexCommandCommunicationTemplates(): Promise<NexCommandCommunicationTemplate[]> {
+    const snapshot = await this.db.collection("nexCommandCommunicationTemplates").get();
+    return snapshot.empty ? defaultNexCommandCommunicationTemplates() : snapshot.docs.map((doc) => nexCommandCommunicationTemplateSchema.parse(doc.data()) as NexCommandCommunicationTemplate);
+  }
+  async saveNexCommandCommunicationTemplate(template: NexCommandCommunicationTemplate): Promise<NexCommandCommunicationTemplate> {
+    const parsed = nexCommandCommunicationTemplateSchema.parse(template) as NexCommandCommunicationTemplate;
+    await setPlatformOwnedDocument({ db: this.db, collection: "nexCommandCommunicationTemplates", id: parsed.category, data: docData(parsed) });
+    return parsed;
+  }
+  async listNexCommandOnboardingTemplates(): Promise<NexCommandOnboardingTemplate[]> {
+    const snapshot = await this.db.collection("nexCommandOnboardingTemplates").get();
+    return snapshot.empty ? defaultNexCommandOnboardingTemplates() : snapshot.docs.map((doc) => nexCommandOnboardingTemplateSchema.parse(doc.data()) as NexCommandOnboardingTemplate);
+  }
+  async saveNexCommandOnboardingTemplate(template: NexCommandOnboardingTemplate): Promise<NexCommandOnboardingTemplate> {
+    const parsed = nexCommandOnboardingTemplateSchema.parse(template) as NexCommandOnboardingTemplate;
+    await setPlatformOwnedDocument({ db: this.db, collection: "nexCommandOnboardingTemplates", id: parsed.flow, data: docData(parsed) });
+    return parsed;
+  }
 
   private parseTenantCandidate(data: unknown, documentId?: string): Tenant | null {
     const parsed = tenantSchema.safeParse(data);

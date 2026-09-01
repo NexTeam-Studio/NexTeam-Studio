@@ -5,6 +5,7 @@ import { InMemoryPlatformRepository } from "../../dist/platform/repository.js";
 import { registerPlatformRoutes } from "../../dist/platform/routes.js";
 import { createLocalDevSession } from "../../dist/auth/accessContext.js";
 import { MemoryStorageWriter } from "../../dist/platform/backup.js";
+import { createOwnerInviteSender } from "../../dist/platform/tenantOwnerInvite.js";
 
 const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
@@ -125,6 +126,106 @@ test("Team & Permissions persists overrides; staff invite/login flow is acceptan
   }
 });
 
+test("NexCommand master and onboarding templates are platform-owned and persist independently of tenant settings", async () => {
+  const { server, base, repository } = await startApp();
+  try {
+    const master = await fetch(`${base}/api/platform/admin/templates/communications`);
+    assert.equal(master.status, 200);
+    const initial = await master.json();
+    assert.equal(initial.templates.length, 22);
+    const quote = initial.templates.find((template) => template.category === "quote_send");
+    assert.ok(quote);
+    const saved = await fetch(`${base}/api/platform/admin/templates/communications/quote_send`, {
+      method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify({ emailSubject: "NexCommand master quote" })
+    });
+    assert.equal(saved.status, 200);
+    assert.equal((await saved.json()).template.emailSubject, "NexCommand master quote");
+    assert.equal((await repository.listNexCommandCommunicationTemplates()).find((template) => template.category === "quote_send").emailSubject, "NexCommand master quote");
+    const onboarding = await fetch(`${base}/api/platform/admin/templates/onboarding`);
+    assert.equal(onboarding.status, 200);
+    assert.deepEqual((await onboarding.json()).templates.map((template) => template.flow).sort(), ["team_member_onboarding", "tenant_onboarding"]);
+  } finally {
+    await close(server);
+  }
+});
+
+test("NexCommand team onboarding uses its platform-owned template and the established credential rail", async () => {
+  const app = express();
+  app.use(express.json());
+  const repository = new InMemoryPlatformRepository();
+  await repository.savePlatformUser({
+    id: "platform_local_operator", authUid: "local-platform-operator", firstName: "Local", lastName: "Operator", email: "operator@local.dev",
+    role: "Owner", accountClass: "internal", capabilityOverrides: { grant: [], deny: [] }, accountStatus: "ACTIVE",
+    createdAt: "2026-08-11T00:00:00.000Z", updatedAt: "2026-08-11T00:00:00.000Z", createdBy: "seed", updatedBy: "seed"
+  });
+  const firebaseUsers = new Map();
+  const appliedClaims = [];
+  const delivered = [];
+  const auth = {
+    async getUserByEmail(email) {
+      const user = firebaseUsers.get(email);
+      if (!user) throw Object.assign(new Error("not found"), { code: "auth/user-not-found" });
+      return user;
+    },
+    async createUser({ email, displayName }) {
+      const user = { uid: `firebase_${firebaseUsers.size + 1}`, email, displayName };
+      firebaseUsers.set(email, user);
+      return user;
+    },
+    async setCustomUserClaims(uid, claims) { appliedClaims.push({ uid, claims }); },
+    async generatePasswordResetLink(email) { return `https://safe-test.invalid/setup/${encodeURIComponent(email)}`; }
+  };
+  const ownerInviteSender = createOwnerInviteSender({
+    auth,
+    continueUrl: "https://safe-test.invalid/nexops/sign-in",
+    email: {
+      mailbox: "safe-test",
+      async sendEmail(message) {
+        delivered.push(message);
+        return { provider: "safe-test", id: "safe_delivery_1", acceptedAt: "2026-08-31T00:00:00.000Z", mailbox: "safe-test" };
+      }
+    }
+  });
+  registerPlatformRoutes(app, {
+    repository,
+    storage: null,
+    firebaseOwnerActivation: auth,
+    ownerInviteSender,
+    env: { TENANT_ID: "tenant_demo", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
+  });
+  const server = await new Promise((resolve) => resolve(app.listen(0)));
+  const address = server.address();
+  assert.equal(typeof address, "object");
+  const base = `http://127.0.0.1:${address.port}`;
+  const tenantId = (await repository.listTenants())[0].id;
+  try {
+    const savedTemplate = await fetch(`${base}/api/platform/admin/templates/onboarding/team_member_onboarding`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ subject: "NexCommand setup for {{MEMBER_NAME}}", body: "{{MEMBER_NAME}} joins {{TENANT_NAME}} as {{ROLE}}: {{SETUP_LINK}}" })
+    });
+    assert.equal(savedTemplate.status, 200);
+    const response = await fetch(`${base}/api/platform/admin/tenants/${tenantId}/team-onboarding`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "logan@example.test", role: "TECHNICIAN", displayName: "Logan" })
+    });
+    assert.equal(response.status, 201);
+    const body = await response.json();
+    assert.equal(body.invite.authUid, "firebase_1");
+    assert.equal(body.invite.active, false);
+    assert.equal(firebaseUsers.get("logan@example.test").uid, body.invite.authUid);
+    assert.equal(appliedClaims.length, 1);
+    assert.equal(appliedClaims[0].claims.tenantRole, "TECHNICIAN");
+    assert.equal(delivered.length, 1);
+    assert.equal(delivered[0].subject, "NexCommand setup for Logan");
+    assert.match(delivered[0].bodyText, /safe-test\.invalid\/setup\/logan%40example\.test/);
+    assert.equal((await repository.listTenantUsers(tenantId)).find((user) => user.id === body.invite.id).active, false);
+  } finally {
+    await close(server);
+  }
+});
+
 test("platform self-profile and lifecycle routes persist authorized platform actions without deleting tenant data", async () => {
   const { server, base, repository } = await startApp();
   try {
@@ -189,6 +290,11 @@ test("protected Owner photo upload is validated, UID-scoped, audited, gates tena
     const allowed = await fetch(`${base}/api/platform/admin/summary`, { headers });
     assert.equal(allowed.status, 200);
     assert.equal(tenantListQueries(), 1);
+    const masterTemplates = await fetch(`${base}/api/platform/admin/templates/communications`, { headers });
+    assert.equal(masterTemplates.status, 200);
+    assert.equal((await masterTemplates.json()).templates.length, 22);
+    const tenantAttempt = await fetch(`${base}/api/platform/admin/templates/communications`, { headers: { authorization: "Bearer firebase-tenant" } });
+    assert.equal(tenantAttempt.status, 401);
     assert.equal((await repository.listPlatformUserAudits("protected_owner")).at(-1).action, "platform_user.updated");
 
     const recovered = await fetch(`${base}/api/platform/admin/team/me/recover-protected-owner-identity`, { method: "POST", headers });

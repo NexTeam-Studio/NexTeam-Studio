@@ -17,6 +17,7 @@ import { registerCrmRoutes } from "../dist/crm/routes.js";
 import { createStripeCheckoutSession, verifyStripeWebhookEvent } from "../dist/crm/stripe.js";
 import { assertAccessRole, createLocalDevSession } from "../dist/auth/accessContext.js";
 import { InMemorySchedulingRepository } from "../dist/scheduling/repository.js";
+import { defaultNexCommandCommunicationTemplates } from "../dist/platform/templateLibrary.js";
 
 const LEGACY_CRM_KEY = String.fromCharCode(106, 111, 98, 98, 101, 114);
 
@@ -867,7 +868,8 @@ test("CRM quote routes create, send, approve, convert, invoice, and renew quotes
     listTenantUsers: async () => [{ id: "owner_1", tenantId: "aquatrace", displayName: "Chris", role: "OWNER", active: true, email: "owner@example.test" }],
     getTenantUser: async (tenantId, userId) => tenantId === "aquatrace" && userId === "owner_1"
       ? { id: "owner_1", tenantId: "aquatrace", displayName: "Chris", role: "OWNER", active: true, email: "owner@example.test" }
-      : null
+      : null,
+    listNexCommandCommunicationTemplates: async () => defaultNexCommandCommunicationTemplates()
   };
   const commsRail = {
     tenantId: "aquatrace",
@@ -926,7 +928,11 @@ test("CRM quote routes create, send, approve, convert, invoice, and renew quotes
     assert.equal(settingsBody.ok, true);
     assert.deepEqual(Object.keys(settingsBody.settings.documentNumbering).sort(), ["invoice", "job", "quote", "receipt", "request"]);
     assert.equal(settingsBody.settings.operatingProfile.onboarding.checklist.tasks.filter((task) => task.required).length, 6);
-    assert.equal(settingsBody.settings.communicationTemplates.every((template) => template.emailEnabled && template.smsEnabled && template.emailBody && template.smsBody), true);
+    assert.deepEqual(
+      settingsBody.settings.communicationTemplates.filter((template) => !template.emailEnabled || !template.smsEnabled || !template.emailBody || !template.smsBody)
+        .map((template) => ({ category: template.category, emailEnabled: template.emailEnabled, smsEnabled: template.smsEnabled, emailBody: Boolean(template.emailBody), smsBody: Boolean(template.smsBody) })),
+      []
+    );
 
     const customizedTemplate = settingsBody.settings.communicationTemplates.map((template) => template.category === "quote_send"
       ? { ...template, emailBody: "Temporary copy for {{CLIENT_NAME}}", updatedAt: "2026-08-30T00:00:00.000Z" }

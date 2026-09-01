@@ -106,3 +106,8 @@ test("Asset Types moved off the landing into Products & Services without losing 
   assert.match(page, /savePropertyAssetDefinitions/);
   assert.match(page, /if \(!selectedSettingsArea\)[\s\S]*nexops-settings-navigation-grid/);
 });
+
+test("only NexCommand-managed communication categories expose Reset to Default", () => {
+  assert.match(page, /templateDefaults\.some\(\(fallback\) => fallback\.category === templateDraft\.category\)/);
+  assert.match(page, /\? <button[^>]*onClick=\{\(\) => void resetTemplate\(\)\}/);
+});

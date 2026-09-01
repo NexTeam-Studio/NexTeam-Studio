@@ -25,6 +25,7 @@ export interface ActivateProspectTenantInput {
   ownerEmail: string;
   ownerDisplayName: string;
   now?: string | undefined;
+  onboardingTemplate?: { subject: string; body: string } | undefined;
 }
 
 export interface ProspectTenantActivationResult {
@@ -152,7 +153,7 @@ export async function activateProspectTenant(
   let invite = newOwnerInvite({ tenantId: tenant.id, ownerUserId: owner.id, ownerEmail: owner.email ?? input.ownerEmail, status: "NOT_SENT", attemptCount: previousInvite?.attemptCount ?? 0 });
   try {
     if (!inviteSender) throw new RailError("Owner invite email delivery is not configured.", { provider: "gmail", op: "sendOwnerInvite", status: 503 });
-    const receipt = await inviteSender.send({ tenantId: tenant.id, ownerEmail: invite.ownerEmail, ownerName: owner.displayName, tenantName: tenant.name });
+    const receipt = await inviteSender.send({ tenantId: tenant.id, ownerEmail: invite.ownerEmail, ownerName: owner.displayName, tenantName: tenant.name, template: input.onboardingTemplate });
     invite = { ...invite, status: "SENT_TO_PROVIDER", attemptCount: invite.attemptCount + 1, provider: receipt.provider, providerMessageId: receipt.messageId, lastError: undefined, updatedAt: new Date().toISOString() };
   } catch (error) {
     invite = { ...invite, status: "FAILED", attemptCount: invite.attemptCount + 1, lastError: error instanceof Error ? error.message : "Owner invite delivery failed.", updatedAt: new Date().toISOString() };

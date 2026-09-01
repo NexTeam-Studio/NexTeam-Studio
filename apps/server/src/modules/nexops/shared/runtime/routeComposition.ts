@@ -27,7 +27,7 @@ export interface CrmRouteDeps {
   memoryRepository?: NativeCrmRepository | undefined;
   fieldDocsRepository?: MediaRepository | undefined;
   nexDocsService?: NexDocsService | undefined;
-  platformRepository?: Pick<PlatformRepository, "getTenant" | "getTenantUser" | "listTenantUsers" | "getTenantBranding"> | undefined;
+  platformRepository?: Pick<PlatformRepository, "getTenant" | "getTenantUser" | "listTenantUsers" | "getTenantBranding" | "listNexCommandCommunicationTemplates"> | undefined;
   sitesRepository?: Pick<SitesRepository, "listLeads"> | undefined;
   commsRail?: CommsRail | undefined;
   jobLifecycleService?: JobLifecycleService | undefined;

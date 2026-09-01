@@ -1023,9 +1023,9 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
                     <span>{templateDraft.description ?? templateDraft.category}</span>
                   </div>
                   <div className="nexops-inline-actions">
-                    <button type="button" onClick={() => void resetTemplate()} disabled={busy === "reset-template"}>
+                    {templateDefaults.some((fallback) => fallback.category === templateDraft.category) ? <button type="button" onClick={() => void resetTemplate()} disabled={busy === "reset-template"}>
                       {busy === "reset-template" ? "Restoring..." : "Reset to Default"}
-                    </button>
+                    </button> : null}
                     <button type="button" onClick={() => void saveTemplate()} disabled={busy === "save-template"}>
                       {busy === "save-template" ? "Saving..." : "Save Template"}
                     </button>

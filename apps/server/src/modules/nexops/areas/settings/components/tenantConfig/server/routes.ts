@@ -6,7 +6,7 @@ import { modulesForPlan } from "../../../../../../../platform/plans.js";
 import { hasPermissionLevel, permissionGridFor } from "../../../../../../../platform/tenantPermissionGrid.js";
 import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
 import { detachCatalogSnapshots, detachDraftCatalogSnapshots } from "./catalogReset.js";
-import { communicationTemplateMatchesDefault, defaultCommunicationTemplate, normalizeCommunicationTemplates } from "./communicationTemplates.js";
+import { communicationTemplateMatchesDefault, normalizeCommunicationTemplates } from "./communicationTemplates.js";
 import { renderQuotePdf } from "../../../../quotes/components/quoteEngine/server/quoteDocument.js";
 import { renderInvoicePdf } from "../../../../invoices/components/invoiceStructure/server/invoiceDocument.js";
 import { renderJobPdf } from "../../../../jobs/components/jobCore/server/jobDocument.js";
@@ -96,12 +96,18 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
         && communicationTemplates.every((template, index) => JSON.stringify(template) === JSON.stringify(settings.communicationTemplates[index]))
         ? settings
         : await repository.saveCrmSettings({ ...settings, communicationTemplates, updatedAt: new Date().toISOString() });
+      const masterTemplates = typeof context.deps.platformRepository?.listNexCommandCommunicationTemplates === "function"
+        ? await context.deps.platformRepository.listNexCommandCommunicationTemplates()
+        : undefined;
       res.json({
         ok: true,
         tenantId,
         actorRole: access.role,
         settings: normalized,
-        templateDefaults: normalizeCommunicationTemplates({ tenantId, communicationTemplates: [] }),
+        // This is only a category-matched reset baseline; no master id or
+        // source reference is sent to or stored with tenant records.
+        templateDefaults: masterTemplates?.map((template) => ({ ...template, id: `comms_${template.category}_${tenantId}`, tenantId }))
+          ?? normalizeCommunicationTemplates({ tenantId, communicationTemplates: [] }),
         onboardingLaunch: await launchReadinessFor(normalized)
       });
     } catch (error) {
@@ -135,9 +141,14 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
       if (!hasPermissionLevel(permissionGridFor(access.role, access.permissionOverrides), "COMMUNICATIONS", "WRITE")) {
         throw new RailError("Your Communications permission cannot reset templates.", { provider: "native", op: "resetCommunicationTemplate", status: 403 });
       }
-      const fallback = defaultCommunicationTemplate(tenantId, req.params.category ?? "");
+      const category = req.params.category ?? "";
+      const masterTemplates = typeof context.deps.platformRepository?.listNexCommandCommunicationTemplates === "function"
+        ? await context.deps.platformRepository.listNexCommandCommunicationTemplates()
+        : undefined;
+      const master = masterTemplates?.find((template) => template.category === category);
+      const fallback = master ? { ...master, id: `comms_${master.category}_${tenantId}`, tenantId } : undefined;
       if (!fallback) {
-        throw new RailError("That template category does not have a registered default.", { provider: "native", op: "resetCommunicationTemplate", status: 404 });
+        throw new RailError("That template category has no NexCommand default.", { provider: "native", op: "resetCommunicationTemplate", status: 404 });
       }
       const repository = repositoryForTenant();
       const settings = await repository.getCrmSettings(tenantId);

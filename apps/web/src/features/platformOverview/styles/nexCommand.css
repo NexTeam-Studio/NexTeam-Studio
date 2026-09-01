@@ -17,3 +17,12 @@
 .nexcommand__brand { gap:9px; }.nexcommand__brand .platform-mark { flex:0 0 auto; width:36px; height:36px; object-fit:contain; filter:none; box-shadow:none; text-shadow:none; outline:0; }.nexcommand__brand span { width:144px; height:27px; flex:0 0 auto; background:url("/assets/brand/nexcommand-wordmark.png") center/contain no-repeat; filter:none; box-shadow:none; text-shadow:none; outline:0; }.nexcommand__nav-title { display:none; }
 .nexcommand__live-build h3 { margin:22px 0 8px; color:#0c1118; font-size:1rem; }.nexcommand__live-events { display:grid; gap:8px; margin:0; padding-left:22px; }.nexcommand__live-events li { padding:10px; border-radius:10px; background:#f5f7f1; }.nexcommand__live-events strong,.nexcommand__live-events span { display:block; }.nexcommand__live-events span { margin-top:3px; color:#68717c; font-size:.78rem; }.nexcommand__live-events p { margin-top:4px; font-size:.85rem; }
 .nexcommand__nav .nexcommand__live-status-icon { width:10px; height:10px; margin-left:auto; border-radius:50%; box-shadow:0 0 0 3px rgba(255,255,255,.08); }.nexcommand__nav .nexcommand__live-status-icon--green { background:#49d568; }.nexcommand__nav .nexcommand__live-status-icon--yellow { background:#ffd34e; }.nexcommand__nav .nexcommand__live-status-icon--red { background:#ff6b6b; }
+.nexcommand__template-editor { display: grid; grid-template-columns: minmax(12rem, .7fr) minmax(0, 1.3fr); gap: 1rem; margin: 1rem 0 2rem; }
+.nexcommand__template-editor aside { display: grid; align-content: start; gap: .4rem; max-height: 34rem; overflow: auto; }
+.nexcommand__template-editor aside button { text-align: left; border: 1px solid var(--nex-border, #d6dfd8); background: #fff; border-radius: .65rem; padding: .65rem .75rem; }
+.nexcommand__template-editor aside button.is-active { background: #0d5c57; color: #fff; border-color: #0d5c57; }
+.nexcommand__template-editor aside small { display: block; opacity: .75; margin-top: .2rem; }
+.nexcommand__template-editor form { display: grid; gap: .75rem; }
+.nexcommand__template-editor label { display: grid; gap: .3rem; font-weight: 600; }
+.nexcommand__template-editor textarea { min-height: 8rem; resize: vertical; }
+@media (max-width: 720px) { .nexcommand__template-editor { grid-template-columns: 1fr; } .nexcommand__template-editor aside { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: none; } }

@@ -23,7 +23,7 @@ export interface FirebaseOwnerInviteAuth {
 }
 
 export interface OwnerInviteSender {
-  send(input: { tenantId: string; ownerEmail: string; ownerName: string; tenantName: string }): Promise<{ provider: string; messageId: string }>;
+  send(input: { tenantId: string; ownerEmail: string; ownerName: string; tenantName: string; template?: { subject: string; body: string } | undefined }): Promise<{ provider: string; messageId: string }>;
 }
 
 export function ownerInviteDocumentId(tenantId: string, ownerUserId: string): string {
@@ -41,17 +41,20 @@ export function ownerInviteContinueUrl(publicBaseUrl: string): string {
 
 export function createOwnerInviteSender(input: { auth: FirebaseOwnerInviteAuth; email: EmailSendProvider | null; continueUrl: string }): OwnerInviteSender {
   return {
-    async send({ tenantId, ownerEmail, ownerName, tenantName }) {
+    async send({ tenantId, ownerEmail, ownerName, tenantName, template }) {
       if (!input.email) {
         throw new RailError("Owner invite email delivery is not configured.", { provider: "gmail", op: "sendOwnerInvite", status: 503 });
       }
       const setupLink = await input.auth.generatePasswordResetLink(ownerEmail, { url: input.continueUrl, handleCodeInApp: false });
+      const defaultSubject = `Set up your ${tenantName} NexTeam account`;
+      const defaultBody = `Hello ${ownerName},\n\nYour ${tenantName} NexTeam workspace is ready. Set your password here: ${setupLink}\n\nThis secure link opens the same NexTeam account used for NexOps and Nexi.\n\nIf you did not expect this invitation, you can ignore this email.`;
+      const resolve = (value: string | undefined, fallback: string) => (value || fallback).replace(/\{\{SETUP_LINK\}\}/g, setupLink);
       const receipt = await input.email.sendEmail({
         tenantId,
         mailbox: input.email.mailbox,
         to: [ownerEmail],
-        subject: `Set up your ${tenantName} NexTeam account`,
-        bodyText: `Hello ${ownerName},\n\nYour ${tenantName} NexTeam workspace is ready. Set your password here: ${setupLink}\n\nThis secure link opens the same NexTeam account used for NexOps and Nexi.\n\nIf you did not expect this invitation, you can ignore this email.`
+        subject: resolve(template?.subject, defaultSubject),
+        bodyText: resolve(template?.body, defaultBody)
       });
       return { provider: receipt.provider, messageId: receipt.id };
     }
