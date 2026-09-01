@@ -1034,7 +1034,13 @@ export async function notifyRequestCreated(
   const settings = automation.crmRepository ? await automation.crmRepository.getCrmSettings(request.tenantId) : undefined;
   const requestVariables = requestTemplateVariables(request);
   const users = automation.platformRepository ? await automation.platformRepository.listTenantUsers(request.tenantId) : [];
-  const adminRecipients = notificationRecipients(users, automation.commsRail?.operatorEmail);
+  const configuredRecipient = settings?.workspaceSettings.requestsBooking.internalNotificationRecipient;
+  // A configured recipient is the tenant's explicit operational mailbox. When
+  // unset, retain the established owner/office fallback instead of silently
+  // dropping a new-request alert.
+  const adminRecipients = configuredRecipient
+    ? [configuredRecipient.trim().toLowerCase()]
+    : notificationRecipients(users, automation.commsRail?.operatorEmail);
   const matchLabel = request.match.matchedBy === "none"
     ? "No exact email or phone match found. Manual review is required."
     : `Exact match hit on ${request.match.matchedBy.replace("exact_", "").replaceAll("_", " ")}. Manual review is still required before downstream action.`;

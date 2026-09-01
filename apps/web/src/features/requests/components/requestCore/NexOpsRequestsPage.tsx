@@ -107,6 +107,8 @@ interface ServiceRequestRecord {
   reviewedAt?: string;
   archivedAt?: string;
   reopenedAt?: string;
+  deletedAt?: string;
+  notes?: Array<{ id: string; body: string; visibility: "internal" | "client"; authorId: string; createdAt: string }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -156,6 +158,7 @@ interface NexOpsRequestsPageProps {
   focusedRequestId?: string;
   onOpenRequest?: (requestId: string) => void;
   onReturnToRequestRoster?: () => void;
+  onScheduleAssessment?: (jobId: string) => void;
   initialClientId?: string;
   initialFilter?: "all" | RequestStatus;
   captureIntent?: { batchId: string; mediaIds: string[] } | null;
@@ -329,6 +332,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
   const [selectedPropertyId, setSelectedPropertyId] = useState("");
   const [fieldDraft, setFieldDraft] = useState<Record<string, string | boolean | string[]>>({});
   const [actionBusy, setActionBusy] = useState("");
+  const [noteDraft, setNoteDraft] = useState("");
 
   const selectedForm = useMemo(
     () => forms.find((form) => form.id === selectedFormId) ?? forms[0] ?? null,
@@ -630,7 +634,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
         ? "Reopening request..."
         : action === "convert-to-quote"
           ? "Converting request to quote..."
-          : "Converting request to job...");
+        : "Preparing assessment scheduling...");
     try {
       const body = await fetch(`/api/crm/requests/${encodeURIComponent(requestId)}/${action}`, {
         method: "POST",
@@ -646,7 +650,8 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
       if (body.quote?.id) {
         setStatusMessage(`Request converted to quote ${body.quote.id}.`);
       } else if (body.job?.id) {
-        setStatusMessage(`Request converted to job ${body.job.id}.`);
+        setStatusMessage(`Assessment job ${body.job.id} is ready to place on the schedule.`);
+        props.onScheduleAssessment?.(body.job.id);
       } else {
         setStatusMessage(action === "archive" ? "Request archived." : "Request reopened.");
       }
@@ -680,6 +685,38 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
       props.onReturnToRequestRoster?.();
     } catch {
       setStatusMessage("Request deletion failed.");
+    } finally {
+      setActionBusy("");
+    }
+  }
+
+  async function saveRequestNote(requestId: string): Promise<void> {
+    const body = noteDraft.trim();
+    if (!body) return;
+    const answer = window.prompt("Note visibility: type Internal or Client-facing", "Internal");
+    if (answer === null) return;
+    const visibility = answer.trim().toLowerCase().replace(/[-\s]+/g, "") === "clientfacing" ? "client" : answer.trim().toLowerCase() === "internal" ? "internal" : "";
+    if (!visibility) {
+      setStatusMessage("Choose Internal or Client-facing before saving the note.");
+      return;
+    }
+    setActionBusy(`note-${requestId}`);
+    try {
+      const response = await fetch(`/api/crm/requests/${encodeURIComponent(requestId)}/notes`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ tenantId: props.tenantId, body, visibility })
+      });
+      const result = await response.json() as RequestMutationResponse;
+      if (!result.ok || !result.request) {
+        setStatusMessage(result.error ?? "Request note could not be saved.");
+        return;
+      }
+      setRequests((current) => current.map((request) => request.id === result.request?.id ? result.request : request));
+      setNoteDraft("");
+      setStatusMessage(`${visibility === "client" ? "Client-facing" : "Internal"} note saved.`);
+    } catch {
+      setStatusMessage("Request note could not be saved.");
     } finally {
       setActionBusy("");
     }
@@ -793,7 +830,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
                     ) : null}
                     {selectedRequestAction.secondaryAction === "convert-to-job" ? (
                       <button type="button" disabled={Boolean(actionBusy)} onClick={() => void runRequestAction(selectedRequest.id, "convert-to-job")}>
-                        {selectedRequestAction.secondaryLabel}
+                        Schedule Assessment
                       </button>
                     ) : null}
                   </div>
@@ -813,6 +850,13 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
                     </div>
                   ))}
                 </div>
+              </section>
+
+              <section className="nexops-quote-panel" aria-label="Request notes">
+                <div className="nexops-quote-section-head"><h3>Notes</h3><span>Choose visibility for every note</span></div>
+                {(selectedRequest.notes ?? []).length ? <div className="nexops-request-submitted-fields">{selectedRequest.notes?.map((note) => <div key={note.id}><strong>{note.visibility === "client" ? "Client-facing" : "Internal"}</strong><span>{note.body}</span></div>)}</div> : <p className="nexops-empty-copy">No notes yet.</p>}
+                <label className="nexops-field"><span>Add note</span><textarea rows={3} value={noteDraft} onChange={(event) => setNoteDraft(event.target.value)} /></label>
+                <button type="button" disabled={Boolean(actionBusy) || !noteDraft.trim()} onClick={() => void saveRequestNote(selectedRequest.id)}>Save Note</button>
               </section>
 
               {prominentFieldValues(selectedRequest).length ? (

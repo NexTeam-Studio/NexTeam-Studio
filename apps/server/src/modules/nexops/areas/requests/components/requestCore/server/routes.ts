@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import type { RequestForm } from "@nexteam/core";
 import type { CrmRouteContext } from "../../../../../runtime/routeRuntime.js";
-import { createRequestBodySchema, requestFormBodySchema, updateRequestBodySchema } from "./routeSchemas.js";
+import { createRequestBodySchema, createRequestNoteBodySchema, requestFormBodySchema, updateRequestBodySchema } from "./routeSchemas.js";
 
 export function registerRequestCoreRoutes(context: CrmRouteContext): void {
   const {
@@ -164,7 +164,7 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
         : defaultTenantId(env);
       await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: tenantId, op: "getRequest" });
       await ensureRequestForms(repositoryForTenant(), tenantId);
-      const requests = await repositoryForTenant().listRequests(tenantId);
+      const requests = (await repositoryForTenant().listRequests(tenantId)).filter((request) => !request.deletedAt);
       res.json({ ok: true, requests });
     } catch (error) {
       sendRouteError(res, error);
@@ -247,13 +247,6 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
         : defaultTenantId(env);
       await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "archiveRequest" });
       const request = await getRequestOrThrow(tenantId, requestId);
-      if (request.status === "converted_to_quote" || request.status === "converted_to_job") {
-        throw new RailError("Converted requests remain as a read-only intake record and cannot be archived.", {
-          provider: "native",
-          op: "archiveRequest",
-          status: 409
-        });
-      }
       if (request.status === "archived") {
         res.json({ ok: true, request });
         return;
@@ -261,6 +254,7 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
       const saved = await repositoryForTenant().updateRequest(requestId, {
         tenantId,
         status: "archived",
+        archivedFromStatus: request.status,
         archivedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         reopenedAt: undefined
@@ -288,12 +282,28 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
       }
       const saved = await repositoryForTenant().updateRequest(requestId, {
         tenantId,
-        status: "new",
+        status: request.archivedFromStatus === "converted_to_quote" || request.archivedFromStatus === "converted_to_job" ? request.archivedFromStatus : "new",
         reopenedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         archivedAt: undefined
       });
       res.json({ ok: true, request: saved });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
+  app.post("/api/crm/requests/:id/notes", async (req: Request, res: Response) => {
+    try {
+      const requestId = req.params.id;
+      if (!requestId) throw new RailError("Request id is required.", { provider: "native", op: "createRequestNote", status: 400 });
+      const input = createRequestNoteBodySchema.parse(req.body);
+      const tenantId = input.tenantId ?? defaultTenantId(env);
+      const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: tenantId, op: "createRequestNote" });
+      const request = await getRequestOrThrow(tenantId, requestId);
+      const note = { id: `request_note_${randomUUID()}`, body: input.body, visibility: input.visibility, authorId: access.tenantUserId, createdAt: new Date().toISOString() } as const;
+      const saved = await repositoryForTenant().updateRequest(requestId, { tenantId, notes: [...(request.notes ?? []), note], updatedAt: note.createdAt });
+      res.status(201).json({ ok: true, request: saved, note });
     } catch (error) {
       sendRouteError(res, error);
     }
@@ -317,7 +327,16 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
           status: 409
         });
       }
-      await repositoryForTenant().deleteRequest(tenantId, requestId);
+      // Preserve source evidence for every downstream requestId. The record is
+      // removed from the working roster but remains readable to linked quote,
+      // job, visit, and invoice surfaces.
+      await repositoryForTenant().updateRequest(requestId, {
+        tenantId,
+        status: "archived",
+        deletedAt: new Date().toISOString(),
+        archivedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
       res.json({ ok: true, deletedRequestId: requestId, preservedClientId: request.selectedClientId ?? request.match.matchedClientId ?? null });
     } catch (error) {
       sendRouteError(res, error);

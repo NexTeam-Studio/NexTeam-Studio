@@ -172,8 +172,9 @@ test("request routes create, update, convert, archive, and reopen while preservi
       body: JSON.stringify({ tenantId: "aquatrace" })
     });
     const archiveBody = await archiveResponse.json();
-    assert.equal(archiveBody.ok, false);
-    assert.equal(archiveResponse.status, 409);
+    assert.equal(archiveBody.ok, true);
+    assert.equal(archiveBody.request.archivedFromStatus, "converted_to_quote");
+    assert.equal(archiveBody.request.convertedQuoteId, quoteBody.quote.id);
 
     const secondRequestResponse = await fetch(`${base}/api/crm/requests`, {
       method: "POST",
@@ -208,7 +209,8 @@ test("request routes create, update, convert, archive, and reopen while preservi
     const deleteBody = await deleteResponse.json();
     assert.equal(deleteBody.ok, true);
     assert.equal(deleteBody.deletedRequestId, secondRequestBody.request.id);
-    assert.equal(await repository.getRequest("aquatrace", secondRequestBody.request.id), null);
+    const deletedReference = await repository.getRequest("aquatrace", secondRequestBody.request.id);
+    assert.ok(deletedReference?.deletedAt, "deleting hides the request from the roster but retains its original intake as a downstream reference");
     assert.ok((await repository.listClients("aquatrace")).some((client) => client.id === secondRequestBody.request.selectedClientId), "deleting a request preserves its linked client");
 
     const thirdRequestResponse = await fetch(`${base}/api/crm/requests`, {

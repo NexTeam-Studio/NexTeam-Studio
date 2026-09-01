@@ -962,7 +962,16 @@ export const serviceRequestSchema = z.object({
   createdAt: z.string().min(1),
   updatedAt: z.string().min(1),
   archivedAt: z.string().optional(),
+  archivedFromStatus: requestStatusSchema.optional(),
   reopenedAt: z.string().optional(),
+  deletedAt: z.string().optional(),
+  notes: z.array(z.object({
+    id: idSchema,
+    body: z.string().min(1).max(4000),
+    visibility: z.enum(["internal", "client"]),
+    authorId: idSchema,
+    createdAt: z.string().min(1)
+  })).max(500).optional(),
   notifications: z.object({
     adminNotifiedAt: z.string().optional(),
     clientConfirmationAt: z.string().optional()
@@ -1331,7 +1340,9 @@ export const workspaceSettingsSchema = z.object({
   requestsBooking: z.object({
     bufferMinutes: z.number().int().min(0).max(1440),
     requireApproval: z.boolean(),
-    serviceAreas: z.array(z.string().min(1).max(120)).max(100)
+    serviceAreas: z.array(z.string().min(1).max(120)).max(100),
+    internalNotificationRecipient: z.string().email().optional(),
+    publicSlotPickerEnabled: z.boolean().default(false)
   }),
   taxSettings: z.object({ calculationMethod: z.enum(["exclusive", "inclusive"]), rates: z.array(z.object({ id: idSchema, name: z.string().min(1).max(120), rate: z.number().min(0).max(100), group: z.string().min(1).max(120).optional(), isDefault: z.boolean(), active: z.boolean() })).max(100) }),
   customFields: z.array(z.object({ id: idSchema, label: z.string().min(1).max(120), valueType: z.enum(["text", "true_false", "area", "numeric", "dropdown_link"]), appliesTo: z.string().min(1).max(80), readOnly: z.boolean(), sortOrder: z.number().int().min(0), archived: z.boolean(), transferable: z.boolean(), options: z.array(z.string().min(1).max(120)).max(50) })).max(200),
@@ -1345,7 +1356,7 @@ export const defaultWorkspaceSettings: z.infer<typeof workspaceSettingsSchema> =
   company: { addressPrivate: false, hideAddressFromAiCrawlers: false, currency: "USD", dateFormat: "MM/DD/YYYY", firstWeekday: "monday" },
   fieldDocs: { gpsDefault: true, timestampDefault: true, aiTaggingDefault: true, markupSaveMode: "new_copy" },
   automations: [],
-  requestsBooking: { bufferMinutes: 0, requireApproval: true, serviceAreas: [] },
+  requestsBooking: { bufferMinutes: 0, requireApproval: true, serviceAreas: [], publicSlotPickerEnabled: false },
   taxSettings: { calculationMethod: "exclusive", rates: [] },
   customFields: [],
   schedule: { showWeekends: true, calendarColors: {}, calendarSyncEnabled: false, daySheet: { showPropertyMap: true, showNotes: true, showCustomInfo: true } },

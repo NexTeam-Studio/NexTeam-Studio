@@ -47,6 +47,12 @@ export const updateRequestBodySchema = z.object({
   customFields: z.record(z.union([z.string(), z.number(), z.boolean()])).optional()
 });
 
+export const createRequestNoteBodySchema = z.object({
+  tenantId: z.string().min(1).optional(),
+  body: z.string().trim().min(1).max(4000),
+  visibility: z.enum(["internal", "client"])
+});
+
 export const requestFormBodySchema = z.object({
   tenantId: z.string().min(1).optional(),
   title: z.string().min(1),

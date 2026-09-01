@@ -262,6 +262,7 @@ export function renderPortalHomeHtml(
         </article>`;
       }).join("") || `<div class="portal-empty">This portal link does not have any properties attached yet.</div>`}
     </section>
+    ${snapshot.clientFacingRequestNotes.length ? `<section class="portal-list"><article class="portal-list-item"><h3>Notes from the office</h3>${snapshot.clientFacingRequestNotes.map((note) => `<p>${escapeHtml(note.body)}</p><small>${escapeHtml(formatDateTime(note.createdAt))}</small>`).join("")}</article></section>` : ""}
     <div class="portal-button-row">
       <a class="portal-button" href="/nexportal/quotes">Review quotes</a>
       <a class="portal-button secondary" href="/nexportal/invoices">Open invoices</a>

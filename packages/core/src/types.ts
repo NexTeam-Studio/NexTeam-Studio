@@ -724,6 +724,16 @@ export interface ServiceRequestMatch {
   reviewedAt?: string | undefined;
 }
 
+/** A staff note attached to a request. Client-facing notes are deliberately
+ * separate from the submitted intake, which is immutable source evidence. */
+export interface ServiceRequestNote {
+  id: ID;
+  body: string;
+  visibility: "internal" | "client";
+  authorId: ID;
+  createdAt: string;
+}
+
 export interface ServiceRequest {
   id: ID;
   tenantId: ID;
@@ -751,7 +761,11 @@ export interface ServiceRequest {
   createdAt: string;
   updatedAt: string;
   archivedAt?: string | undefined;
+  archivedFromStatus?: RequestStatus | undefined;
   reopenedAt?: string | undefined;
+  /** Hidden from normal request rosters, retained for downstream requestId references. */
+  deletedAt?: string | undefined;
+  notes?: ServiceRequestNote[] | undefined;
   notifications?: {
     adminNotifiedAt?: string | undefined;
     clientConfirmationAt?: string | undefined;
@@ -1262,7 +1276,15 @@ export interface CrmSettings {
     };
     fieldDocs: { gpsDefault: boolean; timestampDefault: boolean; aiTaggingDefault: boolean; markupSaveMode: "new_copy"; };
     automations: Array<{ id: ID; title: string; active: boolean; trigger: string; delayMinutes: number; condition: string; action: string; messageTemplateCategory?: string | undefined; stopConditions: string[]; }>;
-    requestsBooking: { bufferMinutes: number; requireApproval: boolean; serviceAreas: string[]; };
+    requestsBooking: {
+      bufferMinutes: number;
+      requireApproval: boolean;
+      serviceAreas: string[];
+      /** Recipient for the internal new-request notice. Empty means active owner/admin staff. */
+      internalNotificationRecipient?: string | undefined;
+      /** Public form slot picker is deliberately opt-in until the picker rail exists. */
+      publicSlotPickerEnabled: boolean;
+    };
     taxSettings: { calculationMethod: "exclusive" | "inclusive"; rates: Array<{ id: ID; name: string; rate: number; group?: string | undefined; isDefault: boolean; active: boolean; }>; };
     customFields: Array<{ id: ID; label: string; valueType: "text" | "true_false" | "area" | "numeric" | "dropdown_link"; appliesTo: string; readOnly: boolean; sortOrder: number; archived: boolean; transferable: boolean; options: string[]; }>;
     schedule: { showWeekends: boolean; calendarColors: Record<string, string>; calendarSyncEnabled: boolean; daySheet: { showPropertyMap: boolean; showNotes: boolean; showCustomInfo: boolean; }; };

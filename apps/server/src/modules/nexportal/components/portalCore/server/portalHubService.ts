@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { RailError, type BusEvent, type Client, type EventBus, type Invoice, type Job, type Property, type Quote, type ReceiptReview, type TenantBranding } from "@nexteam/core";
+import { RailError, type BusEvent, type Client, type EventBus, type Invoice, type Job, type Property, type Quote, type ReceiptReview, type ServiceRequest, type TenantBranding } from "@nexteam/core";
 import type { NativeCrmRepository } from "@nexteam/providers";
 import type { CommsRail } from "../../../../../comms/gmailRegistry.js";
 import type { MediaRepository } from "../../../../../fielddocs/mediaRepository.js";
@@ -54,6 +54,7 @@ export interface PortalHubSnapshot {
   receiptReviews: ReceiptReview[];
   documents: PortalDocumentRecord[];
   portalActivity: PortalActivityEntry[];
+  clientFacingRequestNotes: Array<{ id: string; body: string; createdAt: string }>;
 }
 
 interface PortalHubServiceDeps {
@@ -492,7 +493,7 @@ export class PortalHubService {
   }
 
   async buildSnapshot(input: { tenantId: string; session: PortalSessionRecord }): Promise<PortalHubSnapshot> {
-    const [branding, clients, properties, quotes, invoices, jobs, visits, receiptReviews, events, fieldDocsMedia, fieldDocsReports, signedDocuments, nexDocsDocuments] = await Promise.all([
+    const [branding, clients, properties, quotes, invoices, jobs, visits, receiptReviews, requests, events, fieldDocsMedia, fieldDocsReports, signedDocuments, nexDocsDocuments] = await Promise.all([
       this.resolveBranding(input.tenantId),
       this.deps.crmRepository.listClients(input.tenantId),
       this.deps.crmRepository.listProperties(input.tenantId),
@@ -501,6 +502,7 @@ export class PortalHubService {
       this.deps.crmRepository.listJobs(input.tenantId),
       this.deps.schedulingRepository.listVisits(input.tenantId, {}),
       this.deps.ledgerRepository.listReceiptReviews(input.tenantId),
+      this.deps.crmRepository.listRequests(input.tenantId),
       this.deps.eventBus?.listEvents({ tenantId: input.tenantId, limit: 250 }) ?? Promise.resolve([]),
       this.deps.fieldDocsRepository?.listMedia(input.tenantId) ?? Promise.resolve([]),
       this.deps.fieldDocsRepository?.listReports(input.tenantId) ?? Promise.resolve([]),
@@ -591,6 +593,11 @@ export class PortalHubService {
         ...(objectId ? { objectId } : {})
       };
       });
+    const clientFacingRequestNotes = (requests as ServiceRequest[])
+      .filter((request) => request.selectedClientId === client.id)
+      .filter((request) => this.propertyFilter(input.session, request.selectedPropertyId))
+      .flatMap((request) => (request.notes ?? []).filter((note) => note.visibility === "client"))
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
     const documents: PortalDocumentRecord[] = [
       ...clientQuotes.map((quote) => ({
         id: `quote_pdf_${quote.id}`,
@@ -681,7 +688,8 @@ export class PortalHubService {
       visits: clientVisits.sort((left, right) => left.start.localeCompare(right.start)),
       receiptReviews: clientReceipts.sort((left, right) => stableTimestamp(right.updatedAt, right.createdAt).localeCompare(stableTimestamp(left.updatedAt, left.createdAt))),
       documents,
-      portalActivity
+      portalActivity,
+      clientFacingRequestNotes
     };
   }
 

@@ -862,6 +862,12 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
             window.history.pushState({}, "", buildModulePath("requests"));
             window.scrollTo({ top: 0, left: 0, behavior: "auto" });
           }}
+          onScheduleAssessment={() => {
+            clearWorkspaceTargets();
+            setActiveModule("schedule");
+            window.history.pushState({}, "", "/nexops/schedule");
+            window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+          }}
           initialClientId={createClientContextId || undefined}
           initialFilter={requestFilterIntent}
           captureIntent={captureRequestIntent}
