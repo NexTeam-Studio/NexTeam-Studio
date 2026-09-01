@@ -83,13 +83,6 @@ interface RequestMatch {
   reviewRequired: boolean;
 }
 
-interface RequestNotifications {
-  adminApprovalId?: string;
-  adminNotifiedAt?: string;
-  clientApprovalId?: string;
-  clientConfirmationAt?: string;
-}
-
 interface ServiceRequestRecord {
   id: string;
   tenantId: string;
@@ -111,7 +104,6 @@ interface ServiceRequestRecord {
   sourceLeadId?: string;
   convertedQuoteId?: string;
   convertedJobId?: string;
-  notifications?: RequestNotifications;
   reviewedAt?: string;
   archivedAt?: string;
   reopenedAt?: string;
@@ -151,8 +143,6 @@ interface RequestMutationResponse {
   request?: ServiceRequestRecord;
   quote?: { id: string };
   job?: { id: string };
-  created?: ServiceRequestRecord[];
-  skipped?: string[];
   form?: RequestFormRecord;
   deletedRequestId?: string;
   preservedClientId?: string | null;
@@ -327,21 +317,6 @@ export function requestDominantAction(request: ServiceRequestRecord): {
   };
 }
 
-function requestMatchLabel(match: RequestMatch, clients: ClientOption[], properties: PropertyOption[]): string {
-  if (match.matchedBy === "none") {
-    return "No exact email or phone match. Manual review stays required.";
-  }
-  if (match.matchedBy === "selected_existing_property") {
-    const property = properties.find((candidate) => candidate.id === match.matchedPropertyId);
-    return `Linked to existing property${property ? ` - ${property.siteName || property.label || property.address.street1}` : ""}.`;
-  }
-  if (match.matchedBy === "selected_existing_client") {
-    const client = clients.find((candidate) => candidate.id === match.matchedClientId);
-    return `Linked to existing client${client ? ` - ${clientDisplayName(client)}` : ""}.`;
-  }
-  return `Exact ${match.matchedBy.replace("exact_", "").replaceAll("_", " ")} match${match.matchedValue ? ` on ${match.matchedValue}` : ""}. Manual review is still required.`;
-}
-
 function absoluteShareUrl(form: RequestFormRecord): string {
   if (form.sharePath?.startsWith("http")) {
     return form.sharePath;
@@ -358,10 +333,6 @@ function initialFormDraft(form?: RequestFormRecord): FormDraft {
     active: form?.active ?? true,
     fieldKeys: form?.fieldDefinitions.map((field) => field.key) ?? []
   };
-}
-
-function formatTimestamp(value?: string): string {
-  return value ? new Date(value).toLocaleString() : "Not yet";
 }
 
 function prominentFieldValues(request: ServiceRequestRecord): RequestFieldValue[] {
@@ -767,33 +738,6 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
     }
   }
 
-  async function updateRequestFieldVisibility(requestId: string, field: RequestFieldValue, surface: RequestSurface, checked: boolean): Promise<void> {
-    setActionBusy(`visibility-${requestId}-${field.key}-${surface}`);
-    try {
-      const body = await fetch(`/api/crm/requests/${encodeURIComponent(requestId)}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          tenantId: props.tenantId,
-          fieldPatches: [{
-            key: field.key,
-            visibility: { [surface]: checked }
-          }]
-        })
-      }).then((response) => response.json() as Promise<RequestMutationResponse>);
-      if (!body.ok || !body.request) {
-        setStatusMessage(body.error ?? "Field visibility could not be updated.");
-        return;
-      }
-      setRequests((current) => current.map((request) => request.id === body.request?.id ? body.request : request));
-      setStatusMessage(`Updated ${field.label} visibility for ${surface}.`);
-    } catch {
-      setStatusMessage("Field visibility update failed.");
-    } finally {
-      setActionBusy("");
-    }
-  }
-
   async function markReviewed(requestId: string): Promise<void> {
     setActionBusy(`review-${requestId}`);
     try {
@@ -848,31 +792,6 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
       }
     } catch {
       setStatusMessage("Request action failed.");
-    } finally {
-      setActionBusy("");
-    }
-  }
-
-  async function backfillLeads(): Promise<void> {
-    setActionBusy("backfill");
-    setStatusMessage("Backfilling legacy leads into requests...");
-    try {
-      const body = await fetch("/api/crm/requests/backfill-leads", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tenantId: props.tenantId })
-      }).then((response) => response.json() as Promise<RequestMutationResponse>);
-      if (!body.ok) {
-        setStatusMessage(body.error ?? "Lead backfill failed.");
-        return;
-      }
-      await refresh();
-      props.onCrmMutation?.();
-      const createdCount = body.created?.length ?? 0;
-      const skippedCount = body.skipped?.length ?? 0;
-      setStatusMessage(`Backfill finished. ${createdCount} request${createdCount === 1 ? "" : "s"} created, ${skippedCount} skipped.`);
-    } catch {
-      setStatusMessage("Lead backfill failed.");
     } finally {
       setActionBusy("");
     }
@@ -956,12 +875,6 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
         icon={<NexOpsNavGlyph module="requests" />}
         heroClassName="module-hero-card--quote"
       primaryAction={<button className="nexops-hero-primary-button" type="button" onClick={() => setRequestCreationOpen(true)}>+ New Request</button>}
-      secondaryActions={<>
-          <button type="button" onClick={() => void refresh()} disabled={Boolean(actionBusy)}>Refresh</button>
-          <button type="button" onClick={() => void backfillLeads()} disabled={Boolean(actionBusy)}>
-            {actionBusy === "backfill" ? "Backfilling..." : "Backfill Legacy Leads"}
-          </button>
-        </>}
       metrics={undefined}
     >
       {!props.focusedRequestId ? <>
@@ -1264,29 +1177,6 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
                 </section>
               ) : null}
 
-              <div className="nexops-density-inline-facts">
-                <article>
-                  <h3>Review</h3>
-                  <p>{requestMatchLabel(selectedRequest.match, props.clients, props.properties)}</p>
-                  <small>Reviewed: {formatTimestamp(selectedRequest.reviewedAt)}</small>
-                </article>
-                <article>
-                  <h3>Notifications</h3>
-                  <p>Admins {formatTimestamp(selectedRequest.notifications?.adminNotifiedAt)}</p>
-                  <small>Client {formatTimestamp(selectedRequest.notifications?.clientConfirmationAt)}</small>
-                </article>
-                <article>
-                  <h3>Links</h3>
-                  <p>{selectedRequest.convertedQuoteId ? `Quote ${selectedRequest.convertedQuoteId}` : "No quote yet"}</p>
-                  <small>{selectedRequest.convertedJobId ? `Job ${selectedRequest.convertedJobId}` : "No job yet"}</small>
-                </article>
-                <article>
-                  <h3>Service Address</h3>
-                  <p>{formatAddress(selectedRequest.propertyAddress) || "Use existing client/property link"}</p>
-                  <small>{selectedRequest.email ?? "No email"} · {selectedRequest.phone ?? "No phone"}</small>
-                </article>
-              </div>
-
               <section className="nexops-quote-panel" aria-label="Submitted request details">
                 <div className="nexops-quote-section-head">
                   <h3>Submitted Form Details</h3>
@@ -1310,44 +1200,6 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
                 </div>
               ) : null}
 
-              <details className="nexops-quote-panel nexops-density-disclosure-panel">
-                <summary>
-                  <div className="nexops-density-disclosure-copy">
-                    <h3>Downstream Field Visibility</h3>
-                    <small>Open only when you need to audit what carries into quote, job, visit, or invoice.</small>
-                  </div>
-                  <span className="nexops-density-disclosure-caret">Open</span>
-                </summary>
-                <div className="nexops-density-disclosure-body">
-                  <div className="nexops-request-propagation-table" role="table" aria-label="Request propagation">
-                    <div className="nexops-request-propagation-head" role="row">
-                      <span>Field</span>
-                      <span>Value</span>
-                      <span>Request</span>
-                      <span>Quote</span>
-                      <span>Job</span>
-                      <span>Visit</span>
-                      <span>Invoice</span>
-                    </div>
-                    {selectedRequest.intake.fieldValues.map((field) => (
-                      <div className="nexops-request-propagation-row" role="row" key={`${selectedRequest.id}-${field.key}`}>
-                        <strong>{field.label}</strong>
-                        <span>{requestFieldText(field.value)}</span>
-                        {(["request", "quote", "job", "visit", "invoice"] as RequestSurface[]).map((surface) => (
-                          <label key={`${field.key}-${surface}`}>
-                            <input
-                              checked={field.visibility[surface]}
-                              disabled={Boolean(actionBusy)}
-                              type="checkbox"
-                              onChange={(event) => void updateRequestFieldVisibility(selectedRequest.id, field, surface, event.target.checked)}
-                            />
-                          </label>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </details>
             </div>
           </NexOpsDetailTemplate>
           ) : (

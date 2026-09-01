@@ -24,7 +24,9 @@ test("Requests uses the shared roster and detail templates", () => {
   assert.match(source, /setSelectedRequestId\(\(current\) => current && nextRequests\.some\(\(request\) => request\.id === current\) \? current : ""\)/);
   assert.doesNotMatch(source, /eyebrow="NexOps Intake"/);
   assert.doesNotMatch(source, /<small>\{filteredRequests\.length\}<\/small>/);
-  assert.match(source, /Backfill Legacy Leads/);
+  assert.doesNotMatch(source, /Backfill Legacy Leads/);
+  assert.doesNotMatch(source, /Downstream Field Visibility/);
+  assert.doesNotMatch(source, /nexops-density-inline-facts/);
 });
 
 test("Requests uses Title Case for named interface areas and controls", () => {
@@ -38,9 +40,7 @@ test("Requests uses Title Case for named interface areas and controls", () => {
     "Website Intake Forms",
     "Search Requests",
     "Request Detail",
-    "Next Office Move",
-    "Downstream Field Visibility",
-    "Backfill Legacy Leads"
+    "Next Office Move"
   ]) {
     assert.ok(source.includes(label), `missing ${label}`);
   }

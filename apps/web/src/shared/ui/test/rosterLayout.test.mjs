@@ -22,6 +22,6 @@ test("shared hero owns primary and secondary action rows", () => {
   assert.match(clients, /primaryAction=\{<button className="nexops-hero-primary-button"/);
   assert.match(clients, /secondaryActions=\{<>/);
   assert.match(requests, /primaryAction=\{<button className="nexops-hero-primary-button"/);
-  assert.match(requests, /secondaryActions=\{<>/);
+  assert.doesNotMatch(requests, /secondaryActions=/);
   assert.doesNotMatch(requests, /primaryAction=\{\(\s*<div className="nexops-inline-actions"/);
 });
