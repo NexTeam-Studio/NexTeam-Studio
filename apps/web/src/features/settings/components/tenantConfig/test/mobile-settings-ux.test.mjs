@@ -63,8 +63,14 @@ test("Settings landing is a Quotes-style hero plus all fifteen distinct routed n
   assert.match(page, /className="nexops-settings-navigation-grid"/);
   assert.match(page, /className="nexops-settings-navigation-card"/);
   assert.match(page, /--nexops-settings-tile-color/);
+  assert.match(page, /detail: "Roles & Access"/);
+  assert.match(page, /detail: "Rates & Rules"/);
   assert.match(page, /<ModuleHeroCard[\s\S]*className="module-hero-card--quote"/);
   assert.match(styles, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(styles, /place-items: center/);
+  assert.match(styles, /text-align: center/);
+  assert.match(styles, /var\(--nexops-brand-gradient, var\(--nexteam-gradient\)\) border-box/);
+  assert.match(styles, /\.nexops-settings-navigation-card small \{[\s\S]*font-size: 10px/);
 });
 
 test("sidebar Settings always resets the detail selection to the Settings landing", () => {

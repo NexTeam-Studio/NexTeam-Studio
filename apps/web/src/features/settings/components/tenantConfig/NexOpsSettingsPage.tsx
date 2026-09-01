@@ -15,21 +15,21 @@ import { RemainingSettingsSections } from "./RemainingSettingsSections";
 type SettingsAreaId = "company" | "document-design" | "templates" | "checklists-reports" | "completion-requirements" | "automations" | "requests-booking" | "products-services" | "tax" | "custom-fields" | "team-permissions" | "schedule" | "nexportal" | "payments" | "integrations";
 
 const SETTINGS_AREAS: Array<{ id: SettingsAreaId; label: string; detail: string; icon: string; color: string; path: string }> = [
-  { id: "company", label: "Company", detail: "Business identity and regional defaults", icon: "⌂", color: "#0b6771", path: "/nexops/settings/company" },
-  { id: "document-design", label: "Document Design", detail: "Quote, job, and invoice PDFs", icon: "▤", color: "#4056a1", path: "/nexops/settings/document-design" },
-  { id: "templates", label: "Templates", detail: "Email and text message defaults", icon: "✉", color: "#7a4ca0", path: "/nexops/settings/templates" },
-  { id: "checklists-reports", label: "Checklists & Reports", detail: "NexCam capture and report defaults", icon: "✓", color: "#147a58", path: "/nexops/settings/checklists-reports" },
-  { id: "completion-requirements", label: "Completion Requirements", detail: "Evidence rules for job closeout", icon: "◆", color: "#8a5b17", path: "/nexops/settings/completion-requirements" },
-  { id: "automations", label: "Automations", detail: "Event sequences and follow-up rules", icon: "↻", color: "#9b3f62", path: "/nexops/settings/automations" },
-  { id: "requests-booking", label: "Requests & Booking", detail: "Intake forms and booking rules", icon: "⌁", color: "#2e6f95", path: "/nexops/settings/requests-booking" },
-  { id: "products-services", label: "Products & Services", detail: "Catalog and property asset types", icon: "▦", color: "#ae5d22", path: "/nexops/settings/products-services" },
-  { id: "tax", label: "Tax", detail: "Rates, groups, and calculation", icon: "%", color: "#6c7541", path: "/nexops/settings/tax" },
-  { id: "custom-fields", label: "Custom Fields", detail: "Reusable fields across records", icon: "＋", color: "#426a7c", path: "/nexops/settings/custom-fields" },
-  { id: "team-permissions", label: "Team & Permissions", detail: "Members, tiers, and access", icon: "♙", color: "#6b4a3b", path: "/nexops/users" },
-  { id: "schedule", label: "Schedule", detail: "Calendar and day-sheet defaults", icon: "◫", color: "#486f3a", path: "/nexops/settings/schedule" },
-  { id: "nexportal", label: "NexPortal", detail: "Client hub visibility and tips", icon: "◌", color: "#1e6671", path: "/nexops/settings/nexportal" },
-  { id: "payments", label: "Payments", detail: "Receipts, ACH, and controls", icon: "$", color: "#a04b41", path: "/nexops/settings/payments" },
-  { id: "integrations", label: "Integrations", detail: "Future adapter connections", icon: "↗", color: "#555f76", path: "/nexops/settings/integrations" }
+  { id: "company", label: "Company", detail: "Business Profile & Defaults", icon: "⌂", color: "#0b6771", path: "/nexops/settings/company" },
+  { id: "document-design", label: "Document Design", detail: "PDF Layout & Branding", icon: "▤", color: "#4056a1", path: "/nexops/settings/document-design" },
+  { id: "templates", label: "Templates", detail: "Email & SMS Copy", icon: "✉", color: "#7a4ca0", path: "/nexops/settings/templates" },
+  { id: "checklists-reports", label: "Checklists & Reports", detail: "NexCam Defaults", icon: "✓", color: "#147a58", path: "/nexops/settings/checklists-reports" },
+  { id: "completion-requirements", label: "Completion Requirements", detail: "Closeout Evidence Rules", icon: "◆", color: "#8a5b17", path: "/nexops/settings/completion-requirements" },
+  { id: "automations", label: "Automations", detail: "Triggers & Follow-Ups", icon: "↻", color: "#9b3f62", path: "/nexops/settings/automations" },
+  { id: "requests-booking", label: "Requests & Booking", detail: "Intake & Booking Rules", icon: "⌁", color: "#2e6f95", path: "/nexops/settings/requests-booking" },
+  { id: "products-services", label: "Products & Services", detail: "Catalog & Asset Types", icon: "▦", color: "#ae5d22", path: "/nexops/settings/products-services" },
+  { id: "tax", label: "Tax", detail: "Rates & Rules", icon: "%", color: "#6c7541", path: "/nexops/settings/tax" },
+  { id: "custom-fields", label: "Custom Fields", detail: "Fields Across Records", icon: "＋", color: "#426a7c", path: "/nexops/settings/custom-fields" },
+  { id: "team-permissions", label: "Team & Permissions", detail: "Roles & Access", icon: "♙", color: "#6b4a3b", path: "/nexops/users" },
+  { id: "schedule", label: "Schedule", detail: "Calendar & Day Sheets", icon: "◫", color: "#486f3a", path: "/nexops/settings/schedule" },
+  { id: "nexportal", label: "NexPortal", detail: "Client Access & Tips", icon: "◌", color: "#1e6671", path: "/nexops/settings/nexportal" },
+  { id: "payments", label: "Payments", detail: "Receipts & Controls", icon: "$", color: "#a04b41", path: "/nexops/settings/payments" },
+  { id: "integrations", label: "Integrations", detail: "Connected App Slots", icon: "↗", color: "#555f76", path: "/nexops/settings/integrations" }
 ];
 
 function settingsAreaFromPath(pathname: string): SettingsAreaId | null {

@@ -18,22 +18,22 @@
 
 .nexops-settings-navigation-card {
   display: grid;
-  min-height: 156px;
-  align-content: start;
-  gap: 8px;
-  padding: 16px;
-  border: 1px solid rgba(8, 33, 49, 0.12);
+  min-height: 142px;
+  place-items: center;
+  align-content: center;
+  gap: 7px;
+  padding: 14px 12px;
+  border: 1px solid transparent;
   border-radius: 18px;
   color: #082131;
-  text-align: left;
-  background: #fff;
+  text-align: center;
+  background: linear-gradient(#fff, #fff) padding-box, var(--nexops-brand-gradient, var(--nexteam-gradient)) border-box;
   box-shadow: 0 8px 20px rgba(8, 33, 49, 0.06);
 }
 
 .nexops-settings-navigation-card:hover,
 .nexops-settings-navigation-card:focus-visible {
-  border-color: var(--nexops-settings-tile-color);
-  outline: 3px solid color-mix(in srgb, var(--nexops-settings-tile-color) 22%, transparent);
+  outline: 3px solid color-mix(in srgb, #25d238 22%, transparent);
   outline-offset: 2px;
   transform: translateY(-2px);
 }
@@ -51,11 +51,13 @@
 }
 
 .nexops-settings-navigation-card strong {
+  display: block;
   font-size: 15px;
   line-height: 1.15;
 }
 
 .nexops-settings-navigation-card small {
+  display: block;
   color: #526675;
   font-size: 12px;
   line-height: 1.35;
@@ -132,8 +134,9 @@
   }
 
   .nexops-settings-navigation-card {
-    min-height: 128px;
-    padding: 11px;
+    min-height: 122px;
+    gap: 5px;
+    padding: 10px 7px;
   }
 
   .nexops-settings-navigation-card__icon {
@@ -147,7 +150,9 @@
   }
 
   .nexops-settings-navigation-card small {
-    display: none;
+    display: block;
+    font-size: 10px;
+    line-height: 1.2;
   }
 
   .nexops-settings-template-layout {
