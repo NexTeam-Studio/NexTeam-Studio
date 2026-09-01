@@ -33,3 +33,10 @@ test("Recent Activity filters are horizontally reachable rather than wrapping on
   assert.match(styles, /\.nexops-home-filter-row \{[\s\S]*overflow-x: auto;[\s\S]*flex-wrap: nowrap;/);
   assert.match(styles, /\.nexops-home-filter-row button \{[\s\S]*flex: 0 0 auto;/);
 });
+
+test("Home uses the established branded section treatment for each operational card", () => {
+  assert.match(page, /nexops-module-card wide nexops-home-section-card/);
+  assert.equal((page.match(/nexops-module-card nexops-home-section-card/g) ?? []).length, 2);
+  assert.match(styles, /\.nexops-home-section-card \{[\s\S]*linear-gradient\(118deg, #06151e 0%, #07313a 54%, #08723a 100%\)/);
+  assert.match(styles, /\.nexops-home-section-card \.nexops-home-section-head h2 \{[\s\S]*color: #d4ff20;/);
+});

@@ -228,7 +228,7 @@ export function NexOpsHomePage(props: {
         <h2>{greetingForCurrentTime()}, {props.operatorName}</h2>
       </section>
 
-      <section className="nexops-module-card wide" aria-label="Live Queues">
+      <section className="nexops-module-card wide nexops-home-section-card" aria-label="Live Queues">
         <div className="nexops-home-section-head">
           <p className="eyebrow">Office Action</p>
           <h2>Live Queues</h2>
@@ -295,7 +295,7 @@ export function NexOpsHomePage(props: {
       ) : null}
 
       <div className="nexops-home-layout">
-        <section className="nexops-module-card">
+        <section className="nexops-module-card nexops-home-section-card">
           <div className="nexops-home-section-head">
             <p className="eyebrow">Productivity</p>
             <h2>Documentation Activity</h2>
@@ -322,7 +322,7 @@ export function NexOpsHomePage(props: {
           </div>
         </section>
 
-        <section className="nexops-module-card">
+        <section className="nexops-module-card nexops-home-section-card">
           <div className="nexops-home-section-head">
             <p className="eyebrow">Live activity</p>
             <h2>Recent Activity</h2>
