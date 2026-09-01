@@ -246,7 +246,7 @@ export function NexOpsRosterSurface(props: {
   ariaLabel: string;
   searchTitle: string;
   search: React.ReactNode;
-  filter: React.ReactNode;
+  filter?: React.ReactNode;
   filterOptions?: React.ReactNode;
   resultCount: number;
   resultNoun: string;
@@ -258,7 +258,7 @@ export function NexOpsRosterSurface(props: {
       <section className="nexops-business-hero module-hero-card--quote nexops-quote-roster-filters" aria-label={props.ariaLabel}>
         <h2>{props.searchTitle}</h2>
         {props.search}
-        {props.filter}
+        {props.filter ?? null}
         {props.filterOptions}
       </section>
       <section className="nexops-quote-filtered-roster" aria-label={`${props.resultNoun} results`}>

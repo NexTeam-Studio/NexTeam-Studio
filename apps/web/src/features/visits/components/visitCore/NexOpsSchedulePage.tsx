@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ProductInlineLabel } from "../../../../shared/branding/ProductBranding";
-import { NexOpsDetailTemplate, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
+import { NexOpsDetailTemplate, NexOpsRosterSurface, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
 import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
 import { NexDocsClientWorkspace } from "../../../nexdocs/areas/clientWorkspace/components/NexDocsClientWorkspace";
 import { visitCanBeCompleted } from "./visitCompletion";
@@ -927,8 +927,13 @@ export function NexOpsSchedulePage(props: {
             <article><span>Team filter</span><strong>{selectedTeamIds.length || "All"}</strong><small>Active people</small></article>
           </>
         )}
-        controls={(
-        <div className="nexops-schedule-toolbar">
+      >
+        <NexOpsRosterSurface
+          ariaLabel="Schedule controls and visits"
+          searchTitle="Schedule Visits"
+          resultNoun="Visit"
+          resultCount={workspace?.visits.length ?? 0}
+          search={<div className="nexops-schedule-toolbar">
           <div className="nexops-home-filter-row" role="tablist" aria-label="Schedule views">
             {(["day", "week", "month", "list"] as const).map((candidate) => (
               <button
@@ -978,9 +983,8 @@ export function NexOpsSchedulePage(props: {
               </details>
             ) : null}
           </div>
-        </div>
-        )}
-      >
+          </div>}
+        >
         <section className="nexops-schedule-surface">
         {status ? <p className="nexops-module-status">{status}</p> : null}
         {composerStatus && !composerOpen ? <p className="nexops-module-status" role="status">{composerStatus}</p> : null}
@@ -1073,6 +1077,7 @@ export function NexOpsSchedulePage(props: {
         ) : null}
         {isNarrowSchedule ? renderUnscheduledJobs() : null}
         </section>
+        </NexOpsRosterSurface>
       </NexOpsRosterTemplate>
 
       {composerOpen ? (

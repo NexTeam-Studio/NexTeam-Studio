@@ -41,6 +41,7 @@ test("schedule anchor date accepts real calendar dates without relying on a nati
 test("schedule inherits ModuleHeroCard through the shared roster template", async () => {
   const source = await readFile(new URL("../NexOpsSchedulePage.tsx", import.meta.url), "utf8");
 
-  assert.match(source, /import \{ NexOpsDetailTemplate, NexOpsRosterTemplate \} from/);
+  assert.match(source, /import \{ NexOpsDetailTemplate, NexOpsRosterSurface, NexOpsRosterTemplate \} from/);
   assert.match(source, /<NexOpsRosterTemplate[\s\S]*title="Visits"/);
+  assert.match(source, /<NexOpsRosterSurface[\s\S]*searchTitle="Schedule Visits"/);
 });
