@@ -207,7 +207,6 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
   const {
     notificationsOpen,
     notifications,
-    notificationUnreadCount,
     notificationStatus,
     setNotificationsOpen,
     openNotification,
@@ -343,20 +342,6 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
     setNotificationsOpen(false);
     setModuleSwitcherOpen(false);
     setCreateMenuOpen((current) => !current);
-  }
-
-  function toggleNotifications(): void {
-    setMobileNavOpen(false);
-    setCreateMenuOpen(false);
-    setModuleSwitcherOpen(false);
-    setNotificationsOpen((current) => !current);
-  }
-
-  function toggleModuleSwitcher(): void {
-    setMobileNavOpen(false);
-    setCreateMenuOpen(false);
-    setNotificationsOpen(false);
-    setModuleSwitcherOpen((current) => !current);
   }
 
   function setModule(module: NexOpsModule): void {
