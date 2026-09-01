@@ -320,13 +320,6 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
         : defaultTenantId(env);
       await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "deleteRequest" });
       const request = await getRequestOrThrow(tenantId, requestId);
-      if (request.status === "converted_to_quote" || request.status === "converted_to_job") {
-        throw new RailError("Converted requests remain as a read-only intake record and cannot be deleted.", {
-          provider: "native",
-          op: "deleteRequest",
-          status: 409
-        });
-      }
       // Preserve source evidence for every downstream requestId. The record is
       // removed from the working roster but remains readable to linked quote,
       // job, visit, and invoice surfaces.

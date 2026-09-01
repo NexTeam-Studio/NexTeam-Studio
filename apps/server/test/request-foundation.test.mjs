@@ -276,6 +276,16 @@ test("request routes create, update, convert, archive, and reopen while preservi
     assert.equal(jobBody.job.intake.fieldIndex.pool_configuration, "pool_only");
     assert.equal(jobBody.job.title, secondRequestBody.request.subject);
     assert.equal(jobBody.job.status, "Unscheduled");
+
+    const deleteConvertedRequestResponse = await fetch(`${base}/api/crm/requests/${thirdRequestBody.request.id}`, {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ tenantId: "aquatrace" })
+    });
+    assert.equal((await deleteConvertedRequestResponse.json()).ok, true);
+    const deletedConvertedReference = await repository.getRequest("aquatrace", thirdRequestBody.request.id);
+    assert.ok(deletedConvertedReference?.deletedAt, "deleting a converted request preserves the original intake for its linked downstream job");
+    assert.equal(jobBody.job.requestId, deletedConvertedReference?.id, "the downstream job retains the persistent request reference after source deletion");
   } finally {
     await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   }

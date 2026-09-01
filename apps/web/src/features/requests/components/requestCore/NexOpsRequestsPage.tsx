@@ -787,9 +787,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
               ) : (
                 <button type="button" disabled={Boolean(actionBusy)} onClick={() => void runRequestAction(selectedRequest.id, "archive")}>Archive</button>
               )}
-              {selectedRequest.status !== "converted_to_quote" && selectedRequest.status !== "converted_to_job" ? (
-                <button type="button" disabled={Boolean(actionBusy)} onClick={() => void deleteRequest(selectedRequest.id)}>Delete Request</button>
-              ) : null}
+              <button type="button" disabled={Boolean(actionBusy)} onClick={() => void deleteRequest(selectedRequest.id)}>Delete Request</button>
             </>}
             navigation={<div className="nexops-jobs-filter-row" aria-label="Request detail filters">
                 {REQUEST_FILTERS.map((filter) => (
