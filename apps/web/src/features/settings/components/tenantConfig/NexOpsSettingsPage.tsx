@@ -13,6 +13,7 @@ import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
 import { RemainingSettingsSections } from "./RemainingSettingsSections";
 
 type SettingsAreaId = "company" | "document-design" | "templates" | "checklists-reports" | "completion-requirements" | "automations" | "requests-booking" | "products-services" | "tax" | "custom-fields" | "team-permissions" | "schedule" | "nexportal" | "payments" | "integrations";
+type SettingsSectionId = "business-setup" | "team-permissions" | "operations" | "documents-client-facing" | "financial" | "automation-integrations";
 
 const SETTINGS_AREAS: Array<{ id: SettingsAreaId; label: string; detail: string; icon: string; color: string; path: string }> = [
   { id: "company", label: "Company", detail: "Business Profile & Defaults", icon: "⌂", color: "#0b6771", path: "/nexops/settings/company" },
@@ -32,13 +33,13 @@ const SETTINGS_AREAS: Array<{ id: SettingsAreaId; label: string; detail: string;
   { id: "integrations", label: "Integrations", detail: "Connected App Slots", icon: "↗", color: "#555f76", path: "/nexops/settings/integrations" }
 ];
 
-const SETTINGS_SECTIONS: Array<{ label: string; areas: SettingsAreaId[] }> = [
-  { label: "Business Setup", areas: ["company", "tax", "custom-fields", "products-services"] },
-  { label: "Team & Permissions", areas: ["team-permissions"] },
-  { label: "Operations", areas: ["checklists-reports", "completion-requirements", "requests-booking", "schedule"] },
-  { label: "Documents & Client-Facing", areas: ["document-design", "templates", "nexportal"] },
-  { label: "Financial", areas: ["payments"] },
-  { label: "Automation & Integrations", areas: ["automations", "integrations"] }
+const SETTINGS_SECTIONS: Array<{ id: SettingsSectionId; label: string; icon: string; areas: SettingsAreaId[] }> = [
+  { id: "business-setup", label: "Business Setup", icon: "⌂", areas: ["company", "tax", "custom-fields", "products-services"] },
+  { id: "team-permissions", label: "Team & Permissions", icon: "♙", areas: ["team-permissions"] },
+  { id: "operations", label: "Operations", icon: "✓", areas: ["checklists-reports", "completion-requirements", "requests-booking", "schedule"] },
+  { id: "documents-client-facing", label: "Documents & Client-Facing", icon: "▤", areas: ["document-design", "templates", "nexportal"] },
+  { id: "financial", label: "Financial", icon: "$", areas: ["payments"] },
+  { id: "automation-integrations", label: "Automation & Integrations", icon: "↻", areas: ["automations", "integrations"] }
 ];
 
 function settingsAreaFromPath(pathname: string): SettingsAreaId | null {
@@ -265,6 +266,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
   const [templatePreviewChannel, setTemplatePreviewChannel] = useState<"email" | "sms">("email");
   const catalogSectionRef = useRef<HTMLElement | null>(null);
   const [activeSettingsArea, setActiveSettingsArea] = useState<SettingsAreaId | null>(() => settingsAreaFromPath(window.location.pathname));
+  const [expandedSettingsSection, setExpandedSettingsSection] = useState<SettingsSectionId>("business-setup");
 
   const selectedTemplate = useMemo(
     () => settings?.communicationTemplates.find((template) => template.id === selectedTemplateId) ?? settings?.communicationTemplates[0] ?? null,
@@ -586,10 +588,21 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
           className="module-hero-card--quote"
         />
         <nav className="nexops-settings-navigation-sections" aria-label="Settings areas">
-          {SETTINGS_SECTIONS.map((section) => (
-            <section className="nexops-settings-navigation-section" key={section.label} aria-labelledby={`settings-section-${section.label}`}>
-              <h2 id={`settings-section-${section.label}`}>{section.label}</h2>
-              <div className="nexops-settings-navigation-grid">
+          {SETTINGS_SECTIONS.map((section) => {
+            const expanded = expandedSettingsSection === section.id;
+            return <section className={`nexops-settings-navigation-section${expanded ? " is-expanded" : ""}`} key={section.id}>
+              <button
+                className="nexops-settings-navigation-section__trigger"
+                type="button"
+                aria-expanded={expanded}
+                aria-controls={`settings-section-${section.id}`}
+                onClick={() => setExpandedSettingsSection(section.id)}
+              >
+                <span className="nexops-settings-navigation-section__icon" aria-hidden="true">{section.icon}</span>
+                <strong>{section.label}</strong>
+                <span className="nexops-settings-navigation-section__toggle" aria-hidden="true">{expanded ? "−" : "+"}</span>
+              </button>
+              {expanded ? <div id={`settings-section-${section.id}`} className={`nexops-settings-navigation-grid nexops-settings-navigation-grid--${section.areas.length}`}>
                 {section.areas.map((id) => {
                   const area = SETTINGS_AREAS.find((candidate) => candidate.id === id);
                   if (!area) return null;
@@ -605,9 +618,9 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
                     <small>{area.detail}</small>
                   </button>;
                 })}
-              </div>
-            </section>
-          ))}
+              </div> : null}
+            </section>;
+          })}
         </nav>
       </section>
     );

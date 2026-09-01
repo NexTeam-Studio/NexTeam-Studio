@@ -11,7 +11,7 @@
 
 .nexops-settings-navigation-sections {
   display: grid;
-  gap: 18px;
+  gap: 14px;
   margin-top: 20px;
 }
 
@@ -20,26 +20,69 @@
   gap: 10px;
 }
 
-.nexops-settings-navigation-section > h2 {
-  margin: 0;
-  padding: 9px 12px;
-  border-left: 4px solid #25d238;
-  border-radius: 10px;
-  color: #082131;
-  font-size: 14px;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  background: linear-gradient(135deg, rgba(212, 255, 32, .10), rgba(37, 210, 56, .08));
+.nexops-settings-navigation-section__trigger {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  min-height: 66px;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(212, 255, 32, .20);
+  border-radius: 22px;
+  padding: 11px 14px;
+  color: #d4ff20;
+  background: radial-gradient(circle at 88% 16%, rgba(116, 255, 113, .28), transparent 31%), linear-gradient(118deg, #06151e 0%, #07313a 54%, #08723a 100%);
+  box-shadow: 0 12px 26px rgba(6, 21, 30, .12);
+  font: inherit;
+  cursor: pointer;
+}
+
+.nexops-settings-navigation-section__trigger:hover,
+.nexops-settings-navigation-section__trigger:focus-visible {
+  outline: 3px solid rgba(37, 210, 56, .32);
+  outline-offset: 2px;
+}
+
+.nexops-settings-navigation-section__trigger strong {
+  color: #d4ff20;
+  font-size: clamp(1rem, 2.8vw, 1.28rem);
+  letter-spacing: .03em;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.nexops-settings-navigation-section__icon,
+.nexops-settings-navigation-section__toggle {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.nexops-settings-navigation-section__icon {
+  color: #d4ff20;
+  font-size: 25px;
+  font-weight: 900;
+}
+
+.nexops-settings-navigation-section__toggle {
+  color: #07151c;
+  background: linear-gradient(135deg, #d4ff20, #25d238);
+  font-size: 25px;
+  font-weight: 900;
+  box-shadow: 0 7px 16px rgba(37, 210, 56, .22);
 }
 
 .nexops-settings-navigation-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 14px;
 }
 
 .nexops-settings-navigation-card {
   display: grid;
+  grid-column: span 2;
   grid-template-rows: 38px minmax(2.3em, auto) minmax(2.7em, auto);
   min-height: 142px;
   justify-items: center;
@@ -53,6 +96,18 @@
   text-align: center;
   background: linear-gradient(#fff, #fff) padding-box, var(--nexops-brand-gradient, var(--nexteam-gradient)) border-box;
   box-shadow: 0 8px 20px rgba(8, 33, 49, 0.06);
+}
+
+.nexops-settings-navigation-grid--1 > .nexops-settings-navigation-card {
+  grid-column: 3 / span 2;
+}
+
+.nexops-settings-navigation-grid--2 > .nexops-settings-navigation-card:first-child {
+  grid-column: 2 / span 2;
+}
+
+.nexops-settings-navigation-grid--4 > .nexops-settings-navigation-card:last-child {
+  grid-column: 3 / span 2;
 }
 
 .nexops-settings-navigation-card:hover,
@@ -153,7 +208,6 @@
 
 @container (max-width: 760px) {
   .nexops-settings-navigation-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 9px;
   }
 
@@ -166,9 +220,25 @@
     gap: 8px;
   }
 
-  .nexops-settings-navigation-section > h2 {
-    padding: 8px 10px;
-    font-size: 12px;
+  .nexops-settings-navigation-section__trigger {
+    grid-template-columns: 34px minmax(0, 1fr) 34px;
+    min-height: 58px;
+    border-radius: 18px;
+    padding: 9px 10px;
+  }
+
+  .nexops-settings-navigation-section__icon,
+  .nexops-settings-navigation-section__toggle {
+    width: 34px;
+    height: 34px;
+  }
+
+  .nexops-settings-navigation-section__icon {
+    font-size: 21px;
+  }
+
+  .nexops-settings-navigation-section__toggle {
+    font-size: 21px;
   }
 
   .nexops-settings-navigation-card {
