@@ -1,4 +1,5 @@
 import React from "react";
+import { ModuleHeroCard } from "../../../../../shared/ui/NexOpsBusinessTemplates";
 import type {
   CrmClient,
   FieldDocsMediaRecord
@@ -11,6 +12,7 @@ import type {
   CaptureSessionOrigin,
   CaptureWorkspaceView
 } from "../contracts/captureContracts";
+import { NexOpsNavGlyph } from "../../../../nexopsShell/workspaceSupport";
 
 interface NexOpsCaptureWorkspaceProps {
   operatorTenantId: string;
@@ -297,17 +299,15 @@ export function NexOpsCaptureWorkspace(props: NexOpsCaptureWorkspaceProps): Reac
             event.currentTarget.value = "";
           }}
         />
-        <div className="nexops-page-heading">
-          <div>
-            <p className="eyebrow">NexCam capture</p>
-            <h1>Capture and route</h1>
-            <p>Shoot first, then route to a new request, an existing client, or the unassigned inbox without leaving the NexOps shell.</p>
-          </div>
-          <div className="nexops-inline-actions">
-            <button type="button" onClick={() => void onStartCaptureSession()} disabled={Boolean(captureBusy)}>New capture</button>
-            <button type="button" className="secondary" onClick={() => onOpenCaptureWorkspace("unassigned")}>Continue unassigned batch</button>
-          </div>
-        </div>
+        <ModuleHeroCard
+          eyebrow="NexCam capture"
+          title="Capture and route"
+          detail="Shoot first, then route to a new request, an existing client, or the unassigned inbox without leaving the NexOps shell."
+          icon={<NexOpsNavGlyph module="capture" />}
+          primaryAction={<button className="nexops-hero-primary-button" type="button" onClick={() => void onStartCaptureSession()} disabled={Boolean(captureBusy)}>New capture</button>}
+          secondaryActions={<button type="button" onClick={() => onOpenCaptureWorkspace("unassigned")}>Continue unassigned batch</button>}
+          className="module-hero-card--quote"
+        />
 
         <div className="nexops-module-grid nexops-module-grid-wide">
           <article className="nexops-module-card">

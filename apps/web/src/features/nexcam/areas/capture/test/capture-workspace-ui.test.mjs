@@ -3,9 +3,17 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 const styles = readFileSync(new URL("../styles/captureWorkspace.css", import.meta.url), "utf8");
+const source = readFileSync(new URL("../components/NexOpsCaptureWorkspace.tsx", import.meta.url), "utf8");
 
 test("long NexCam capture captions stay contained in the preview card", () => {
   assert.match(styles, /\.nexops-capture-preview-card h3 \{[\s\S]*-webkit-line-clamp: 3/);
   assert.match(styles, /\.nexops-capture-preview-card \.nexops-detail-header > :first-child \{[\s\S]*min-width: 0/);
   assert.match(styles, /@media \(max-width: 720px\)[\s\S]*\.nexops-capture-preview-card \.nexops-inline-actions \{[\s\S]*width: 100%/);
+});
+
+test("NexCam capture uses the shared ModuleHeroCard and action structure", () => {
+  assert.match(source, /import \{ ModuleHeroCard \} from ".*NexOpsBusinessTemplates"/);
+  assert.match(source, /<ModuleHeroCard[\s\S]*title="Capture and route"/);
+  assert.match(source, /primaryAction=\{<button className="nexops-hero-primary-button"/);
+  assert.match(source, /secondaryActions=\{<button/);
 });

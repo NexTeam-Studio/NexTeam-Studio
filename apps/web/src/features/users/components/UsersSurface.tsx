@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { ModuleHeroCard } from "../../../shared/ui/NexOpsBusinessTemplates";
 import "../styles/users.css";
 
 type AccessLevel = "NONE" | "READ" | "CREATE" | "WRITE" | "MANAGE" | "DELETE" | "FULL";
@@ -97,14 +98,14 @@ export function UsersSurface(props: UsersSurfaceProps = {}): React.ReactElement 
 
   return (
     <main className="users-surface">
-      <header className="users-hero">
-        <div>
-          <p className="users-kicker">NexOps / Team</p>
-          <h1 className="users-page-title"><TeamTitleIcon /> <span>Team</span></h1>
-          <p>Invite your crew, give each person the access they need, and keep everyone ready for the day.</p>
-        </div>
-        <button className="users-primary" type="button" onClick={() => { setInviteOpen(true); setInviteSent(false); }}>Invite team member <span>+</span></button>
-      </header>
+      <ModuleHeroCard
+        eyebrow="NexOps / Team"
+        title="Team & Permissions"
+        detail="Invite your crew, give each person the access they need, and keep everyone ready for the day."
+        icon={<TeamTitleIcon />}
+        primaryAction={<button className="nexops-hero-primary-button" type="button" onClick={() => { setInviteOpen(true); setInviteSent(false); }}>Invite team member</button>}
+        className="module-hero-card--quote"
+      />
 
       <section className="users-summary" aria-label="Team seat summary">
         <div className="users-summary__copy"><span className="users-summary__label">Team seats</span><strong>{assigned.length} of 8 assigned</strong><p>{8 - assigned.length} seats are ready for your next teammate.</p></div>

@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 
 import { dateRange, isScheduleAnchorDate, scheduleScopeLabel, scheduleViewLabel, visitToneClass } from "../NexOpsSchedulePage.tsx";
 
@@ -35,4 +36,11 @@ test("schedule anchor date accepts real calendar dates without relying on a nati
   assert.equal(isScheduleAnchorDate("2026-08-15"), true);
   assert.equal(isScheduleAnchorDate("2026-02-30"), false);
   assert.equal(isScheduleAnchorDate("08/15/2026"), false);
+});
+
+test("schedule inherits ModuleHeroCard through the shared roster template", async () => {
+  const source = await readFile(new URL("../NexOpsSchedulePage.tsx", import.meta.url), "utf8");
+
+  assert.match(source, /import \{ NexOpsDetailTemplate, NexOpsRosterTemplate \} from/);
+  assert.match(source, /<NexOpsRosterTemplate[\s\S]*title="Visits"/);
 });

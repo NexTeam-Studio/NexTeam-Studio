@@ -55,12 +55,20 @@ test("team controls use the persisted permission grid and profile preferences ar
   assert.match(source, /notificationPreferences: \{ \.\.\.current\.notificationPreferences/);
 });
 
-test("team and own-profile opening headers use the shared title treatment with matching icons", async () => {
+test("team uses the shared hero while own-profile retains its matching title icon", async () => {
   const [source, css] = await Promise.all([readFile(sourceUrl, "utf8"), readFile(cssUrl, "utf8")]);
 
-  assert.match(source, /users-page-title.*Team/);
+  assert.match(source, /<ModuleHeroCard[\s\S]*title="Team & Permissions"/);
   assert.match(source, /users-page-title.*My Profile/);
   assert.match(source, /function TeamTitleIcon/);
   assert.match(source, /function PersonTitleIcon/);
   assert.match(css, /\.users-page-title \{ display:flex/);
+});
+
+test("team roster uses the shared ModuleHeroCard with the standard primary action", async () => {
+  const source = await readFile(sourceUrl, "utf8");
+
+  assert.match(source, /import \{ ModuleHeroCard \} from ".*NexOpsBusinessTemplates"/);
+  assert.match(source, /<ModuleHeroCard[\s\S]*title="Team & Permissions"/);
+  assert.match(source, /primaryAction=\{<button className="nexops-hero-primary-button"/);
 });
