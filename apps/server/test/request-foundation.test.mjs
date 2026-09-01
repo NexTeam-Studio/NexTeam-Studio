@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import express from "express";
 import { ApprovalQueueService, InMemoryApprovalQueueRepository } from "@nexteam/core";
 import { MemoryNativeCrmRepository, NativeAdapter } from "@nexteam/providers";
+import { CompositeApprovalExecutor } from "../dist/approval/compositeExecutor.js";
+import { CommsApprovalExecutor } from "../dist/comms/approvalExecutor.js";
 import { CrmApprovalExecutor } from "../dist/crm/approvalExecutor.js";
 import { createCrmToolsWithOptions } from "../dist/crm/nexiTools.js";
 import { registerCrmRoutes } from "../dist/crm/routes.js";
@@ -24,7 +26,22 @@ function tenant() {
 test("request routes create, update, convert, archive, and reopen while preserving intake fields", async () => {
   const repository = new MemoryNativeCrmRepository();
   const adapter = new NativeAdapter(repository, "aquatrace");
-  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CrmApprovalExecutor(adapter));
+  const sentEmails = [];
+  const commsRail = {
+    tenantId: "aquatrace",
+    readAdapters: new Map(),
+    sendAdapter: {
+      mailbox: "TRANSACTIONAL",
+      async sendEmail(outbound) {
+        sentEmails.push(outbound);
+        return { id: `sent_${sentEmails.length}` };
+      }
+    }
+  };
+  const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CompositeApprovalExecutor([
+    { canExecute: (item) => item.execute.service === "comms" && item.execute.op === "sendEmail", executor: new CommsApprovalExecutor(commsRail) },
+    { canExecute: (item) => item.execute.service === "crm", executor: new CrmApprovalExecutor(adapter) }
+  ]));
   const app = express();
   app.use(express.json());
   registerCrmRoutes(app, {
@@ -33,6 +50,7 @@ test("request routes create, update, convert, archive, and reopen while preservi
     platformRepository: {
       listTenantUsers: async () => [{ id: "owner_1", tenantId: "aquatrace", displayName: "Chris", role: "OWNER", active: true, email: "owner@example.test" }]
     },
+    commsRail,
     env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
   });
 
@@ -90,6 +108,10 @@ test("request routes create, update, convert, archive, and reopen while preservi
     assert.equal(publicSubmissionBody.request.consent.sms, true);
     assert.equal(publicSubmissionBody.request.intake.fieldIndex.company_name, "Aquatrace Test Company");
     assert.equal(publicSubmissionBody.request.intake.fieldIndex.marketing_sms_consent, true);
+    assert.ok(publicSubmissionBody.request.notifications?.adminNotifiedAt, "the configured internal notification is sent through the approval rail");
+    assert.ok(publicSubmissionBody.request.notifications?.clientConfirmationAt, "the email-only client confirmation is sent through the approval rail");
+    assert.equal(sentEmails.length, 2, "public request submission sends one internal notification and one client confirmation");
+    assert.deepEqual(sentEmails.map((email) => email.to), [["service@aquatraceleak.com"], ["public-intake@example.test"]]);
     assert.ok(publicSubmissionBody.request.selectedClientId, "public submission links to a saved client immediately");
     const publicClient = (await repository.listClients("aquatrace")).find((client) => client.id === publicSubmissionBody.request.selectedClientId);
     assert.ok(publicClient, "the linked client is persisted in the tenant client database");

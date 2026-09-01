@@ -1055,7 +1055,9 @@ export async function notifyRequestCreated(
       request.propertyAddress ? `Address: ${request.propertyAddress.street1}, ${request.propertyAddress.city}, ${request.propertyAddress.province} ${request.propertyAddress.postalCode}` : "",
       `Request: ${request.narrative}`,
       matchLabel
-    ].filter(Boolean).join("\n")
+    ].filter(Boolean).join("\n"),
+    approvalQueue: automation.approvalQueue,
+    commsRail: automation.commsRail
   });
   const requestConfirmation = resolveTemplateMessage({
     settings,
@@ -1076,7 +1078,9 @@ export async function notifyRequestCreated(
         tenantId: request.tenantId,
         to: [request.email],
         subject: requestConfirmation.subject,
-        bodyText: requestConfirmation.bodyText
+        bodyText: requestConfirmation.bodyText,
+        approvalQueue: automation.approvalQueue,
+        commsRail: automation.commsRail
       })
       : {}
     : {};
