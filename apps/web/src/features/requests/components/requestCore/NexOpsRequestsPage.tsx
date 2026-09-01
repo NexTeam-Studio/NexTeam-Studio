@@ -128,7 +128,6 @@ interface RequestFormRecord {
 interface RequestFormResponse {
   ok: boolean;
   forms?: RequestFormRecord[];
-  availableFields?: RequestFieldDefinition[];
   error?: string;
 }
 
@@ -143,7 +142,6 @@ interface RequestMutationResponse {
   request?: ServiceRequestRecord;
   quote?: { id: string };
   job?: { id: string };
-  form?: RequestFormRecord;
   deletedRequestId?: string;
   preservedClientId?: string | null;
   error?: string;
@@ -162,15 +160,6 @@ interface NexOpsRequestsPageProps {
   initialFilter?: "all" | RequestStatus;
   captureIntent?: { batchId: string; mediaIds: string[] } | null;
   onCaptureRequestCreated?: (request: { id: string; clientName: string; selectedClientId?: string }) => Promise<void> | void;
-}
-
-interface FormDraft {
-  id?: string;
-  title: string;
-  slug: string;
-  intro: string;
-  active: boolean;
-  fieldKeys: string[];
 }
 
 const DEFAULT_VISIBILITY: RequestFieldVisibility = {
@@ -317,24 +306,6 @@ export function requestDominantAction(request: ServiceRequestRecord): {
   };
 }
 
-function absoluteShareUrl(form: RequestFormRecord): string {
-  if (form.sharePath?.startsWith("http")) {
-    return form.sharePath;
-  }
-  return `${window.location.origin}${form.sharePath ?? `/request-forms/${encodeURIComponent(form.tenantId)}/${encodeURIComponent(form.slug)}`}`;
-}
-
-function initialFormDraft(form?: RequestFormRecord): FormDraft {
-  return {
-    ...(form?.id ? { id: form.id } : {}),
-    title: form?.title ?? "",
-    slug: form?.slug ?? "",
-    intro: form?.intro ?? "",
-    active: form?.active ?? true,
-    fieldKeys: form?.fieldDefinitions.map((field) => field.key) ?? []
-  };
-}
-
 function prominentFieldValues(request: ServiceRequestRecord): RequestFieldValue[] {
   return request.intake.fieldValues.filter((field) => field.prominent || field.group === "safety");
 }
@@ -342,7 +313,6 @@ function prominentFieldValues(request: ServiceRequestRecord): RequestFieldValue[
 export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactElement {
   const [requests, setRequests] = useState<ServiceRequestRecord[]>([]);
   const [forms, setForms] = useState<RequestFormRecord[]>([]);
-  const [availableFields, setAvailableFields] = useState<RequestFieldDefinition[]>([]);
   const [statusMessage, setStatusMessage] = useState("Loading requests...");
   const [requestSearch, setRequestSearch] = useState("");
   const [requestFilter, setRequestFilter] = useState<"all" | RequestStatus>("all");
@@ -358,11 +328,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
   const [propertyMode, setPropertyMode] = useState<"existing_property" | "new_property">("existing_property");
   const [selectedPropertyId, setSelectedPropertyId] = useState("");
   const [fieldDraft, setFieldDraft] = useState<Record<string, string | boolean | string[]>>({});
-  const [fieldVisibility, setFieldVisibility] = useState<Record<string, RequestFieldVisibility>>({});
-  const [formDraft, setFormDraft] = useState<FormDraft>(() => initialFormDraft());
-  const [formStatus, setFormStatus] = useState("One library, multiple forms, each with its own share link and embed code.");
   const [actionBusy, setActionBusy] = useState("");
-  const [uploadingFieldKey, setUploadingFieldKey] = useState("");
 
   const selectedForm = useMemo(
     () => forms.find((form) => form.id === selectedFormId) ?? forms[0] ?? null,
@@ -433,14 +399,6 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
   }), [requests]);
   const selectedRequestAction = selectedRequest ? requestDominantAction(selectedRequest) : null;
 
-  const fieldGroups = useMemo(() => {
-    const groups = new Map<IntakeFieldGroup, RequestFieldDefinition[]>();
-    for (const field of availableFields) {
-      groups.set(field.group, [...(groups.get(field.group) ?? []), field]);
-    }
-    return groups;
-  }, [availableFields]);
-
   useEffect(() => {
     void refresh();
   }, [props.tenantId]);
@@ -454,25 +412,10 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
   useEffect(() => {
     if (!forms.length) {
       setSelectedFormId("");
-      setFormDraft(initialFormDraft());
       return;
     }
     setSelectedFormId((current) => current && forms.some((form) => form.id === current) ? current : forms[0]!.id);
-    setFormDraft((current) => current.id && forms.some((form) => form.id === current.id) ? current : initialFormDraft(forms[0]));
   }, [forms]);
-
-  useEffect(() => {
-    if (!selectedForm) {
-      return;
-    }
-    setFieldVisibility((current) => {
-      const next = { ...current };
-      for (const field of selectedForm.fieldDefinitions) {
-        next[field.key] = next[field.key] ?? DEFAULT_VISIBILITY;
-      }
-      return next;
-    });
-  }, [selectedForm]);
 
   useEffect(() => {
     if (!selectedClient || officeMode !== "existing_client") {
@@ -533,13 +476,11 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
       const nextForms = formsBody.forms ?? [];
       setRequests(nextRequests);
       setForms(nextForms);
-      setAvailableFields(formsBody.availableFields ?? []);
       setSelectedRequestId((current) => current && nextRequests.some((request) => request.id === current) ? current : "");
       setStatusMessage(nextRequests.length ? `${nextRequests.length} request${nextRequests.length === 1 ? "" : "s"} loaded.` : "No requests yet. First intake is on you.");
     } catch (error) {
       setRequests([]);
       setForms([]);
-      setAvailableFields([]);
       setSelectedRequestId("");
       setStatusMessage(error instanceof Error ? error.message : "Requests are unavailable.");
     }
@@ -589,55 +530,6 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
     setFieldDraft((current) => ({ ...current, [fieldKey]: value }));
   }
 
-  async function uploadRequestImages(field: RequestFieldDefinition, files: FileList | null): Promise<void> {
-    if (!files?.length) {
-      return;
-    }
-    const existing = Array.isArray(currentFieldValue(field)) ? [...currentFieldValue(field) as string[]] : [];
-    const maxItems = field.maxItems ?? 10;
-    const remaining = Math.max(0, maxItems - existing.length);
-    if (!remaining) {
-      setStatusMessage(`${field.label} already has the maximum ${maxItems} images.`);
-      return;
-    }
-    const nextFiles = Array.from(files).slice(0, remaining);
-    setUploadingFieldKey(field.key);
-    try {
-      const uploaded = [...existing];
-      for (const file of nextFiles) {
-        setStatusMessage(`Uploading ${uploaded.length + 1} of ${maxItems} for ${field.label.toLowerCase()}...`);
-        const fileBase64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(String(reader.result ?? ""));
-          reader.onerror = () => reject(new Error("Image upload read failed."));
-          reader.readAsDataURL(file);
-        });
-        const body = await fetch("/api/fielddocs/uploads", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            tenantId: props.tenantId,
-            filename: file.name,
-            mime: file.type || "image/jpeg",
-            fileBase64,
-            tags: ["request-intake"],
-            ...(file.type.startsWith("image/") ? { imageBase64: fileBase64, imageMime: file.type || "image/jpeg" } : {})
-          })
-        }).then((response) => response.json() as Promise<{ ok: boolean; media?: { id: string }; error?: string }>);
-        if (!body.ok || !body.media?.id) {
-          throw new Error(body.error ?? "Image upload failed.");
-        }
-        uploaded.push(body.media.id);
-        updateFieldValue(field.key, uploaded);
-      }
-      setStatusMessage(`${uploaded.length} image${uploaded.length === 1 ? "" : "s"} queued for ${field.label.toLowerCase()}.`);
-    } catch (error) {
-      setStatusMessage(error instanceof Error ? error.message : "Image upload failed.");
-    } finally {
-      setUploadingFieldKey("");
-    }
-  }
-
   async function createRequest(event: React.FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     if (!selectedForm) {
@@ -652,7 +544,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
     setStatusMessage("Saving request...");
     const fieldValues = selectedForm.fieldDefinitions.flatMap((field) => {
       const value = currentFieldValue(field);
-      const visibility = fieldVisibility[field.key] ?? DEFAULT_VISIBILITY;
+      const visibility = DEFAULT_VISIBILITY;
       if (field.type === "multi_image") {
         if (!Array.isArray(value) || !value.length) {
           return [];
@@ -701,38 +593,6 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
       props.onCrmMutation?.();
     } catch {
       setStatusMessage("Request create failed.");
-    } finally {
-      setActionBusy("");
-    }
-  }
-
-  async function saveForm(event: React.FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault();
-    setActionBusy("save-form");
-    setFormStatus(formDraft.id ? "Updating form..." : "Saving form...");
-    try {
-      const body = await fetch(formDraft.id ? `/api/crm/request-forms/${encodeURIComponent(formDraft.id)}` : "/api/crm/request-forms", {
-        method: formDraft.id ? "PATCH" : "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          tenantId: props.tenantId,
-          title: formDraft.title,
-          slug: formDraft.slug,
-          intro: formDraft.intro,
-          active: formDraft.active,
-          fieldKeys: formDraft.fieldKeys
-        })
-      }).then((response) => response.json() as Promise<RequestMutationResponse>);
-      if (!body.ok || !body.form) {
-        setFormStatus(body.error ?? "Request form could not be saved.");
-        return;
-      }
-      setFormStatus(`Saved ${body.form.title}.`);
-      setFormDraft(initialFormDraft());
-      await refresh();
-      setSelectedFormId(body.form.id);
-    } catch {
-      setFormStatus("Request form save failed.");
     } finally {
       setActionBusy("");
     }
@@ -794,15 +654,6 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
       setStatusMessage("Request action failed.");
     } finally {
       setActionBusy("");
-    }
-  }
-
-  async function copyText(value: string, successLabel: string): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(value);
-      setFormStatus(successLabel);
-    } catch {
-      setFormStatus("Clipboard blocked here. Copy it manually.");
     }
   }
 
@@ -878,234 +729,6 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
       metrics={undefined}
     >
       {!props.focusedRequestId ? <>
-      <div className="nexops-module-grid nexops-module-grid-wide nexops-roster-workflow-after">
-        <details className="nexops-quote-filtered-row expanded nexops-request-builder-card">
-          <summary>
-            <div className="nexops-density-disclosure-copy">
-              <p className="eyebrow">Office Intake</p>
-              <h2>Create a Request</h2>
-              <small>Open only when the office needs to enter a request by hand.</small>
-            </div>
-            <span className="nexops-density-disclosure-caret">Open</span>
-          </summary>
-          <div className="nexops-density-disclosure-body">
-            <form className="nexops-request-builder" onSubmit={(event) => void createRequest(event)}>
-            <div className="nexops-request-toggle-row">
-              <button className={officeMode === "new_client" ? "active" : ""} type="button" onClick={() => setOfficeMode("new_client")}>New Client</button>
-              <button className={officeMode === "existing_client" ? "active" : ""} type="button" onClick={() => setOfficeMode("existing_client")}>Existing Client</button>
-            </div>
-            <div className="nexops-request-builder-grid">
-              <label className="nexops-field">
-                <span>Request Form</span>
-                <select value={selectedForm?.id ?? ""} onChange={(event) => setSelectedFormId(event.target.value)}>
-                  {forms.map((form) => <option value={form.id} key={form.id}>{form.title}</option>)}
-                </select>
-              </label>
-              {officeMode === "existing_client" ? (
-                <>
-                  <label className="nexops-field">
-                    <span>Existing Client</span>
-                    <select value={selectedClientId} onChange={(event) => setSelectedClientId(event.target.value)}>
-                      <option value="">Select Client</option>
-                      {props.clients.map((client) => <option value={client.id} key={client.id}>{clientDisplayName(client)}</option>)}
-                    </select>
-                  </label>
-                  <label className="nexops-field">
-                    <span>Property Handling</span>
-                    <select value={propertyMode} onChange={(event) => setPropertyMode(event.target.value as "existing_property" | "new_property")}>
-                      <option value="existing_property">Use Existing Property</option>
-                      <option value="new_property">Capture New Property</option>
-                    </select>
-                  </label>
-                  {propertyMode === "existing_property" ? (
-                    <label className="nexops-field">
-                      <span>Existing Property</span>
-                      <select value={selectedPropertyId} onChange={(event) => setSelectedPropertyId(event.target.value)}>
-                        <option value="">Select Property</option>
-                        {existingProperties.map((property) => <option value={property.id} key={property.id}>{property.siteName || property.label || property.address.street1}</option>)}
-                      </select>
-                    </label>
-                  ) : null}
-                </>
-              ) : null}
-            </div>
-
-            {selectedForm ? (
-              <div className="nexops-request-form-fields">
-                {selectedForm.fieldDefinitions.map((field) => (
-                  <label className={`nexops-field ${field.prominent ? "nexops-request-prominent" : ""}`} key={field.key}>
-                    <span>{field.label}</span>
-                    {field.type === "textarea" ? (
-                      <textarea
-                        rows={4}
-                        value={String(currentFieldValue(field))}
-                        onChange={(event) => updateFieldValue(field.key, event.target.value)}
-                      />
-                    ) : field.type === "multi_image" ? (
-                      <div className="nexops-request-upload-field">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          onChange={(event) => {
-                            void uploadRequestImages(field, event.target.files);
-                            event.currentTarget.value = "";
-                          }}
-                        />
-                        <small>
-                          {Array.isArray(currentFieldValue(field))
-                            ? `${(currentFieldValue(field) as string[]).length} of ${field.maxItems ?? 10} uploaded`
-                            : `0 of ${field.maxItems ?? 10} uploaded`}
-                        </small>
-                        {Array.isArray(currentFieldValue(field)) && (currentFieldValue(field) as string[]).length ? (
-                          <div className="nexops-request-upload-pill-row">
-                            {(currentFieldValue(field) as string[]).map((mediaId, index) => (
-                              <button
-                                className="nexops-request-upload-pill"
-                                type="button"
-                                key={mediaId}
-                                onClick={() => updateFieldValue(field.key, (currentFieldValue(field) as string[]).filter((entry) => entry !== mediaId))}
-                              >
-                                Image {index + 1}
-                              </button>
-                            ))}
-                          </div>
-                        ) : null}
-                        {uploadingFieldKey === field.key ? <small>Uploading now...</small> : null}
-                      </div>
-                    ) : field.type === "select" ? (
-                      <select value={String(currentFieldValue(field))} onChange={(event) => updateFieldValue(field.key, event.target.value)}>
-                        <option value="">Select</option>
-                        {field.options?.map((option) => <option value={option} key={option}>{titleCaseUiLabel(option)}</option>)}
-                      </select>
-                    ) : field.type === "boolean" ? (
-                      <div className="nexops-check-field inline">
-                        <input
-                          checked={Boolean(currentFieldValue(field))}
-                          type="checkbox"
-                          onChange={(event) => updateFieldValue(field.key, event.target.checked)}
-                        />
-                        <span>{Boolean(currentFieldValue(field)) ? "Flagged" : "Not flagged"}</span>
-                      </div>
-                    ) : field.key === "salesperson_user_id" ? (
-                      <select value={String(currentFieldValue(field))} onChange={(event) => updateFieldValue(field.key, event.target.value)}>
-                        <option value="">Assign Later</option>
-                        {activeTenantUsers.map((user) => (
-                          <option value={user.id} key={user.id}>{user.displayName} ({titleCaseUiLabel(user.role)})</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        type={field.type === "email" ? "email" : field.type === "phone" ? "tel" : "text"}
-                        value={String(currentFieldValue(field))}
-                        onChange={(event) => updateFieldValue(field.key, event.target.value)}
-                      />
-                    )}
-                    {field.helpText ? <small>{field.helpText}</small> : null}
-                    <div className="nexops-request-visibility-row">
-                      {(["request", "quote", "job", "visit", "invoice"] as RequestSurface[]).map((surface) => (
-                        <label key={`${field.key}-${surface}`}>
-                          <input
-                            checked={(fieldVisibility[field.key] ?? DEFAULT_VISIBILITY)[surface]}
-                            type="checkbox"
-                            onChange={(event) => setFieldVisibility((current) => ({
-                              ...current,
-                              [field.key]: {
-                                ...(current[field.key] ?? DEFAULT_VISIBILITY),
-                                [surface]: event.target.checked
-                              }
-                            }))}
-                          />
-                          <span>{titleCaseUiLabel(surface)}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </label>
-                ))}
-              </div>
-            ) : (
-              <p>Create a form in the library first so the office and website can use the same intake definitions.</p>
-            )}
-              <div className="nexops-inline-actions">
-                <button type="submit" disabled={Boolean(actionBusy) || !selectedForm}>
-                  {actionBusy === "create-request" ? "Saving..." : "Create Request"}
-                </button>
-                <small>{statusMessage}</small>
-              </div>
-            </form>
-          </div>
-        </details>
-
-        <details className="nexops-quote-filtered-row expanded nexops-request-library-card">
-          <summary>
-            <div className="nexops-density-disclosure-copy">
-              <p className="eyebrow">Multi-Form Library</p>
-              <h2>Website Intake Forms</h2>
-              <small>{formStatus}</small>
-            </div>
-            <span className="nexops-density-disclosure-caret">Open</span>
-          </summary>
-          <div className="nexops-density-disclosure-body">
-            <div className="nexops-request-library-list">
-            {forms.map((form) => (
-              <div className="nexops-request-library-item" key={form.id}>
-                <div>
-                  <strong>{form.title}</strong>
-                  <small>{form.active ? "Active" : "Inactive"} - {form.fieldDefinitions.length} fields</small>
-                </div>
-                <div className="nexops-inline-actions">
-                  <button type="button" onClick={() => setFormDraft(initialFormDraft(form))}>Edit</button>
-                  <button type="button" onClick={() => void copyText(absoluteShareUrl(form), `Copied share link for ${form.title}.`)}>Copy Link</button>
-                  <button type="button" onClick={() => void copyText(form.embedCode ?? `<iframe src="${absoluteShareUrl(form)}" loading="lazy"></iframe>`, `Copied embed code for ${form.title}.`)}>Copy Embed</button>
-                </div>
-                <a href={absoluteShareUrl(form)} rel="noreferrer" target="_blank">{absoluteShareUrl(form)}</a>
-              </div>
-            ))}
-            </div>
-
-            <form className="nexops-request-library-editor" onSubmit={(event) => void saveForm(event)}>
-              <div className="nexops-request-library-editor-head">
-                <h3>{formDraft.id ? "Edit Form" : "New Form"}</h3>
-                {formDraft.id ? <button type="button" onClick={() => setFormDraft(initialFormDraft())}>Clear</button> : null}
-              </div>
-              <div className="nexops-request-builder-grid">
-                <label className="nexops-field"><span>Title</span><input value={formDraft.title} onChange={(event) => setFormDraft({ ...formDraft, title: event.target.value })} /></label>
-                <label className="nexops-field"><span>Slug</span><input value={formDraft.slug} onChange={(event) => setFormDraft({ ...formDraft, slug: event.target.value })} /></label>
-              </div>
-              <label className="nexops-field"><span>Intro</span><textarea rows={3} value={formDraft.intro} onChange={(event) => setFormDraft({ ...formDraft, intro: event.target.value })} /></label>
-              <label className="nexops-check-field"><input checked={formDraft.active} type="checkbox" onChange={(event) => setFormDraft({ ...formDraft, active: event.target.checked })} /> Form Is Active</label>
-              <div className="nexops-request-library-field-groups">
-                {[...fieldGroups.entries()].map(([group, fields]) => (
-                  <section key={group}>
-                    <h4>{titleCaseUiLabel(group)}</h4>
-                    <div className="nexops-request-library-field-list">
-                      {fields.map((field) => (
-                        <label className="nexops-check-field" key={field.key}>
-                          <input
-                            checked={formDraft.fieldKeys.includes(field.key)}
-                            type="checkbox"
-                            onChange={(event) => setFormDraft((current) => ({
-                              ...current,
-                              fieldKeys: event.target.checked
-                                ? [...current.fieldKeys, field.key]
-                                : current.fieldKeys.filter((key) => key !== field.key)
-                            }))}
-                          />
-                          <span>{field.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </section>
-                ))}
-              </div>
-              <div className="nexops-inline-actions">
-                <button type="submit" disabled={Boolean(actionBusy)}>{actionBusy === "save-form" ? "Saving..." : formDraft.id ? "Save Form" : "Create Form"}</button>
-              </div>
-            </form>
-          </div>
-        </details>
-      </div>
-
       <div className="nexops-roster-workflow-stack" ref={requestRosterAnchorRef}>
         <NexOpsRosterSurface ariaLabel="Search and filter requests" searchTitle="Search Requests" resultNoun="Request" resultCount={filteredRequests.length} search={<label className="nexops-quote-roster-search"><span className="sr-only">Search Requests</span><input placeholder="Search Requests" value={requestSearch} onChange={(event) => setRequestSearch(event.target.value)} /></label>} filter={<button className="nexops-jobs-filter-pill nexops-quote-filter-trigger" type="button" aria-expanded={requestFilterOpen} onClick={() => setRequestFilterOpen((current) => !current)}><span className="nexops-quote-filter-icon" aria-hidden="true">☷</span><span className="nexops-quote-filter-label">Filter</span></button>} filterOptions={requestFilterOpen ? <div className="nexops-quote-filter-options" aria-label="Request status filters">{REQUEST_FILTERS.filter((filter) => filter.value !== "all").map((filter) => <button key={filter.value} type="button" role="radio" aria-checked={requestFilter === filter.value} className={`nexops-jobs-filter-pill${requestFilter === filter.value ? " active" : ""}`} onClick={() => setRequestFilter(filter.value)}><span>{filter.label}</span><small>{requestCounts[filter.value]}</small></button>)}</div> : undefined} empty={!filteredRequests.length ? <div className="nexops-quote-filtered-empty"><h2>No Requests Match This View</h2><p>Change the search or status filter to see requests.</p></div> : undefined}>{filteredRequests.map((request) => { const expanded = request.id === selectedRequest?.id; return <article className={`nexops-quote-filtered-row${expanded ? " expanded" : ""}`} key={request.id}><button className="nexops-quote-filtered-identity-banner" type="button" aria-expanded={expanded} onClick={() => setSelectedRequestId(expanded ? "" : request.id)}><span className="nexops-quote-filtered-identity"><strong>{request.clientName}</strong><small>{request.subject}</small></span></button>{expanded ? <div className="nexops-quote-filtered-details"><span className="nexops-quote-filtered-title" data-label="Request">{request.subject}</span><span className="nexops-quote-filtered-updated" data-label="Service Location">{formatAddress(request.propertyAddress) || request.email || request.phone || requestSourceLabel(request.source)}</span><span className="nexops-quote-filtered-status" data-label="Status"><mark>{requestStatusLabel(request.status)}</mark></span><span className="nexops-quote-filtered-activity" data-label="Request Record"><small>{requestSourceLabel(request.source)}</small><button className="nexops-quote-filtered-open" type="button" onClick={() => openRequestDetail(request.id)}>Open Request <span aria-hidden="true">→</span></button></span></div> : null}</article>; })}</NexOpsRosterSurface>
       </div>
@@ -1202,12 +825,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
 
             </div>
           </NexOpsDetailTemplate>
-          ) : (
-            <div className="nexops-client-empty">
-              <h2>No Request Selected</h2>
-              <p>Pick a request to review the exact-match rule, confirmation timestamps, and field-by-field downstream visibility.</p>
-            </div>
-          )}
+          ) : null}
         </div>
     </NexOpsRosterTemplate>
   );

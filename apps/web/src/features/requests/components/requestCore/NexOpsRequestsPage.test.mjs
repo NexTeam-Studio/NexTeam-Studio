@@ -27,17 +27,17 @@ test("Requests uses the shared roster and detail templates", () => {
   assert.doesNotMatch(source, /Backfill Legacy Leads/);
   assert.doesNotMatch(source, /Downstream Field Visibility/);
   assert.doesNotMatch(source, /nexops-density-inline-facts/);
+  assert.doesNotMatch(source, /Office Intake/);
+  assert.doesNotMatch(source, /Website Intake Forms/);
+  assert.doesNotMatch(source, /No Request Selected/);
 });
 
 test("Requests uses Title Case for named interface areas and controls", () => {
   for (const label of [
-    "Office Intake",
-    "Create a Request",
+    "Create Request",
     "New Client",
     "Existing Client",
     "Request Form",
-    "Multi-Form Library",
-    "Website Intake Forms",
     "Search Requests",
     "Request Detail",
     "Next Office Move"
@@ -47,6 +47,5 @@ test("Requests uses Title Case for named interface areas and controls", () => {
 });
 
 test("Requests keeps explanatory copy in sentence case", () => {
-  assert.ok(source.includes("Open only when the office needs to enter a request by hand."));
   assert.ok(source.includes("Capture, review, and move verified service requests into quotes or jobs without losing their client and property context."));
 });
