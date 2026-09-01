@@ -584,7 +584,6 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
           title="Settings"
           detail="Configure the business rules, documents, team access, and client experience your office uses every day."
           icon={<NexOpsNavGlyph module="settings" />}
-          primaryAction={<button className="nexops-hero-primary-button" type="button" onClick={() => openSettingsArea("company")}>Open Company Settings</button>}
           className="module-hero-card--quote"
         />
         <nav className="nexops-settings-navigation-sections" aria-label="Settings areas">
