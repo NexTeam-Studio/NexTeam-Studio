@@ -381,6 +381,7 @@ export function NexOpsSchedulePage(props: {
   const [jobOptions, setJobOptions] = useState<JobSummary[]>([]);
   const [status, setStatus] = useState("Loading schedule...");
   const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>([]);
+  const [scheduleResultsActive, setScheduleResultsActive] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
   const [composerStatus, setComposerStatus] = useState("");
   const [composerJobId, setComposerJobId] = useState("");
@@ -933,6 +934,7 @@ export function NexOpsSchedulePage(props: {
           searchTitle="Schedule Visits"
           resultNoun="Visit"
           resultCount={workspace?.visits.length ?? 0}
+          showResults={scheduleResultsActive}
           search={<div className="nexops-schedule-toolbar">
           <div className="nexops-home-filter-row" role="tablist" aria-label="Schedule views">
             {(["day", "week", "month", "list"] as const).map((candidate) => (
@@ -940,7 +942,7 @@ export function NexOpsSchedulePage(props: {
                 key={candidate}
                 className={candidate === view ? "active" : ""}
                 type="button"
-                onClick={() => setView(candidate)}
+                onClick={() => { setScheduleResultsActive(true); setView(candidate); }}
               >
                 {scheduleViewLabel(candidate)}
               </button>
@@ -953,13 +955,13 @@ export function NexOpsSchedulePage(props: {
                   key={candidate}
                   className={candidate === scope ? "active" : ""}
                   type="button"
-                  onClick={() => setScope(candidate)}
+                  onClick={() => { setScheduleResultsActive(true); setScope(candidate); }}
                 >
                   {scheduleScopeLabel(candidate)}
                 </button>
               ))}
             </div>
-            <input aria-label="Schedule anchor date" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" value={anchorDateDraft} onChange={(event) => setAnchorDateDraft(event.target.value)} onBlur={commitAnchorDate} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); commitAnchorDate(); event.currentTarget.blur(); } }} />
+            <input aria-label="Schedule anchor date" type="text" inputMode="numeric" placeholder="YYYY-MM-DD" value={anchorDateDraft} onChange={(event) => { setScheduleResultsActive(true); setAnchorDateDraft(event.target.value); }} onBlur={commitAnchorDate} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); commitAnchorDate(); event.currentTarget.blur(); } }} />
             {props.role !== "TECHNICIAN" ? (
               <details className="nexops-schedule-team-filter">
                 <summary>Team {selectedTeamIds.length ? `(${selectedTeamIds.length})` : "(all)"}</summary>
@@ -969,16 +971,16 @@ export function NexOpsSchedulePage(props: {
                       <input
                         type="checkbox"
                         checked={selectedTeamIds.includes(member.id)}
-                        onChange={() => setSelectedTeamIds((current) =>
+                        onChange={() => { setScheduleResultsActive(true); setSelectedTeamIds((current) =>
                           current.includes(member.id)
                             ? current.filter((value) => value !== member.id)
                             : [...current, member.id]
-                        )}
+                        ); }}
                       />
                       <span>{member.name}</span>
                     </label>
                   ))}
-                  <button type="button" onClick={() => setSelectedTeamIds([])}>Show All</button>
+                  <button type="button" onClick={() => { setScheduleResultsActive(true); setSelectedTeamIds([]); }}>Show All</button>
                 </div>
               </details>
             ) : null}

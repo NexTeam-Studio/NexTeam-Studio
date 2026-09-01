@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 /** Complete, authoritative shared hero-quote rotation. */
 export const HERO_QUOTES: Array<{ text: string; author: string }> = [
@@ -250,18 +250,35 @@ export function NexOpsRosterSurface(props: {
   filterOptions?: React.ReactNode;
   resultCount: number;
   resultNoun: string;
+  /** Results remain hidden until a consuming page has an active query or filter. */
+  showResults?: boolean;
   children: React.ReactNode;
   empty?: React.ReactNode;
 }): React.ReactElement {
+  const [hasResultsQuery, setHasResultsQuery] = useState(false);
+  const resultsVisible = props.showResults ?? hasResultsQuery;
+
+  function synchronizeResultsVisibility(event: React.SyntheticEvent<HTMLElement>): void {
+    const surface = event.currentTarget;
+    window.requestAnimationFrame(() => {
+      const hasSearchText = Array.from(surface.querySelectorAll<HTMLInputElement>("input[type=search], input[type=text]"))
+        .some((input) => input.value.trim().length > 0);
+      const hasSelectedNativeFilter = Array.from(surface.querySelectorAll<HTMLSelectElement>("select"))
+        .some((select) => Boolean(select.value) && select.value !== "all");
+      const hasSelectedButtonFilter = Boolean(surface.querySelector('[role="radio"][aria-checked="true"], [role="checkbox"][aria-checked="true"]'));
+      setHasResultsQuery(hasSearchText || hasSelectedNativeFilter || hasSelectedButtonFilter);
+    });
+  }
+
   return (
     <>
-      <section className="nexops-business-hero module-hero-card--quote nexops-quote-roster-filters" aria-label={props.ariaLabel}>
+      <section className="nexops-business-hero module-hero-card--quote nexops-quote-roster-filters" aria-label={props.ariaLabel} onInputCapture={synchronizeResultsVisibility} onChangeCapture={synchronizeResultsVisibility} onClickCapture={synchronizeResultsVisibility}>
         <h2>{props.searchTitle}</h2>
         {props.search}
         {props.filter ?? null}
         {props.filterOptions}
       </section>
-      <section className="nexops-quote-filtered-roster" aria-label={`${props.resultNoun} results`}>
+      {!resultsVisible ? null : <section className="nexops-quote-filtered-roster" aria-label={`${props.resultNoun} results`}>
         <div className="nexops-quote-filtered-roster-heading">
           <h2>{props.resultCount} {props.resultCount === 1 ? "Result" : "Results"}</h2>
         </div>
@@ -269,7 +286,7 @@ export function NexOpsRosterSurface(props: {
           <div className="nexops-quote-filtered-list">{props.children}</div>
           {props.empty}
         </div>
-      </section>
+      </section>}
     </>
   );
 }

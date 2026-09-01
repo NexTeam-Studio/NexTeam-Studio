@@ -44,4 +44,7 @@ test("schedule inherits ModuleHeroCard through the shared roster template", asyn
   assert.match(source, /import \{ NexOpsDetailTemplate, NexOpsRosterSurface, NexOpsRosterTemplate \} from/);
   assert.match(source, /<NexOpsRosterTemplate[\s\S]*title="Visits"/);
   assert.match(source, /<NexOpsRosterSurface[\s\S]*searchTitle="Schedule Visits"/);
+  assert.match(source, /showResults=\{scheduleResultsActive\}/);
+  assert.match(source, /setScheduleResultsActive\(true\); setView\(candidate\)/);
+  assert.match(source, /setScheduleResultsActive\(true\); setScope\(candidate\)/);
 });

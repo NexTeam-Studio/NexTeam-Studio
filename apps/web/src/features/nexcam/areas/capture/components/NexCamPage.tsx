@@ -85,6 +85,7 @@ export function NexCamPage(props: { auth: Auth | null; user: User }) {
         filter={<button className="nexops-quote-filter-trigger" type="button" onClick={() => setModule("overview")}><span className="nexops-quote-filter-label">Field Checklist</span></button>}
         resultCount={resultCount}
         resultNoun={resultNoun}
+        showResults
       >
         {content}
       </NexOpsRosterSurface>

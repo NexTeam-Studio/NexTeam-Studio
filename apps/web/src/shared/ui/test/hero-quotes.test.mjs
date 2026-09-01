@@ -25,3 +25,13 @@ test("ModuleHeroCard renders the complete centered approved quote rotation", () 
   assert.match(styles, /@media \(max-width: 700px\) \{[\s\S]*\.nexops-business-metrics \{ grid-template-columns: 1fr; \}/);
   assert.doesNotMatch(styles, /nexops-quote-primary-button/);
 });
+
+test("NexOpsRosterSurface keeps the result card empty until a real query or filter is active", () => {
+  assert.match(template, /const \[hasResultsQuery, setHasResultsQuery\] = useState\(false\)/);
+  assert.match(template, /const resultsVisible = props\.showResults \?\? hasResultsQuery/);
+  assert.match(template, /onInputCapture=\{synchronizeResultsVisibility\}/);
+  assert.match(template, /input\[type=search\], input\[type=text\]/);
+  assert.match(template, /select\.value !== "all"/);
+  assert.match(template, /\[role="radio"\]\[aria-checked="true"\]/);
+  assert.match(template, /\{!resultsVisible \? null : <section className="nexops-quote-filtered-roster"/);
+});
