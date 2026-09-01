@@ -54,12 +54,17 @@ test("Settings landing is a Quotes-style hero plus all fifteen distinct routed n
   ];
   assert.match(page, /const SETTINGS_AREAS: Array/);
   assert.equal((page.match(/\{ id: "/g) ?? []).length, 15);
+  assert.equal((page.match(/\{ label: ".*?", areas: \[/g) ?? []).length, 6);
   for (const label of labels) assert.match(page, new RegExp(`label: "${label.replace(/[&]/g, "\\&")}"`));
   assert.match(page, /path: "\/nexops\/settings\/company"/);
   assert.match(page, /path: "\/nexops\/settings\/integrations"/);
   assert.match(page, /path: "\/nexops\/users"/);
   assert.match(page, /function openSettingsArea/);
   assert.match(page, /window\.history\.pushState\(\{\}, "", target\.path\)/);
+  assert.match(page, /className="nexops-settings-navigation-sections"/);
+  assert.match(page, /className="nexops-settings-navigation-section"/);
+  assert.match(page, /label: "Business Setup", areas: \["company", "tax", "custom-fields", "products-services"\]/);
+  assert.match(page, /label: "Automation & Integrations", areas: \["automations", "integrations"\]/);
   assert.match(page, /className="nexops-settings-navigation-grid"/);
   assert.match(page, /className="nexops-settings-navigation-card"/);
   assert.match(page, /--nexops-settings-tile-color/);
@@ -67,9 +72,12 @@ test("Settings landing is a Quotes-style hero plus all fifteen distinct routed n
   assert.match(page, /detail: "Rates & Rules"/);
   assert.match(page, /<ModuleHeroCard[\s\S]*className="module-hero-card--quote"/);
   assert.match(styles, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
-  assert.match(styles, /place-items: center/);
+  assert.match(styles, /justify-items: center/);
+  assert.match(styles, /align-items: start/);
   assert.match(styles, /text-align: center/);
   assert.match(styles, /var\(--nexops-brand-gradient, var\(--nexteam-gradient\)\) border-box/);
+  assert.match(styles, /grid-template-rows: 38px minmax\(2\.3em, auto\) minmax\(2\.7em, auto\)/);
+  assert.match(styles, /background: linear-gradient\(135deg, rgba\(212, 255, 32, \.10\), rgba\(37, 210, 56, \.08\)\)/);
   assert.match(styles, /\.nexops-settings-navigation-card small \{[\s\S]*font-size: 10px/);
 });
 

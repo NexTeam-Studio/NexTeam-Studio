@@ -32,6 +32,15 @@ const SETTINGS_AREAS: Array<{ id: SettingsAreaId; label: string; detail: string;
   { id: "integrations", label: "Integrations", detail: "Connected App Slots", icon: "↗", color: "#555f76", path: "/nexops/settings/integrations" }
 ];
 
+const SETTINGS_SECTIONS: Array<{ label: string; areas: SettingsAreaId[] }> = [
+  { label: "Business Setup", areas: ["company", "tax", "custom-fields", "products-services"] },
+  { label: "Team & Permissions", areas: ["team-permissions"] },
+  { label: "Operations", areas: ["checklists-reports", "completion-requirements", "requests-booking", "schedule"] },
+  { label: "Documents & Client-Facing", areas: ["document-design", "templates", "nexportal"] },
+  { label: "Financial", areas: ["payments"] },
+  { label: "Automation & Integrations", areas: ["automations", "integrations"] }
+];
+
 function settingsAreaFromPath(pathname: string): SettingsAreaId | null {
   return SETTINGS_AREAS.find((area) => area.path === pathname)?.id ?? null;
 }
@@ -576,19 +585,28 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
           primaryAction={<button className="nexops-hero-primary-button" type="button" onClick={() => openSettingsArea("company")}>Open Company Settings</button>}
           className="module-hero-card--quote"
         />
-        <nav className="nexops-settings-navigation-grid" aria-label="Settings areas">
-          {SETTINGS_AREAS.map((area) => (
-            <button
-              className="nexops-settings-navigation-card"
-              type="button"
-              key={area.id}
-              style={{ "--nexops-settings-tile-color": area.color } as React.CSSProperties}
-              onClick={() => openSettingsArea(area.id)}
-            >
-              <span className="nexops-settings-navigation-card__icon" aria-hidden="true">{area.icon}</span>
-              <strong>{area.label}</strong>
-              <small>{area.detail}</small>
-            </button>
+        <nav className="nexops-settings-navigation-sections" aria-label="Settings areas">
+          {SETTINGS_SECTIONS.map((section) => (
+            <section className="nexops-settings-navigation-section" key={section.label} aria-labelledby={`settings-section-${section.label}`}>
+              <h2 id={`settings-section-${section.label}`}>{section.label}</h2>
+              <div className="nexops-settings-navigation-grid">
+                {section.areas.map((id) => {
+                  const area = SETTINGS_AREAS.find((candidate) => candidate.id === id);
+                  if (!area) return null;
+                  return <button
+                    className="nexops-settings-navigation-card"
+                    type="button"
+                    key={area.id}
+                    style={{ "--nexops-settings-tile-color": area.color } as React.CSSProperties}
+                    onClick={() => openSettingsArea(area.id)}
+                  >
+                    <span className="nexops-settings-navigation-card__icon" aria-hidden="true">{area.icon}</span>
+                    <strong>{area.label}</strong>
+                    <small>{area.detail}</small>
+                  </button>;
+                })}
+              </div>
+            </section>
           ))}
         </nav>
       </section>
