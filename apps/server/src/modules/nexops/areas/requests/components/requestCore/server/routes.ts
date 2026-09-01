@@ -139,6 +139,11 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
         formId: form.id,
         formSlug: form.slug,
         allowIncomplete: false,
+        fieldDefinitions: form.fieldDefinitions,
+        consent: {
+          sms: Boolean(String(record.phone ?? "").trim()),
+          marketing: record.marketing_email_consent === true || record.marketing_email_consent === "true" || record.marketing_email_consent === "on"
+        },
         fieldValues: publicFormSubmissionValues(form, record)
       });
       if ((req.headers["content-type"] ?? "").toString().includes("application/json")) {

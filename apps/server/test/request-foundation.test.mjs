@@ -49,6 +49,47 @@ test("request routes create, update, convert, archive, and reopen while preservi
     const formsBody = await formsResponse.json();
     assert.equal(formsBody.ok, true);
     assert.equal(formsBody.forms.length >= 1, true);
+    const publicFormResponse = await fetch(`${base}/request-forms/aquatrace/service-request`);
+    const publicFormHtml = await publicFormResponse.text();
+    assert.equal(publicFormResponse.ok, true);
+    assert.match(publicFormHtml, /Contact Details/);
+    assert.match(publicFormHtml, /Is your pool inground or above ground\?/);
+    assert.match(publicFormHtml, /Swimming Pool \/ Spa Combo/);
+    assert.match(publicFormHtml, /0 of 10 uploaded/);
+    assert.match(publicFormHtml, /aquatraceleak\.com\/privacy-policy/);
+    assert.match(publicFormHtml, /checked/);
+
+    const publicSubmissionResponse = await fetch(`${base}/api/request-forms/aquatrace/service-request/submit`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        first_name: "Public",
+        last_name: "Intake",
+        company_name: "Aquatrace Test Company",
+        email: "public-intake@example.test",
+        phone: "8645551212",
+        marketing_email_consent: true,
+        marketing_sms_consent: true,
+        property_street1: "100 Test Lane",
+        property_city: "Fair Play",
+        property_province: "South Carolina",
+        property_postal_code: "29643",
+        pool_installation_type: "Inground",
+        pool_type: "Residential",
+        pool_construction_type: "Fiberglass",
+        pool_configuration: "Swimming Pool Only",
+        water_loss_rate: "1\" or less daily",
+        issue_summary: "Public form regression submission.",
+        referral_source: "Search"
+      })
+    });
+    const publicSubmissionBody = await publicSubmissionResponse.json();
+    assert.equal(publicSubmissionResponse.status, 201);
+    assert.equal(publicSubmissionBody.request.clientName, "Public Intake");
+    assert.equal(publicSubmissionBody.request.consent.marketing, true);
+    assert.equal(publicSubmissionBody.request.consent.sms, true);
+    assert.equal(publicSubmissionBody.request.intake.fieldIndex.company_name, "Aquatrace Test Company");
+    assert.equal(publicSubmissionBody.request.intake.fieldIndex.marketing_sms_consent, true);
 
     const requestResponse = await fetch(`${base}/api/crm/requests`, {
       method: "POST",

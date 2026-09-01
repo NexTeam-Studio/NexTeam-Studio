@@ -2,7 +2,7 @@ import { RailError, type EventBus, type RequestForm, type ServiceRequest } from 
 import type { NativeCrmRepository } from "@nexteam/providers";
 import type { z } from "zod";
 import type { CrmRouteDeps } from "../../../../../shared/runtime/routeComposition.js";
-import { buildServiceRequest, notifyRequestCreated, requestFormEmbedCode, requestFormSharePath } from "./requestFoundation.js";
+import { buildServiceRequest, notifyRequestCreated, requestFormEmbedCode, requestFormSharePath, type RequestBuildInput } from "./requestFoundation.js";
 import type { createRequestBodySchema } from "./routeSchemas.js";
 
 export function sanitizeFieldVisibility(visibility?: {
@@ -36,7 +36,7 @@ export function createRequestRouteSupport(input: {
     return request;
   }
 
-  async function createAndNotifyRequest(request: z.infer<typeof createRequestBodySchema>): Promise<ServiceRequest> {
+  async function createAndNotifyRequest(request: z.infer<typeof createRequestBodySchema> & Pick<RequestBuildInput, "fieldDefinitions">): Promise<ServiceRequest> {
     const tenantId = request.tenantId ?? input.defaultTenantId(input.env);
     const repository = input.repositoryForTenant();
     const built = await buildServiceRequest(repository, {
@@ -51,6 +51,7 @@ export function createRequestRouteSupport(input: {
       consent: request.consent,
       allowIncomplete: request.allowIncomplete,
       customFields: request.customFields,
+      fieldDefinitions: request.fieldDefinitions,
       fieldValues: request.fieldValues.map((field) => ({
         key: field.key,
         value: field.value,

@@ -32,6 +32,7 @@ export interface RequestBuildInput {
   consent?: { email?: boolean | undefined; sms?: boolean | undefined; marketing?: boolean | undefined } | undefined;
   allowIncomplete?: boolean | undefined;
   customFields?: Record<string, string | number | boolean> | undefined;
+  fieldDefinitions?: IntakeFieldDefinition[] | undefined;
   fieldValues: Array<{
     key: string;
     value: string | number | boolean | string[];
@@ -195,6 +196,8 @@ export const REQUEST_FIELD_CATALOG: IntakeFieldDefinition[] = [
 ];
 
 const REQUEST_FIELD_MAP = new Map(REQUEST_FIELD_CATALOG.map((field) => [field.key, field]));
+const AQUATRACE_REQUEST_FORM_VERSION = "aquatrace-jobber-service-request-v1";
+const US_STATES = ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"];
 
 function now(): string {
   return new Date().toISOString();
@@ -217,6 +220,9 @@ export function requestFormEmbedCode(form: Pick<RequestForm, "tenantId" | "slug"
 
 export function defaultRequestForms(tenantId: string): RequestForm[] {
   const createdAt = now();
+  if (tenantId === "aquatrace") {
+    return [aquatraceServiceRequestForm(createdAt)];
+  }
   return [
     {
       id: `request_form_${tenantId}_service_request`,
@@ -261,8 +267,61 @@ export function defaultRequestForms(tenantId: string): RequestForm[] {
   ];
 }
 
+function aquatraceServiceRequestForm(createdAt: string): RequestForm {
+  const field = (key: string, label: string, type: IntakeFieldDefinition["type"], sectionId: string, options?: string[], required = false, layout: "full" | "half" | "third" = "full", extras: Partial<IntakeFieldDefinition> = {}): IntakeFieldDefinition => ({ key, label, type, group: sectionId === "address" ? "property" : sectionId === "service" ? "service" : sectionId === "uploads" ? "notes" : "contact", sectionId, ...(options ? { options } : {}), ...(required ? { required: true } : {}), layout, ...extras });
+  return {
+    id: "request_form_aquatrace_service_request",
+    tenantId: "aquatrace",
+    slug: "service-request",
+    title: "Service Request",
+    intro: "",
+    active: true,
+    templateVersion: AQUATRACE_REQUEST_FORM_VERSION,
+    sections: [
+      { id: "contact", title: "Contact Details" },
+      { id: "address", title: "Address" },
+      { id: "service", title: "Service Item Details" },
+      { id: "uploads", title: "Upload Images" }
+    ],
+    fieldDefinitions: [
+      field("first_name", "First name", "text", "contact", undefined, false, "half"),
+      field("last_name", "Last name", "text", "contact", undefined, false, "half"),
+      field("company_name", "Company name", "text", "contact"),
+      field("email", "Email", "email", "contact"),
+      field("marketing_email_consent", "I'd like to receive marketing emails from Aquatrace. Unsubscribe at any time.", "boolean", "contact", undefined, false, "full", { defaultValue: true }),
+      field("phone", "Phone", "phone", "contact", undefined, false, "full", { placeholder: "(___) ___-____", helpText: "By providing your phone number, you agree to receive Visit Reminders and other transactional text messages (SMS) from Aquatrace. You can unsubscribe at anytime by replying STOP. Message and data rates may apply. Message frequency varies. Reply HELP for help or STOP to cancel. View our privacy policy and terms of service for more information." }),
+      field("marketing_sms_consent", "I also agree to receive marketing SMS from Aquatrace. Reply STOP MKT to opt out of marketing SMS.", "boolean", "contact"),
+      field("property_street1", "Street address", "text", "address", undefined, true),
+      field("property_street2", "Unit, apartment, suite, etc.", "text", "address"),
+      field("property_city", "City", "text", "address", undefined, true, "third"),
+      field("property_province", "State", "select", "address", US_STATES, true, "third"),
+      field("property_postal_code", "ZIP Code", "text", "address", undefined, true, "third"),
+      field("pool_installation_type", "Is your pool inground or above ground?", "select", "service", ["Inground", "Above Ground"], true),
+      field("pool_type", "Is your pool residential or commercial?", "select", "service", ["Residential", "Commercial (i.e. Community Pool, Public Pool, HOA, Apartment, Condominium, Hotel, etc.)"], true),
+      field("pool_construction_type", "What type of construction is your pool?", "select", "service", ["Vinyl Liner", "Concrete (Gunite, Shotcrete, etc.)", "Fiberglass", "Not Sure"], true),
+      field("pool_configuration", "Do you have a spa integrated with your pool?", "select", "service", ["Swimming Pool Only", "Swimming Pool / Spa Combo", "Spa Only"], true),
+      field("water_loss_rate", "Approximate daily water loss", "select", "service", ["1\" or less daily", "1\" to 2\" daily", "2\" or more daily", "Not Sure"], true),
+      field("issue_summary", "Please provide as much additional information as you can", "textarea", "service", undefined, true),
+      field("referral_source", "How did you hear about Aquatrace?", "text", "service", undefined, true),
+      field("promo_code", "Have a Promo Code? Enter it Here...", "text", "service"),
+      field("request_images", "Share images of the work to be done", "multi_image", "uploads", undefined, false, "full", { maxItems: 10 })
+    ],
+    footerConsent: { text: "By continuing you agree to our Privacy Policy and Terms and Conditions.", privacyUrl: "https://aquatraceleak.com/privacy-policy/", termsUrl: "https://aquatraceleak.com/terms-and-conditions/" },
+    createdAt,
+    updatedAt: createdAt
+  };
+}
+
 export async function ensureRequestForms(repository: NativeCrmRepository, tenantId: string): Promise<RequestForm[]> {
   const existing = await repository.listRequestForms(tenantId);
+  if (tenantId === "aquatrace") {
+    const serviceRequest = existing.find((form) => form.slug === "service-request");
+    if (!serviceRequest || serviceRequest.templateVersion !== AQUATRACE_REQUEST_FORM_VERSION) {
+      const template = aquatraceServiceRequestForm(serviceRequest?.createdAt ?? now());
+      const saved = await repository.upsertRequestForm({ ...template, ...(serviceRequest ? { id: serviceRequest.id, createdAt: serviceRequest.createdAt } : {}), updatedAt: now() });
+      return [...existing.filter((form) => form.id !== saved.id), saved];
+    }
+  }
   if (existing.length) {
     return existing;
   }
@@ -451,8 +510,9 @@ export async function matchRequestToClient(repository: NativeCrmRepository, tena
 
 export function requestFieldValuesFromInput(input: RequestBuildInput): IntakeFieldValue[] {
   const built: IntakeFieldValue[] = [];
+  const definitions = new Map([...REQUEST_FIELD_CATALOG, ...(input.fieldDefinitions ?? [])].map((field) => [field.key, field]));
   for (const entry of input.fieldValues) {
-    const field = REQUEST_FIELD_MAP.get(entry.key);
+    const field = definitions.get(entry.key);
     if (!field) {
       continue;
     }
@@ -1081,26 +1141,34 @@ function fieldInput(field: IntakeFieldDefinition): string {
   const name = htmlEscape(field.key);
   const label = htmlEscape(field.label);
   const help = field.helpText ? `<small>${htmlEscape(field.helpText)}</small>` : "";
+  const layout = field.layout ? ` request-form-field--${field.layout}` : "";
+  const placeholder = field.placeholder ? ` placeholder="${htmlEscape(field.placeholder)}"` : "";
   if (field.type === "textarea") {
-    return `<label class="request-form-field"><span>${label}${field.required ? " *" : ""}</span><textarea name="${name}" rows="4"${field.required ? " required" : ""}></textarea>${help}</label>`;
+    return `<label class="request-form-field${layout}"><span>${label}${field.required ? " *" : ""}</span><textarea name="${name}" rows="4"${field.required ? " required" : ""}${placeholder}></textarea>${help}</label>`;
   }
   if (field.type === "select") {
     const options = (field.options ?? []).map((option) => `<option value="${htmlEscape(option)}">${htmlEscape(option.replaceAll("_", " "))}</option>`).join("");
-    return `<label class="request-form-field"><span>${label}${field.required ? " *" : ""}</span><select name="${name}"${field.required ? " required" : ""}><option value="">Select one</option>${options}</select>${help}</label>`;
+    return `<label class="request-form-field${layout}"><span>${label}${field.required ? " *" : ""}</span><select name="${name}"${field.required ? " required" : ""}><option value="">Select one</option>${options}</select>${help}</label>`;
   }
   if (field.type === "boolean") {
-    return `<label class="request-form-check${field.prominent ? " prominent" : ""}"><input type="checkbox" name="${name}" value="true" /><span>${label}</span>${help}</label>`;
+    return `<label class="request-form-check${layout}${field.prominent ? " prominent" : ""}"><input type="checkbox" name="${name}" value="true"${field.defaultValue === true ? " checked" : ""} /><span>${label}</span>${help}</label>`;
   }
   if (field.type === "multi_image") {
     const maxItems = field.maxItems ?? 10;
-    return `<label class="request-form-field request-form-upload${field.prominent ? " prominent" : ""}" data-upload-field="${name}" data-max-items="${maxItems}"><span>${label}${field.required ? " *" : ""}</span><input type="file" accept="image/*" multiple data-upload-input /><input type="hidden" name="${name}" value="[]" /><small data-upload-status>0 of ${maxItems} uploaded</small><div class="request-form-upload-list" data-upload-list></div>${help}</label>`;
+    return `<label class="request-form-field${layout} request-form-upload${field.prominent ? " prominent" : ""}" data-upload-field="${name}" data-max-items="${maxItems}"><span>${label}${field.required ? " *" : ""}</span><input type="file" accept="image/*" multiple data-upload-input /><input type="hidden" name="${name}" value="[]" /><small data-upload-status>0 of ${maxItems} uploaded</small><div class="request-form-upload-list" data-upload-list></div>${help}</label>`;
   }
   const type = field.type === "email" || field.type === "number" ? field.type : "text";
-  return `<label class="request-form-field${field.prominent ? " prominent" : ""}"><span>${label}${field.required ? " *" : ""}</span><input type="${type}" name="${name}"${field.required ? " required" : ""} />${help}</label>`;
+  return `<label class="request-form-field${layout}${field.prominent ? " prominent" : ""}"><span>${label}${field.required ? " *" : ""}</span><input type="${type}" name="${name}"${field.required ? " required" : ""}${placeholder} />${help}</label>`;
 }
 
 export function renderPublicRequestForm(form: RequestForm): string {
-  const inputs = form.fieldDefinitions.map(fieldInput).join("");
+  const fieldsBySection = new Map<string, IntakeFieldDefinition[]>();
+  for (const field of form.fieldDefinitions) {
+    const sectionId = field.sectionId ?? "default";
+    fieldsBySection.set(sectionId, [...(fieldsBySection.get(sectionId) ?? []), field]);
+  }
+  const inputs = form.sections?.map((section) => `<fieldset class="request-form-section"><legend>${htmlEscape(section.title)}</legend><div class="request-form-grid">${(fieldsBySection.get(section.id) ?? []).map(fieldInput).join("")}</div></fieldset>`).join("") ?? form.fieldDefinitions.map(fieldInput).join("");
+  const footerConsent = form.footerConsent ? `<p class="request-form-footer">By continuing you agree to our <a href="${htmlEscape(form.footerConsent.privacyUrl)}" target="_blank" rel="noreferrer">Privacy Policy</a> and <a href="${htmlEscape(form.footerConsent.termsUrl)}" target="_blank" rel="noreferrer">Terms and Conditions</a>.</p>` : "";
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -1115,7 +1183,8 @@ export function renderPublicRequestForm(form: RequestForm): string {
       h1 { margin: 0; font-size: clamp(2rem, 7vw, 3rem); }
       p { line-height: 1.5; }
       form { display: grid; gap: 14px; margin-top: 20px; }
-      .request-form-field, .request-form-check { display: grid; gap: 8px; }
+      .request-form-section { border: 0; padding: 0; margin: 0; display: grid; gap: 12px; } legend { font-size: 1.12rem; font-weight: 800; padding: 0; } .request-form-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; }
+      .request-form-field, .request-form-check { display: grid; gap: 8px; grid-column: span 6; } .request-form-field--half { grid-column: span 3; } .request-form-field--third { grid-column: span 2; }
       .request-form-field span, .request-form-check span { font-weight: 700; }
       .request-form-field input, .request-form-field select, .request-form-field textarea {
         border: 1px solid rgba(12, 17, 24, 0.16);
@@ -1144,6 +1213,7 @@ export function renderPublicRequestForm(form: RequestForm): string {
         cursor: pointer;
       }
       small { color: rgba(12, 17, 24, 0.68); }
+      .request-form-footer { font-size: .92rem; color: rgba(12,17,24,.72); } .request-form-footer a { color: inherit; font-weight: 700; } @media (max-width: 540px) { .request-form-field--half, .request-form-field--third { grid-column: span 6; } }
     </style>
   </head>
   <body>
@@ -1154,6 +1224,7 @@ export function renderPublicRequestForm(form: RequestForm): string {
         <p>${htmlEscape(form.intro ?? "Send the office the job details the first time so nothing gets dropped on transfer.")}</p>
         <form method="post" action="${requestFormSubmitPath(form)}" data-tenant-id="${htmlEscape(form.tenantId)}">
           ${inputs}
+          ${footerConsent}
           <button type="submit">Send request</button>
         </form>
       </section>
@@ -1241,7 +1312,7 @@ export function renderPublicRequestForm(form: RequestForm): string {
 }
 
 export function publicFormSubmissionValues(form: RequestForm, body: Record<string, unknown>): RequestBuildInput["fieldValues"] {
-  return form.fieldDefinitions.flatMap((field) => {
+  const values = form.fieldDefinitions.flatMap((field) => {
     const value = coerceValue(field, body[field.key]);
     if (value === null) {
       if (field.type === "boolean") {
@@ -1251,6 +1322,12 @@ export function publicFormSubmissionValues(form: RequestForm, body: Record<strin
     }
     return [{ key: field.key, value }];
   });
+  const firstName = String(body.first_name ?? "").trim();
+  const lastName = String(body.last_name ?? "").trim();
+  if (firstName || lastName) {
+    values.push({ key: "client_name", value: [firstName, lastName].filter(Boolean).join(" ") });
+  }
+  return values;
 }
 
 export function summarizeRequestField(field: IntakeFieldValue): string {

@@ -683,6 +683,10 @@ export interface IntakeFieldDefinition {
   helpText?: string | undefined;
   prominent?: boolean | undefined;
   maxItems?: number | undefined;
+  sectionId?: string | undefined;
+  layout?: "full" | "half" | "third" | undefined;
+  placeholder?: string | undefined;
+  defaultValue?: string | number | boolean | string[] | undefined;
 }
 
 export interface IntakeFieldValue extends IntakeFieldDefinition {
@@ -704,6 +708,9 @@ export interface RequestForm {
   intro?: string | undefined;
   active: boolean;
   fieldDefinitions: IntakeFieldDefinition[];
+  sections?: Array<{ id: string; title: string }> | undefined;
+  footerConsent?: { text: string; privacyUrl: string; termsUrl: string } | undefined;
+  templateVersion?: string | undefined;
   createdAt: string;
   updatedAt: string;
 }

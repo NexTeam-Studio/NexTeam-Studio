@@ -893,7 +893,11 @@ export const intakeFieldDefinitionSchema = z.object({
   options: z.array(z.string().min(1)).optional(),
   helpText: z.string().optional(),
   prominent: z.boolean().optional(),
-  maxItems: z.number().int().min(1).optional()
+  maxItems: z.number().int().min(1).optional(),
+  sectionId: z.string().min(1).optional(),
+  layout: z.enum(["full", "half", "third"]).optional(),
+  placeholder: z.string().optional(),
+  defaultValue: z.union([z.string(), z.number(), z.boolean(), z.array(z.string().min(1))]).optional()
 });
 
 export const intakeFieldValueSchema = intakeFieldDefinitionSchema.extend({
@@ -915,6 +919,9 @@ export const requestFormSchema = z.object({
   intro: z.string().optional(),
   active: z.boolean(),
   fieldDefinitions: z.array(intakeFieldDefinitionSchema),
+  sections: z.array(z.object({ id: z.string().min(1), title: z.string().min(1) })).optional(),
+  footerConsent: z.object({ text: z.string().min(1), privacyUrl: z.string().url(), termsUrl: z.string().url() }).optional(),
+  templateVersion: z.string().min(1).optional(),
   createdAt: z.string().min(1),
   updatedAt: z.string().min(1)
 });
