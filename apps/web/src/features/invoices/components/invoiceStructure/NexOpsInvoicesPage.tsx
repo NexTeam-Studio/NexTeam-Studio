@@ -1434,6 +1434,7 @@ export function NexOpsInvoicesPage(props: NexOpsInvoicesPageProps): React.ReactE
                 <span className="nexops-density-disclosure-caret">Open</span>
               </summary>
               <div className="nexops-density-disclosure-body">
+                {detail.invoice.requestId ? <p><a href={`/nexops/requests/${encodeURIComponent(detail.invoice.requestId)}`}>Open original request</a></p> : null}
                 {selectedInvoiceCarryForwardFacts.length ? (
                   <div className="nexops-density-inline-facts">
                     {selectedInvoiceCarryForwardFacts.map((fact) => (

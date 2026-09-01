@@ -119,6 +119,7 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
   const [jobFilterIntent, setJobFilterIntent] = useState<"All" | "Upcoming" | "Today" | "Late" | "Unscheduled" | "Action Required" | "Requires Invoicing" | "Archived" | undefined>();
   const [invoiceFilterIntent, setInvoiceFilterIntent] = useState<"all" | "draft" | "awaiting" | "partial_pay" | "paid" | "void" | "bad_debt" | "past_due" | undefined>();
   const [scheduleScopeIntent, setScheduleScopeIntent] = useState<ScheduleScope | undefined>();
+  const [scheduleJobIntent, setScheduleJobIntent] = useState("");
   const [moduleSwitcherOpen, setModuleSwitcherOpen] = useState(false);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [createClientContextId, setCreateClientContextId] = useState("");
@@ -862,8 +863,9 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
             window.history.pushState({}, "", buildModulePath("requests"));
             window.scrollTo({ top: 0, left: 0, behavior: "auto" });
           }}
-          onScheduleAssessment={() => {
+          onScheduleAssessment={(jobId) => {
             clearWorkspaceTargets();
+            setScheduleJobIntent(jobId);
             setActiveModule("schedule");
             window.history.pushState({}, "", "/nexops/schedule");
             window.scrollTo({ top: 0, left: 0, behavior: "auto" });
@@ -951,6 +953,8 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
           tenantId={operatorContext.tenantId}
           role={operatorContext.role}
           initialScope={scheduleScopeIntent}
+          initialJobId={scheduleJobIntent || undefined}
+          onInitialJobHandled={() => setScheduleJobIntent("")}
           onOpenJob={(jobId) => openWorkspaceTarget({ module: "jobs", objectId: jobId })}
           onCrmMutation={() => window.dispatchEvent(new Event("nexops:crm-mutated"))}
         />

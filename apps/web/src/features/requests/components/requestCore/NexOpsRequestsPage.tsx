@@ -626,7 +626,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
     }
   }
 
-  async function runRequestAction(requestId: string, action: "archive" | "reopen" | "convert-to-quote" | "convert-to-job"): Promise<void> {
+  async function runRequestAction(requestId: string, action: "archive" | "reopen" | "convert-to-quote" | "convert-to-job", scheduleAfterJob = false): Promise<void> {
     setActionBusy(`${action}-${requestId}`);
     setStatusMessage(action === "archive"
       ? "Archiving request..."
@@ -634,7 +634,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
         ? "Reopening request..."
         : action === "convert-to-quote"
           ? "Converting request to quote..."
-        : "Preparing assessment scheduling...");
+        : scheduleAfterJob ? "Preparing assessment scheduling..." : "Converting request to job...");
     try {
       const body = await fetch(`/api/crm/requests/${encodeURIComponent(requestId)}/${action}`, {
         method: "POST",
@@ -651,7 +651,9 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
         setStatusMessage(`Request converted to quote ${body.quote.id}.`);
       } else if (body.job?.id) {
         setStatusMessage(`Assessment job ${body.job.id} is ready to place on the schedule.`);
-        props.onScheduleAssessment?.(body.job.id);
+        if (scheduleAfterJob) {
+          props.onScheduleAssessment?.(body.job.id);
+        }
       } else {
         setStatusMessage(action === "archive" ? "Request archived." : "Request reopened.");
       }
@@ -829,8 +831,13 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
                       </button>
                     ) : null}
                     {selectedRequestAction.secondaryAction === "convert-to-job" ? (
-                      <button type="button" disabled={Boolean(actionBusy)} onClick={() => void runRequestAction(selectedRequest.id, "convert-to-job")}>
+                      <button type="button" disabled={Boolean(actionBusy)} onClick={() => void runRequestAction(selectedRequest.id, "convert-to-job", true)}>
                         Schedule Assessment
+                      </button>
+                    ) : null}
+                    {selectedRequestAction.secondaryAction === "convert-to-job" ? (
+                      <button type="button" disabled={Boolean(actionBusy)} onClick={() => void runRequestAction(selectedRequest.id, "convert-to-job")}>
+                        Convert to Job
                       </button>
                     ) : null}
                   </div>

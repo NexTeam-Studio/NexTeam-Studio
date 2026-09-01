@@ -2451,7 +2451,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
                   <ul className="nexops-mini-list">
                     <li>
                       <strong>Request link</strong>
-                      <span>{selectedQuote.requestId ? `Connected to request ${selectedQuote.requestId}` : "This quote was not created from a tracked request."}</span>
+                      {selectedQuote.requestId ? <a href={`/nexops/requests/${encodeURIComponent(selectedQuote.requestId)}`}>Open original request</a> : <span>This quote was not created from a tracked request.</span>}
                     </li>
                     <li>
                       <strong>Job link</strong>

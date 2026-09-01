@@ -2015,6 +2015,7 @@ export function NexOpsJobsPage(props: {
                   </div>
                 </div>
                 <div className="nexops-jobs-actions">
+                  {detail.request?.id ? <a href={`/nexops/requests/${encodeURIComponent(detail.request.id)}`}>Open original request</a> : null}
                   {bookingPreview && !bookingConfirmationWasSent(detail, bookingPreview.visit.id) ? (
                     <button type="button" disabled={bookingBusy} onClick={() => setBookingSheetOpen(true)}>Send Booking Confirmation</button>
                   ) : null}

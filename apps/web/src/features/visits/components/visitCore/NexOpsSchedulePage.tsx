@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ProductInlineLabel } from "../../../../shared/branding/ProductBranding";
 import { NexOpsDetailTemplate, NexOpsRosterSurface, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
 import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
@@ -367,6 +367,8 @@ export function NexOpsSchedulePage(props: {
   onOpenJob: (jobId: string) => void;
   onCrmMutation?: () => void;
   initialScope?: ScheduleScope;
+  initialJobId?: string;
+  onInitialJobHandled?: () => void;
 }): React.ReactElement {
   const [view, setView] = useState<ScheduleView>(() => defaultView());
   const [scope, setScope] = useState<ScheduleScope>(() => props.initialScope ?? defaultScope());
@@ -407,6 +409,7 @@ export function NexOpsSchedulePage(props: {
   const [evaporationPreview, setEvaporationPreview] = useState<EvaporationPreview | null>(null);
   const [evaporationReviewToken, setEvaporationReviewToken] = useState("");
   const [evaporationDraft, setEvaporationDraft] = useState({ surfaceAreaFt2: "", waterTempF: "", observedLossInches: "", zip: "", windMphOverride: "" });
+  const handledInitialJobIdRef = useRef("");
 
   const range = useMemo(() => dateRange(anchorDate, view, scope), [anchorDate, scope, view]);
   const groupedByDay = useMemo(() => byDay(workspace?.visits ?? []), [workspace?.visits]);
@@ -522,6 +525,15 @@ export function NexOpsSchedulePage(props: {
     setVisitDrafts([emptyVisitDraft(seedDate ?? anchorDate, seedHour ?? "09:00")]);
     setComposerOpen(true);
   }
+
+  useEffect(() => {
+    if (!props.initialJobId || props.initialJobId === handledInitialJobIdRef.current) {
+      return;
+    }
+    handledInitialJobIdRef.current = props.initialJobId;
+    openComposer(props.initialJobId);
+    props.onInitialJobHandled?.();
+  }, [props.initialJobId, jobOptions, workspace]);
 
   function patchVisitDraft(draftId: string, patch: Partial<VisitDraft>): void {
     setVisitDrafts((current) => current.map((draft) => draft.id === draftId ? { ...draft, ...patch } : draft));
@@ -900,7 +912,7 @@ export function NexOpsSchedulePage(props: {
         title={detail.clientName}
         detail={`${detail.arrivalWindow} · ${detail.jobTitle}`}
         status={<><span className={`nexops-status-pill nexops-tone-${visitToneClass(detail.statusTone)}`}>{detail.status}</span><span className="nexops-status-pill">{detail.assignedTeam.map((member) => member.name).join(", ") || "Unassigned"}</span></>}
-        actions={<>{!detail.readOnly ? <button className="nexops-primary-inline-button" type="button" onClick={() => { setVisitDetail(null); openEdit(detail); }}>Edit visit</button> : null}<button type="button" onClick={() => props.onOpenJob(detail.jobId)}>Open Job</button></>}
+        actions={<>{!detail.readOnly ? <button className="nexops-primary-inline-button" type="button" onClick={() => { setVisitDetail(null); openEdit(detail); }}>Edit visit</button> : null}<button type="button" onClick={() => props.onOpenJob(detail.jobId)}>Open Job</button>{detail.requestId ? <a href={`/nexops/requests/${encodeURIComponent(detail.requestId)}`}>Open original request</a> : null}</>}
         navigation={<><button type="button" className={visitDetailSection === "overview" ? "active" : ""} aria-current={visitDetailSection === "overview" ? "page" : undefined} onClick={() => setVisitDetailSection("overview")}>Visit</button><button type="button" className={visitDetailSection === "measurements" ? "active" : ""} aria-current={visitDetailSection === "measurements" ? "page" : undefined} onClick={() => { setVisitDetailSection("measurements"); void loadEvaporationWorkspace(detail); }}>Measurements</button><button type="button" className={visitDetailSection === "files" ? "active" : ""} aria-current={visitDetailSection === "files" ? "page" : undefined} onClick={() => setVisitDetailSection("files")}>Files</button><button type="button" className={visitDetailSection === "nexcam" ? "active" : ""} aria-current={visitDetailSection === "nexcam" ? "page" : undefined} onClick={() => setVisitDetailSection("nexcam")}>NexCam</button></>}
       >
         <section className="nexops-module-card nexops-visit-detail-card">
