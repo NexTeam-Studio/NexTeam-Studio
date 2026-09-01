@@ -12,7 +12,6 @@ const REQUEST_FILTERS: Array<{ value: "all" | RequestStatus; label: string }> = 
   { value: "converted_to_job", label: "To Job" }
 ];
 type RequestSource = "website_form" | "office_existing_client" | "office_new_client" | "legacy_lead_backfill";
-type RequestSurface = "request" | "quote" | "job" | "visit" | "invoice";
 type IntakeFieldType = "text" | "email" | "phone" | "textarea" | "select" | "boolean" | "multi_image";
 type IntakeFieldGroup = "contact" | "property" | "pool" | "safety" | "service" | "notes";
 type TenantRole = "OWNER" | "OFFICE_ADMIN" | "TECHNICIAN";
