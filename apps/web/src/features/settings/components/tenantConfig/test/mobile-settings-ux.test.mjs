@@ -72,9 +72,9 @@ test("Settings landing is a Quotes-style hero plus all fifteen distinct routed n
   assert.match(page, /detail: "Roles & Access"/);
   assert.match(page, /detail: "Rates & Rules"/);
   assert.match(page, /<ModuleHeroCard[\s\S]*className="module-hero-card--quote"/);
-  assert.match(page, /useState<SettingsSectionId>\("business-setup"\)/);
+  assert.match(page, /useState<SettingsSectionId \| null>\(null\)/);
   assert.match(page, /aria-expanded=\{expanded\}/);
-  assert.match(page, /setExpandedSettingsSection\(section\.id\)/);
+  assert.match(page, /setExpandedSettingsSection\(\(current\) => current === section\.id \? null : section\.id\)/);
   assert.match(page, /expanded \? <div/);
   assert.match(styles, /grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
   assert.match(styles, /grid-column: span 2/);

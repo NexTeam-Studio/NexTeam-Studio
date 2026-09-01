@@ -266,7 +266,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
   const [templatePreviewChannel, setTemplatePreviewChannel] = useState<"email" | "sms">("email");
   const catalogSectionRef = useRef<HTMLElement | null>(null);
   const [activeSettingsArea, setActiveSettingsArea] = useState<SettingsAreaId | null>(() => settingsAreaFromPath(window.location.pathname));
-  const [expandedSettingsSection, setExpandedSettingsSection] = useState<SettingsSectionId>("business-setup");
+  const [expandedSettingsSection, setExpandedSettingsSection] = useState<SettingsSectionId | null>(null);
 
   const selectedTemplate = useMemo(
     () => settings?.communicationTemplates.find((template) => template.id === selectedTemplateId) ?? settings?.communicationTemplates[0] ?? null,
@@ -596,7 +596,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
                 type="button"
                 aria-expanded={expanded}
                 aria-controls={`settings-section-${section.id}`}
-                onClick={() => setExpandedSettingsSection(section.id)}
+                onClick={() => setExpandedSettingsSection((current) => current === section.id ? null : section.id)}
               >
                 <span className="nexops-settings-navigation-section__icon" aria-hidden="true">{section.icon}</span>
                 <strong>{section.label}</strong>
