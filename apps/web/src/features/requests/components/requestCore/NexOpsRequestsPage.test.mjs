@@ -9,6 +9,9 @@ test("Requests uses the shared roster and detail templates", () => {
   assert.match(source, /<NexOpsRosterTemplate/);
   assert.match(source, /<NexOpsDetailTemplate/);
   assert.match(source, /Back to Request Roster/);
+  assert.match(source, /onClick=\{\(\) => openRequestDetail\(request\.id\)\}/);
+  assert.match(source, /requestDetailAnchorRef\.current\?\.scrollIntoView/);
+  assert.match(source, /onClick=\{returnToRequestRoster\}/);
   assert.match(source, /aria-label="Request status filters"/);
   assert.match(source, /requests\.find\(\(request\) => request\.id === selectedRequestId\) \?\? null/);
   assert.doesNotMatch(source, /\?\? filteredRequests\[0\]/);

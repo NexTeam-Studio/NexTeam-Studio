@@ -1,5 +1,5 @@
 import { formatAddress, type Address as CrmAddress } from "@nexteam/shared";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { NexOpsCreationTemplate, NexOpsDetailTemplate, NexOpsRosterSurface, NexOpsRosterTemplate } from "../../../../shared/ui/NexOpsBusinessTemplates";
 import { NexOpsNavGlyph } from "../../../nexopsShell/workspaceSupport";
 
@@ -374,6 +374,8 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
   const [requestFilterOpen, setRequestFilterOpen] = useState(false);
   const [requestCreationOpen, setRequestCreationOpen] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState("");
+  const requestRosterAnchorRef = useRef<HTMLDivElement | null>(null);
+  const requestDetailAnchorRef = useRef<HTMLDivElement | null>(null);
   const [selectedFormId, setSelectedFormId] = useState("");
   const initialClientId = props.initialClientId && props.clients.some((client) => client.id === props.initialClientId) ? props.initialClientId : "";
   const [officeMode, setOfficeMode] = useState<"new_client" | "existing_client">(initialClientId ? "existing_client" : "new_client");
@@ -520,6 +522,16 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
       setSelectedRequestId(props.focusedRequestId);
     }
   }, [props.focusedRequestId, requests, selectedRequestId]);
+
+  function openRequestDetail(requestId: string): void {
+    setSelectedRequestId(requestId);
+    requestAnimationFrame(() => requestDetailAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }
+
+  function returnToRequestRoster(): void {
+    setSelectedRequestId("");
+    requestAnimationFrame(() => requestRosterAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }
 
   async function refresh(): Promise<void> {
     setStatusMessage("Loading requests...");
@@ -1141,12 +1153,13 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
         </details>
       </div>
 
-      <div className="nexops-roster-workflow-stack">
-        <NexOpsRosterSurface ariaLabel="Search and filter requests" searchTitle="Search Requests" resultNoun="Request" resultCount={filteredRequests.length} search={<label className="nexops-quote-roster-search"><span className="sr-only">Search Requests</span><input placeholder="Search Requests" value={requestSearch} onChange={(event) => setRequestSearch(event.target.value)} /></label>} filter={<button className="nexops-jobs-filter-pill nexops-quote-filter-trigger" type="button" aria-expanded={requestFilterOpen} onClick={() => setRequestFilterOpen((current) => !current)}><span className="nexops-quote-filter-icon" aria-hidden="true">☷</span><span className="nexops-quote-filter-label">Filter</span></button>} filterOptions={requestFilterOpen ? <div className="nexops-quote-filter-options" aria-label="Request status filters">{REQUEST_FILTERS.filter((filter) => filter.value !== "all").map((filter) => <button key={filter.value} type="button" role="radio" aria-checked={requestFilter === filter.value} className={`nexops-jobs-filter-pill${requestFilter === filter.value ? " active" : ""}`} onClick={() => setRequestFilter(filter.value)}><span>{filter.label}</span><small>{requestCounts[filter.value]}</small></button>)}</div> : undefined} empty={!filteredRequests.length ? <div className="nexops-quote-filtered-empty"><h2>No Requests Match This View</h2><p>Change the search or status filter to see requests.</p></div> : undefined}>{filteredRequests.map((request) => { const expanded = request.id === selectedRequest?.id; return <article className={`nexops-quote-filtered-row${expanded ? " expanded" : ""}`} key={request.id}><button className="nexops-quote-filtered-identity-banner" type="button" aria-expanded={expanded} onClick={() => setSelectedRequestId(expanded ? "" : request.id)}><span className="nexops-quote-filtered-identity"><strong>{request.clientName}</strong><small>{request.subject}</small></span></button>{expanded ? <div className="nexops-quote-filtered-details"><span className="nexops-quote-filtered-title" data-label="Request">{request.subject}</span><span className="nexops-quote-filtered-updated" data-label="Service Location">{formatAddress(request.propertyAddress) || request.email || request.phone || requestSourceLabel(request.source)}</span><span className="nexops-quote-filtered-status" data-label="Status"><mark>{requestStatusLabel(request.status)}</mark></span><span className="nexops-quote-filtered-activity" data-label="Request Record"><small>{requestSourceLabel(request.source)}</small><button className="nexops-quote-filtered-open" type="button" onClick={() => setSelectedRequestId(request.id)}>Open Request <span aria-hidden="true">→</span></button></span></div> : null}</article>; })}</NexOpsRosterSurface>
+      <div className="nexops-roster-workflow-stack" ref={requestRosterAnchorRef}>
+        <NexOpsRosterSurface ariaLabel="Search and filter requests" searchTitle="Search Requests" resultNoun="Request" resultCount={filteredRequests.length} search={<label className="nexops-quote-roster-search"><span className="sr-only">Search Requests</span><input placeholder="Search Requests" value={requestSearch} onChange={(event) => setRequestSearch(event.target.value)} /></label>} filter={<button className="nexops-jobs-filter-pill nexops-quote-filter-trigger" type="button" aria-expanded={requestFilterOpen} onClick={() => setRequestFilterOpen((current) => !current)}><span className="nexops-quote-filter-icon" aria-hidden="true">☷</span><span className="nexops-quote-filter-label">Filter</span></button>} filterOptions={requestFilterOpen ? <div className="nexops-quote-filter-options" aria-label="Request status filters">{REQUEST_FILTERS.filter((filter) => filter.value !== "all").map((filter) => <button key={filter.value} type="button" role="radio" aria-checked={requestFilter === filter.value} className={`nexops-jobs-filter-pill${requestFilter === filter.value ? " active" : ""}`} onClick={() => setRequestFilter(filter.value)}><span>{filter.label}</span><small>{requestCounts[filter.value]}</small></button>)}</div> : undefined} empty={!filteredRequests.length ? <div className="nexops-quote-filtered-empty"><h2>No Requests Match This View</h2><p>Change the search or status filter to see requests.</p></div> : undefined}>{filteredRequests.map((request) => { const expanded = request.id === selectedRequest?.id; return <article className={`nexops-quote-filtered-row${expanded ? " expanded" : ""}`} key={request.id}><button className="nexops-quote-filtered-identity-banner" type="button" aria-expanded={expanded} onClick={() => setSelectedRequestId(expanded ? "" : request.id)}><span className="nexops-quote-filtered-identity"><strong>{request.clientName}</strong><small>{request.subject}</small></span></button>{expanded ? <div className="nexops-quote-filtered-details"><span className="nexops-quote-filtered-title" data-label="Request">{request.subject}</span><span className="nexops-quote-filtered-updated" data-label="Service Location">{formatAddress(request.propertyAddress) || request.email || request.phone || requestSourceLabel(request.source)}</span><span className="nexops-quote-filtered-status" data-label="Status"><mark>{requestStatusLabel(request.status)}</mark></span><span className="nexops-quote-filtered-activity" data-label="Request Record"><small>{requestSourceLabel(request.source)}</small><button className="nexops-quote-filtered-open" type="button" onClick={() => openRequestDetail(request.id)}>Open Request <span aria-hidden="true">→</span></button></span></div> : null}</article>; })}</NexOpsRosterSurface>
 
+        <div ref={requestDetailAnchorRef}>
         {selectedRequest ? (
           <NexOpsDetailTemplate
-            back={<button type="button" onClick={() => setSelectedRequestId("")}>Back to Request Roster</button>}
+            back={<button type="button" onClick={returnToRequestRoster}>Back to Request Roster</button>}
             eyebrow="Request Detail"
             title={selectedRequest.clientName}
             detail={selectedRequest.subject}
@@ -1281,6 +1294,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
               <p>Pick a request to review the exact-match rule, confirmation timestamps, and field-by-field downstream visibility.</p>
             </div>
           )}
+        </div>
       </div>
     </NexOpsRosterTemplate>
   );
