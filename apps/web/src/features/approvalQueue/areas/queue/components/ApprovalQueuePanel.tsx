@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ModuleHeroCard } from "../../../../../shared/ui/NexOpsBusinessTemplates";
+import { NexOpsRosterTemplate } from "../../../../../shared/ui/NexOpsBusinessTemplates";
 import { NexOpsNavGlyph } from "../../../../nexopsShell/workspaceSupport";
 import "../styles/approvalQueue.css";
 import "../../../../queueShared/queuePrimitives.css";
@@ -184,8 +184,8 @@ export function ApprovalQueuePanel(props: { tenantId: string }): React.ReactElem
   }
 
   return (
-    <aside className="approval-card">
-      <ModuleHeroCard title="Approvals" detail="Review the work that needs a deliberate approval before it can continue." icon={<NexOpsNavGlyph module="approvals" />} primaryAction={<button className="nexops-hero-primary-button" type="button" onClick={() => void refresh()}>Refresh</button>} />
+    <NexOpsRosterTemplate title="Approvals" detail="Review the work that needs a deliberate approval before it can continue." icon={<NexOpsNavGlyph module="approvals" />} primaryAction={<button className="nexops-hero-primary-button" type="button" onClick={() => void refresh()}>Refresh</button>}>
+      <section className="approval-queue-content" aria-label="Approval queue">
       <p className="schedule-status">{status}</p>
       <h3 className="queue-section-heading">Pending</h3>
       <div className="content-list">
@@ -195,6 +195,7 @@ export function ApprovalQueuePanel(props: { tenantId: string }): React.ReactElem
       <div className="content-list">
         {historicalItems.length ? historicalItems.map(renderApprovalItem) : <p className="empty-state">No approval history yet.</p>}
       </div>
-    </aside>
+      </section>
+    </NexOpsRosterTemplate>
   );
 }

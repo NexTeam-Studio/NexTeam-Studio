@@ -10,4 +10,7 @@ test("Approval Queue route imports the owner panel and keeps its server-backed a
   assert.match(panel, /\/api\/approval-queue\?tenantId=/);
   assert.match(panel, /\/api\/approval-queue\/\$\{encodeURIComponent\(item\.id\)\}\/execute/);
   assert.match(panel, /\/api\/approval-queue\/\$\{encodeURIComponent\(item\.id\)\}\/reject/);
+  assert.match(panel, /import \{ NexOpsRosterTemplate \} from ".*NexOpsBusinessTemplates"/);
+  assert.match(panel, /<NexOpsRosterTemplate title="Approvals"/);
+  assert.doesNotMatch(panel, /className="approval-card"/);
 });

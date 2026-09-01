@@ -21,5 +21,7 @@ test("ModuleHeroCard renders the complete centered approved quote rotation", () 
   assert.match(styles, /\.module-hero-card__icon svg \{ width: 100%; height: 100%; \}/);
   assert.doesNotMatch(styles, /\.module-hero-card__detail/);
   assert.match(styles, /\.nexops-hero-primary-button \{[\s\S]*background: linear-gradient\(135deg, #d4ff20, #25d238\)/);
+  assert.match(styles, /\.nexops-business-metrics > article \{[\s\S]*border-radius: 20px/);
+  assert.match(styles, /@media \(max-width: 700px\) \{[\s\S]*\.nexops-business-metrics \{ grid-template-columns: 1fr; \}/);
   assert.doesNotMatch(styles, /nexops-quote-primary-button/);
 });

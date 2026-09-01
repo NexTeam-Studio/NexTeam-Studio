@@ -1,17 +1,4 @@
-.approval-card {
-  padding: 24px;
-  overflow: auto;
-  border: 1px solid rgba(21, 24, 23, 0.16);
-  border-radius: 34px;
-  background:
-    linear-gradient(180deg, rgba(248, 255, 252, 0.94), rgba(221, 231, 223, 0.88)),
-    radial-gradient(circle at 100% 0%, rgba(0, 255, 255, 0.14), transparent 34%);
-  box-shadow: 0 28px 90px rgba(16, 24, 24, 0.2);
-}
-
-.approval-card {
-  min-height: 0;
-}
+.approval-queue-content { display: grid; min-height: 0; gap: 14px; }
 
 .approval-item p {
   display: -webkit-box;

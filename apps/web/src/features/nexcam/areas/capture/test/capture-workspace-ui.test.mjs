@@ -16,4 +16,6 @@ test("NexCam capture uses the shared ModuleHeroCard and action structure", () =>
   assert.match(source, /<ModuleHeroCard[\s\S]*title="Capture and route"/);
   assert.match(source, /primaryAction=\{<button className="nexops-hero-primary-button"/);
   assert.match(source, /secondaryActions=\{<button/);
+  const heroStyles = readFileSync(new URL("../../../../../shared/ui/NexOpsBusinessTemplates.css", import.meta.url), "utf8");
+  assert.match(heroStyles, /\.module-hero-card__secondary-actions > :only-child \{ grid-column: 1 \/ -1; \}/);
 });

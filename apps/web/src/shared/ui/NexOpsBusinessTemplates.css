@@ -40,12 +40,18 @@
 .module-hero-card__primary-action > * { width: 100%; }
 .module-hero-card__secondary-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .module-hero-card__secondary-actions > :is(button, a) { box-sizing: border-box; display: inline-flex; min-width: 0; min-height: 42px; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, .28); border-radius: 999px; padding: 10px 15px; color: #fff; background: rgba(255, 255, 255, .08); font: inherit; font-weight: 850; text-decoration: none; cursor: pointer; }
+.module-hero-card__secondary-actions > :only-child { grid-column: 1 / -1; }
 .module-hero-card__secondary-actions > :is(button, a):hover { background: rgba(255, 255, 255, .17); }
 .module-hero-card__title { display: flex; align-items: center; gap: 12px; }
 .module-hero-card__icon { display: inline-flex; flex: 0 0 auto; width: clamp(2.1rem, 4.2vw, 3.52rem); height: clamp(2.1rem, 4.2vw, 3.52rem); color: #d4ff20; }
 .module-hero-card__icon svg { width: 100%; height: 100%; }
 .module-hero-card__icon:empty { display: none; }
 .nexops-business-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.nexops-business-metrics > article { display: grid; min-width: 0; gap: 3px; padding: 16px; border: 1px solid rgba(8, 33, 49, .1); border-radius: 20px; background: rgba(255, 255, 255, .9); box-shadow: 0 12px 28px rgba(6, 21, 30, .06); }
+.nexops-business-metrics > article > :is(span, strong, small) { display: block; min-width: 0; }
+.nexops-business-metrics > article > span { color: #526675; font-size: .76rem; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+.nexops-business-metrics > article > strong { color: #082131; font-size: 1.65rem; line-height: 1.05; }
+.nexops-business-metrics > article > small { color: #526675; line-height: 1.35; }
 .nexops-business-controls,
 .nexops-business-content { min-width: 0; }
 .nexops-creation-template,
@@ -118,6 +124,7 @@
   .nexops-business-hero { align-items: flex-start; flex-direction: column; padding: 22px; border-radius: 26px; }
   .nexops-business-hero-action { width: 100%; justify-content: stretch; }
   .module-hero-card__actions { width: 100%; }
+  .nexops-business-metrics { grid-template-columns: 1fr; }
   .nexops-business-nav { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: thin; }
   .nexops-business-nav button { flex: 0 0 auto; }
   .nexops-quote-filtered-table { gap: 10px; padding: 10px; }
