@@ -9,6 +9,7 @@ import { MemoryLedgerRepository } from "../dist/crm/ledgerRepository.js";
 import { MemoryMediaRepository } from "../dist/fielddocs/mediaRepository.js";
 import { InMemoryPortalHubRepository } from "../dist/modules/nexportal/components/portalCore/server/portalHubRepository.js";
 import { PortalHubService } from "../dist/modules/nexportal/components/portalCore/server/portalHubService.js";
+import { renderPortalHomeHtml } from "../dist/modules/nexportal/components/portalCore/server/portalHubHtml.js";
 
 function fixture({ evidence, requirements = { checklistRequired: true, photosRequired: true, reportRequired: true, signatureRequired: true } } = {}) {
   const repository = new MemoryNativeCrmRepository({ clients: [{ id: "client_1", tenantId: "tenant_1", name: "Placeholder Client", emails: [], phones: [], tags: [], consent: { email: false, sms: false }, communicationSettings: { quotesAndInvoices: "email", jobReminders: "email", jobClosureFollowUps: "email", reviewRequests: "email", smsDefaultMode: "one_way" } }] });
@@ -77,4 +78,36 @@ test("completion override audit data is internal-only and cannot enter a NexPort
   const session = await portal.consumeMagicLink({ tenantId: "tenant_portal", sessionId: link.session.id, token: link.token });
   const snapshot = await portal.buildSnapshot({ tenantId: "tenant_portal", session });
   assert.equal(snapshot.portalActivity.some((entry) => entry.detail.includes("Internal reason") || entry.title.includes("completion overridden")), false);
+});
+
+test("request notes expose only client-facing notes in NexPortal", async () => {
+  const client = { id: "client_request_notes", tenantId: "tenant_request_notes", name: "Portal request client", emails: ["portal-request@example.test"], phones: [], tags: [], consent: { email: true, sms: false }, communicationSettings: { quotesAndInvoices: "email", jobReminders: "email", jobClosureFollowUps: "email", reviewRequests: "email", smsDefaultMode: "one_way" } };
+  const request = {
+    id: "request_notes_1",
+    tenantId: "tenant_request_notes",
+    source: "website_form",
+    status: "new",
+    subject: "Request note visibility",
+    clientName: client.name,
+    narrative: "Request intake",
+    consent: { email: true, sms: false },
+    intake: { fieldValues: [], fieldIndex: {} },
+    match: { type: "none", reviewRequired: false },
+    selectedClientId: client.id,
+    createdAt: "2026-09-01T00:00:00.000Z",
+    updatedAt: "2026-09-01T00:00:00.000Z",
+    notes: [
+      { id: "note_internal", body: "Internal dispatch instruction", visibility: "internal", authorId: "owner_1", createdAt: "2026-09-01T01:00:00.000Z" },
+      { id: "note_client", body: "Your assessment is being scheduled.", visibility: "client", authorId: "owner_1", createdAt: "2026-09-01T02:00:00.000Z" }
+    ]
+  };
+  const repository = new MemoryNativeCrmRepository({ clients: [client], requests: [request] });
+  const portal = new PortalHubService({ crmRepository: repository, ledgerRepository: new MemoryLedgerRepository(), schedulingRepository: new InMemorySchedulingRepository(), repository: new InMemoryPortalHubRepository(), fieldDocsRepository: new MemoryMediaRepository(), eventBus: new InMemoryEventBus(), publicBaseUrl: "http://127.0.0.1:0" });
+  const link = await portal.issueMagicLink({ tenantId: "tenant_request_notes", clientId: client.id, target: "portal-request@example.test" });
+  const session = await portal.consumeMagicLink({ tenantId: "tenant_request_notes", sessionId: link.session.id, token: link.token });
+  const snapshot = await portal.buildSnapshot({ tenantId: "tenant_request_notes", session });
+  assert.deepEqual(snapshot.clientFacingRequestNotes.map((note) => note.body), ["Your assessment is being scheduled."]);
+  const html = renderPortalHomeHtml(snapshot);
+  assert.match(html, /Your assessment is being scheduled\./);
+  assert.doesNotMatch(html, /Internal dispatch instruction/);
 });

@@ -15,6 +15,11 @@ test("Requests uses the shared roster and detail templates", () => {
   assert.match(source, /Submitted Form Details/);
   assert.match(source, /Delete Request/);
   assert.match(source, /linked Client, contact details, and property will remain unchanged/);
+  assert.match(source, /Schedule Assessment/);
+  assert.match(source, /Convert to Quote/);
+  assert.match(source, /Convert to Job/);
+  assert.match(source, /Note visibility: type Internal or Client-facing/);
+  assert.match(source, /Choose Internal or Client-facing before saving the note/);
   assert.match(source, /onClick=\{\(\) => openRequestDetail\(request\.id\)\}/);
   assert.match(source, /requestDetailAnchorRef\.current\?\.scrollIntoView/);
   assert.match(source, /onClick=\{returnToRequestRoster\}/);
