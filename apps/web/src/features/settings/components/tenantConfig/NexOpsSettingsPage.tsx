@@ -97,7 +97,7 @@ interface TenantOperatingProfile {
   locations: Array<{ id: string; label: string; active: boolean }>;
   businessHours: Array<{ day: string; open?: string; close?: string; closed: boolean }>;
   tax: { enabled: boolean; defaultRate: number; registrationId?: string };
-  communicationIdentity: { replyToEmail?: string; replyToName?: string; phone?: string };
+  communicationIdentity: { senderEmail?: string; replyToEmail?: string; replyToName?: string; phone?: string };
   securityAudit: { auditEventsEnabled: boolean; requireApprovalForExternalSend: boolean };
   onboarding: {
     completedSteps: Array<"company-profile" | "module-selection" | "office-defaults" | "launch-review">;
@@ -716,6 +716,13 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
                 <input value={settings.operatingProfile.company.timezone} onChange={(event) => setSettings({
                   ...settings,
                   operatingProfile: { ...settings.operatingProfile, company: { ...settings.operatingProfile.company, timezone: event.target.value } }
+                })} />
+              </label>
+              <label className="nexops-field">
+                <span>Sender Email</span>
+                <input type="email" value={settings.operatingProfile.communicationIdentity.senderEmail ?? ""} onChange={(event) => setSettings({
+                  ...settings,
+                  operatingProfile: { ...settings.operatingProfile, communicationIdentity: { ...settings.operatingProfile.communicationIdentity, senderEmail: event.target.value } }
                 })} />
               </label>
               <label className="nexops-field">

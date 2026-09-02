@@ -122,9 +122,10 @@ const platformRepository = adminDb ? new FirestorePlatformRepository(adminDb) : 
 if (commsRail.sendAdapter) {
   const transactionalAdapter = commsRail.sendAdapter;
   commsRail.sendAdapter = new TenantBrandingEmailSendAdapter(transactionalAdapter, async (tenantId) => {
-    const [branding, profile] = await Promise.all([
+    const [branding, profile, settings] = await Promise.all([
       platformRepository.getTenantBranding(tenantId),
-      platformRepository.getTenantProfile(tenantId)
+      platformRepository.getTenantProfile(tenantId),
+      nativeCrmRepository.getCrmSettings(tenantId)
     ]);
     const address = profile?.primaryContact?.address;
     const addressText = address && typeof address === "object"
@@ -137,7 +138,8 @@ if (commsRail.sendAdapter) {
         phone: profile.primaryContact.phone,
         address: addressText,
         website: profile.website
-      } : profile?.website ? { website: profile.website } : null
+      } : profile?.website ? { website: profile.website } : null,
+      senderEmail: settings.operatingProfile.communicationIdentity.senderEmail
     };
   }, commsRail.senderEmail);
 }

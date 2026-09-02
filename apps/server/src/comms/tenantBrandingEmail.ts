@@ -10,6 +10,8 @@ export interface TenantEmailContactBlock {
 export interface TenantEmailBranding {
   branding: TenantBranding | null;
   contact: TenantEmailContactBlock | null;
+  /** Tenant-controlled sender. The transport remains responsible for verification. */
+  senderEmail?: string | undefined;
 }
 
 export type TenantEmailBrandingResolver = (tenantId: string) => Promise<TenantEmailBranding>;
@@ -80,7 +82,9 @@ export class TenantBrandingEmailSendAdapter implements EmailSendProvider {
       bodyHtml: message.bodyHtml
         ? appendContactBlock(message.bodyHtml, tenant.branding, tenant.contact)
         : renderTenantBrandedEmail({ bodyText: message.bodyText, ...tenant }),
-      ...(message.from ? {} : { from: senderName(this.senderEmail, displayName) })
+      // A tenant sender deliberately wins over workflow-local and deployment
+      // defaults. This is the one shared boundary for every transactional email.
+      from: senderName(tenant.senderEmail || message.from || this.senderEmail, displayName)
     });
   }
 }

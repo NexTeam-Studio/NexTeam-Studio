@@ -30,11 +30,6 @@ function attachmentBytes(message: OutboundEmail): number {
   return (message.attachments ?? []).reduce((total, attachment) => total + Buffer.byteLength(attachment.contentBase64, "utf8"), 0);
 }
 
-function senderEmail(from: string): string {
-  const angle = from.match(/<([^>]+)>/);
-  return (angle?.[1] ?? from).trim().toLowerCase();
-}
-
 /**
  * Transactional-only transport. It deliberately implements no mailbox read
  * methods; Gmail/Workspace read integrations remain separate providers.
@@ -65,9 +60,8 @@ export class ResendTransactionalAdapter implements EmailSendProvider {
     }
     const idempotencyKey = message.idempotencyKey?.trim() || `nexteam-${randomUUID()}`;
     const from = message.from?.trim() || this.config.from;
-    if (senderEmail(from) !== senderEmail(this.config.from)) {
-      throw new RailError("Transactional email sender must use the configured verified mailbox.", { provider: "resend", op: "sendEmail", status: 403 });
-    }
+    // The configured sender is a fallback only. Resend verifies the actual
+    // tenant-provided From address/domain at delivery time.
     const sent = await railFetchJson(RESEND_EMAILS_URL, {
       provider: "resend",
       op: "sendEmail",

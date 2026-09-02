@@ -49,6 +49,7 @@ export const crmSettingsPatchSchema = z.object({
       registrationId: z.string().min(1).optional()
     }).optional(),
     communicationIdentity: z.object({
+      senderEmail: z.string().email().optional(),
       replyToEmail: z.string().email().optional(),
       replyToName: z.string().min(1).optional(),
       phone: z.string().min(1).optional()

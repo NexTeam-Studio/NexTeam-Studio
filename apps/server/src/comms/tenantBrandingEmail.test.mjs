@@ -25,16 +25,16 @@ test("tenant branded email renders logo, colors, and contact block", () => {
   assert.match(html, /Hello customer/);
 });
 
-test("tenant branding adapter renders all 23 communication template emails and preserves a supplied sender", async () => {
+test("tenant branding adapter renders all 23 communication template emails and resolves sender from tenant settings", async () => {
   const sent = [];
   const adapter = new TenantBrandingEmailSendAdapter({
     mailbox: "TRANSACTIONAL",
     async sendEmail(message) { sent.push(message); return { provider: "test", id: `sent_${sent.length}`, acceptedAt: "2026-09-02T00:00:00.000Z" }; }
-  }, async () => ({ branding, contact: { email: "service@aquatrace.example" } }), "transactions@example.test");
+  }, async () => ({ branding, contact: { email: "service@aquatrace.example" }, senderEmail: "office@aquatrace.example" }), "transactions@example.test");
   for (const category of COMMUNICATION_TEMPLATE_CATEGORIES) {
     await adapter.sendEmail({ tenantId: "aquatrace", mailbox: "TRANSACTIONAL", to: ["client@example.test"], subject: category, bodyText: `Body for ${category}` });
   }
-  assert.equal(sent[0].from, "Aquatrace <transactions@example.test>");
+  assert.equal(sent[0].from, "Aquatrace <office@aquatrace.example>");
   assert.equal(sent.length, 23);
   for (const message of sent) {
     assert.match(message.bodyHtml, /aquatrace\.png/);
@@ -42,7 +42,7 @@ test("tenant branding adapter renders all 23 communication template emails and p
     assert.match(message.bodyHtml, /service@aquatrace\.example/);
   }
   await adapter.sendEmail({ tenantId: "aquatrace", mailbox: "TRANSACTIONAL", to: ["client@example.test"], subject: "sender", bodyText: "Body", from: "Aquatrace via NexOps <transactions@example.test>" });
-  assert.equal(sent.at(-1).from, "Aquatrace via NexOps <transactions@example.test>");
+  assert.equal(sent.at(-1).from, "Aquatrace <office@aquatrace.example>");
   await adapter.sendEmail({ tenantId: "aquatrace", mailbox: "TRANSACTIONAL", to: ["client@example.test"], subject: "existing", bodyText: "Body", bodyHtml: "<html><body><img src=\"https://cdn.example.test/aquatrace.png\" /></body></html>" });
   assert.match(sent.at(-1).bodyHtml, /data-nexteam-tenant-contact/);
   assert.match(sent.at(-1).bodyHtml, /service@aquatrace\.example/);

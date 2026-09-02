@@ -1215,6 +1215,8 @@ export interface CrmSettings {
       registrationId?: string | undefined;
     };
     communicationIdentity: {
+      /** Verified transactional sender configured by the tenant. */
+      senderEmail?: string | undefined;
       replyToEmail?: string | undefined;
       replyToName?: string | undefined;
       phone?: string | undefined;

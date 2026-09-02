@@ -50,6 +50,27 @@ test("Resend transactional adapter preserves prepared content, attachment metada
   }
 });
 
+test("Resend transactional adapter sends a tenant-selected sender instead of its fallback constant", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (_url, init) => {
+    calls.push(init);
+    return new Response(JSON.stringify({ id: "resend_message_tenant_sender" }), { status: 200, headers: { "content-type": "application/json" } });
+  };
+  try {
+    await adapter().sendEmail({
+      tenantId: "tenant_1",
+      to: ["safe-recipient@example.test"],
+      subject: "Tenant sender",
+      bodyText: "Body",
+      from: "Tenant Office <office@tenant.example>"
+    });
+    assert.equal(JSON.parse(calls[0].body).from, "Tenant Office <office@tenant.example>");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("Resend transactional adapter fails without exposing its API key", async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => new Response(JSON.stringify({ message: "sender rejected" }), { status: 422, headers: { "content-type": "application/json" } });
