@@ -240,9 +240,15 @@ export class FirestoreJobLifecycleRepository implements JobLifecycleRepository {
   }
 
   async listLifecycleEvents(tenantId: string, jobId?: string): Promise<JobLifecycleEventRecord[]> {
-    const records = await this.listByTenant("jobLifecycleEvents", tenantId, lifecycleEventSchema) as JobLifecycleEventRecord[];
-    return records
-      .filter((record) => !jobId || record.jobId === jobId)
+    // The jobs list does not consume lifecycle history. Avoid reading a tenant's
+    // complete event history merely to construct its roster.
+    if (!jobId) return [];
+    const snapshot = await this.db.collection("jobLifecycleEvents")
+      .where("tenantId", "==", tenantId)
+      .where("jobId", "==", jobId)
+      .get();
+    return snapshot.docs
+      .map((doc) => lifecycleEventSchema.parse(doc.data()) as JobLifecycleEventRecord)
       .sort((left, right) => left.createdAt.localeCompare(right.createdAt));
   }
 
