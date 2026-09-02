@@ -317,7 +317,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
   const [forms, setForms] = useState<RequestFormRecord[]>([]);
   const [statusMessage, setStatusMessage] = useState("Loading requests...");
   const [requestSearch, setRequestSearch] = useState("");
-  const [requestFilter, setRequestFilter] = useState<"all" | RequestStatus>("all");
+  const [requestFilter, setRequestFilter] = useState<"all" | RequestStatus>("new");
   const [requestFilterOpen, setRequestFilterOpen] = useState(false);
   const [requestCreationOpen, setRequestCreationOpen] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState("");

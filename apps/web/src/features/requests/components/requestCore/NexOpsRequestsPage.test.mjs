@@ -56,6 +56,7 @@ test("Requests keeps explanatory copy in sentence case", () => {
 });
 
 test("Requests retains the default roster when request-form metadata is unavailable", () => {
+  assert.match(source, /useState<"all" \| RequestStatus>\("new"\)/);
   assert.match(source, /const requestsBody = await fetch\(`\/api\/crm\/requests/);
   assert.match(source, /setRequests\(nextRequests\);/);
   assert.match(source, /const formsBody = await fetch\(`\/api\/crm\/request-forms/);
