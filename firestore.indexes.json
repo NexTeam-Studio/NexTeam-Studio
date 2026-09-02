@@ -34,6 +34,38 @@
       ]
     },
     {
+      "collectionGroup": "timePayEvents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tenantId", "order": "ASCENDING" },
+        { "fieldPath": "factId", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "serviceAgreementEvents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tenantId", "order": "ASCENDING" },
+        { "fieldPath": "agreementId", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "jobCostFacts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tenantId", "order": "ASCENDING" },
+        { "fieldPath": "jobId", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "jobCostFactEvents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tenantId", "order": "ASCENDING" },
+        { "fieldPath": "jobId", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "events",
       "queryScope": "COLLECTION",
       "fields": [
