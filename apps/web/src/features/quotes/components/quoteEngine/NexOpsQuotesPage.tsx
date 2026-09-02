@@ -1307,6 +1307,18 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }
 
+  function openQuoteComposer(quote: QuoteRecord): void {
+    setComposer(composerFromQuote(quote, props.clients.find((client) => client.id === quote.clientId)));
+    setQuoteBuilderMode("new");
+    setClientSelectionSaved(true);
+    setClientSelectionMode("existing");
+    setPropertySelectionMode("existing");
+    setCatalogPickerOpen(false);
+    setCatalogSearch("");
+    setWorkspaceView("builder");
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }
+
   function chooseClient(clientId: string): void {
     setComposer((current) => ({ ...current, clientId, propertyId: "" }));
     setPropertySelectionMode("existing");
@@ -1713,7 +1725,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
         void copyPortalLink();
         return;
       case "edit":
-        setComposer(composerFromQuote(selectedQuote, selectedClient));
+        openQuoteComposer(selectedQuote);
         return;
       case "none":
       default:
@@ -2125,8 +2137,8 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
             title={selectedQuote?.number ?? "Quote"}
             detail={selectedQuote ? `${selectedQuote.title} · ${clientDisplayName(selectedClient)}` : "Choose a quote from the roster."}
             status={selectedQuote ? <NexopsStatusPill label={quoteStatusLabel(selectedQuote.status)} tone={quoteStatusTone(selectedQuote.status)} /> : undefined}
-            actions={<button className="nexops-hero-primary-button" type="button" onClick={() => { if (selectedQuote) { setComposer(composerFromQuote(selectedQuote, selectedClient)); setWorkspaceView("builder"); } }}>Edit Quote</button>}
-            navigation={<><button className="active" type="button" aria-current="page">Overview</button><button type="button" onClick={() => { if (selectedQuote) { setComposer(composerFromQuote(selectedQuote, selectedClient)); setWorkspaceView("builder"); } }}>Pricing</button><button type="button" onClick={() => selectedQuote && runQuoteAction("send")}>Approval &amp; Send</button></>}
+            actions={<button className="nexops-hero-primary-button" type="button" onClick={() => { if (selectedQuote) { openQuoteComposer(selectedQuote); } }}>Edit Quote</button>}
+            navigation={<><button className="active" type="button" aria-current="page">Overview</button><button type="button" onClick={() => { if (selectedQuote) { openQuoteComposer(selectedQuote); } }}>Pricing</button><button type="button" onClick={() => selectedQuote && runQuoteAction("send")}>Approval &amp; Send</button></>}
           >{null}</NexOpsDetailTemplate> : null}
           {selectedQuote ? (
             <div className="nexops-quote-detail">
@@ -2137,7 +2149,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
                   <p>{selectedQuote.title}</p>
                 </div>
                 <div className="nexops-inline-actions">
-                  <button type="button" onClick={() => { setComposer(composerFromQuote(selectedQuote, selectedClient)); setWorkspaceView("builder"); }} disabled={Boolean(busy) || !selectedQuoteCanEdit}>Edit in Composer</button>
+                  <button type="button" onClick={() => openQuoteComposer(selectedQuote)} disabled={Boolean(busy) || !selectedQuoteCanEdit}>Edit in Composer</button>
                   <a href={`/api/crm/quotes/${encodeURIComponent(selectedQuote.id)}/pdf?tenantId=${encodeURIComponent(props.tenantId)}`} rel="noreferrer" target="_blank">Open PDF</a>
                   <button type="button" onClick={() => void copyPortalLink()} disabled={Boolean(busy)}>Copy Portal Link</button>
                 </div>

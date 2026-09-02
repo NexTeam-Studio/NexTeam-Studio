@@ -465,27 +465,30 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
   async function refresh(): Promise<void> {
     setStatusMessage("Loading requests...");
     try {
-      const [requestsBody, formsBody] = await Promise.all([
-        fetch(`/api/crm/requests?tenantId=${encodeURIComponent(props.tenantId)}`).then((response) => response.json() as Promise<RequestsResponse>),
-        fetch(`/api/crm/request-forms?tenantId=${encodeURIComponent(props.tenantId)}`).then((response) => response.json() as Promise<RequestFormResponse>)
-      ]);
+      const requestsBody = await fetch(`/api/crm/requests?tenantId=${encodeURIComponent(props.tenantId)}`).then((response) => response.json() as Promise<RequestsResponse>);
       if (!requestsBody.ok) {
         throw new Error(requestsBody.error ?? "Requests are unavailable.");
       }
-      if (!formsBody.ok) {
-        throw new Error(formsBody.error ?? "Request forms are unavailable.");
-      }
       const nextRequests = requestsBody.requests ?? [];
-      const nextForms = formsBody.forms ?? [];
       setRequests(nextRequests);
-      setForms(nextForms);
       setSelectedRequestId((current) => current && nextRequests.some((request) => request.id === current) ? current : "");
       setStatusMessage(nextRequests.length ? `${nextRequests.length} request${nextRequests.length === 1 ? "" : "s"} loaded.` : "No requests yet. First intake is on you.");
     } catch (error) {
       setRequests([]);
-      setForms([]);
       setSelectedRequestId("");
       setStatusMessage(error instanceof Error ? error.message : "Requests are unavailable.");
+      return;
+    }
+
+    try {
+      const formsBody = await fetch(`/api/crm/request-forms?tenantId=${encodeURIComponent(props.tenantId)}`).then((response) => response.json() as Promise<RequestFormResponse>);
+      if (!formsBody.ok) {
+        throw new Error(formsBody.error ?? "Request forms are unavailable.");
+      }
+      setForms(formsBody.forms ?? []);
+    } catch (error) {
+      setForms([]);
+      setStatusMessage((current) => `${current} Request form setup is unavailable.`);
     }
   }
 

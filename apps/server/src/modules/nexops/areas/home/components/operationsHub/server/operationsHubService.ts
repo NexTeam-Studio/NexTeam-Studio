@@ -1,5 +1,6 @@
 import {
   type BusEvent,
+  type Client,
   type EventBus,
   type Invoice,
   type Quote,
@@ -156,6 +157,7 @@ interface TenantContext {
   visits: ScheduledVisit[];
   alerts: JobActionAlertRecord[];
   users: TenantUser[];
+  clientById: Map<string, Client>;
   detailByJobId: Map<string, JobDetailRecord>;
   requestById: Map<string, ServiceRequest>;
   quoteById: Map<string, Quote>;
@@ -272,13 +274,17 @@ function arrivalWindow(visit: ScheduledVisit): string {
   return `${start.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })} - ${end.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
 }
 
-function actorLabel(actorId: string | undefined, users: TenantUser[]): string {
+function actorLabel(actorId: string | undefined, users: TenantUser[], clients = new Map<string, Client>()): string {
   if (!actorId) {
     return "Office";
   }
   const matched = users.find((user) => user.id === actorId || user.authUid === actorId);
   if (matched) {
     return matched.displayName;
+  }
+  const client = clients.get(actorId);
+  if (client) {
+    return client.name;
   }
   if (actorId === "stripe_webhook") {
     return "Stripe";
@@ -289,7 +295,45 @@ function actorLabel(actorId: string | undefined, users: TenantUser[]): string {
   if (actorId.startsWith("internal:")) {
     return "Office";
   }
-  return actorId === "system" ? "System" : actorId;
+  if (actorId === "system") {
+    return "System";
+  }
+  return isRawEntityId(actorId) ? "Client" : actorId;
+}
+
+function isRawEntityId(value: string): boolean {
+  return /^(?:[a-z]+_)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
+    || /^(?:client|request|quote|job|invoice|payment|visit)_[a-z0-9_-]+$/i.test(value);
+}
+
+function normaliseActivityReference(input: {
+  reference: string;
+  title: string;
+  target: ActivityEntry["target"];
+  request?: ServiceRequest | undefined;
+  quote?: Quote | undefined;
+  job?: JobSummaryRecord | undefined;
+  invoice?: Invoice | undefined;
+}): Pick<ActivityEntry, "reference" | "title"> {
+  const label = input.target.module === "requests" ? "Request"
+    : input.target.module === "quotes" ? "Quote"
+      : input.target.module === "jobs" ? "Job"
+        : input.target.module === "invoices" ? "Invoice"
+          : "Payment";
+  const documentReference = input.target.module === "requests" ? input.request?.number
+    : input.target.module === "quotes" ? input.quote?.number
+      : input.target.module === "jobs" ? input.job?.number
+        : input.target.module === "invoices" ? input.invoice?.number
+          : input.invoice?.number ?? input.quote?.number;
+  const documentTitle = input.target.module === "requests" ? input.request?.subject
+    : input.target.module === "quotes" ? input.quote?.title
+      : input.target.module === "jobs" ? input.job?.title
+        : input.target.module === "invoices" ? input.invoice?.title
+          : input.invoice?.title ?? input.quote?.title;
+  return {
+    reference: !input.reference || isRawEntityId(input.reference) ? documentReference ?? label : input.reference,
+    title: !input.title || isRawEntityId(input.title) ? documentTitle ?? label : input.title
+  };
 }
 
 function recordOf(value: unknown): Record<string, unknown> {
@@ -500,6 +544,7 @@ export class OperationsHubService {
       visits,
       alerts,
       users,
+      clientById,
       detailByJobId,
       requestById: new Map(requests.map((request) => [request.id, request])),
       quoteById: new Map(quotes.map((quote) => [quote.id, quote])),
@@ -817,7 +862,7 @@ export class OperationsHubService {
       case "request.created":
         actor = stringValue(payload, "clientName") ?? request?.clientName ?? "Client";
         action = "submitted a request";
-        reference = request?.clientName ?? actor;
+        reference = request?.number ?? "Request";
         title = request?.subject ?? "Service request";
         break;
       case "request.converted_to_quote":
@@ -847,7 +892,7 @@ export class OperationsHubService {
         value = quote ? currency(quote.totals.total) : undefined;
         break;
       case "quote.viewed":
-        actor = quote?.approvedBy ?? quote?.clientId ?? "Client";
+        actor = actorLabel(quote?.approvedBy ?? quote?.clientId, context.users, context.clientById);
         action = "viewed a quote";
         reference = quote?.number ?? quote?.id ?? target.objectId;
         title = quote?.title ?? "Quote";
@@ -1042,6 +1087,7 @@ export class OperationsHubService {
         break;
     }
 
+    const display = normaliseActivityReference({ target, reference, title, request, quote, job, invoice });
     return {
       id: `activity_${event.id}`,
       eventId: event.id,
@@ -1049,8 +1095,7 @@ export class OperationsHubService {
       objectType,
       actor,
       action,
-      reference,
-      title,
+      ...display,
       ...(value ? { value } : {}),
       occurredAt: event.ts,
       relativeTime: relativeTime(event.ts, referenceTime),

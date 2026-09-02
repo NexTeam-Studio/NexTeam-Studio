@@ -471,6 +471,49 @@ test("operations hub activity feed renders every currently-defined lifecycle eve
   assert.equal(jobEntry?.target.objectId, job.id);
 });
 
+test("operations hub activity feed resolves every lifecycle event to a human document reference and title", async () => {
+  const fixture = createFixture();
+  const { request, quote, job } = await seedRequestQuoteJobInvoice(fixture);
+  const visit = await fixture.jobLifecycleService.scheduleVisit({
+    tenantId: "aquatrace",
+    jobId: job.id,
+    title: "Leak detection visit",
+    start: "2026-07-20T14:00:00.000Z",
+    end: "2026-07-20T16:00:00.000Z",
+    assignedTo: ["tech_1"]
+  });
+  const invoice = (await fixture.repository.listInvoices("aquatrace"))[0];
+  await emitCoverageEvents(fixture, {
+    requestId: request.id,
+    quoteId: quote.id,
+    jobId: job.id,
+    invoiceId: invoice.id,
+    visitId: visit.id,
+    paymentId: "payment_coverage_1"
+  });
+
+  const activity = await fixture.operationsHubService.getActivityFeed({
+    access: access("OWNER", "owner_1"),
+    limit: 100,
+    referenceTime: "2026-07-16T16:00:00.000Z"
+  });
+  const rawId = /^(?:client|request|quote|job|invoice|payment|visit)_[a-z0-9_-]+$/i;
+  for (const entry of activity) {
+    assert.doesNotMatch(entry.reference, rawId, `${entry.type} must not display a raw object id`);
+    assert.doesNotMatch(entry.title, rawId, `${entry.type} must not display a raw object id as its title`);
+    assert.doesNotMatch(entry.actor, rawId, `${entry.type} must not display a raw actor id`);
+    assert.ok(entry.reference.length > 0 && entry.title.length > 0, `${entry.type} must render a number/reference and title`);
+  }
+  assert.equal(activity.find((entry) => entry.type === "request.created")?.reference, request.number);
+  assert.equal(activity.find((entry) => entry.type === "request.created")?.title, request.subject);
+  assert.equal(activity.find((entry) => entry.type === "quote.viewed")?.actor, "Deborah Justice");
+  assert.equal(activity.find((entry) => entry.type === "quote.created")?.reference, quote.number);
+  assert.equal(activity.find((entry) => entry.type === "visit.booked")?.reference, job.number);
+  assert.equal(activity.find((entry) => entry.type === "invoice.created")?.reference, invoice.number);
+  assert.equal(activity.find((entry) => entry.type === "payment.created")?.reference, invoice.number);
+  assert.equal(activity.find((entry) => entry.type === "refund.created")?.reference, invoice.number);
+});
+
 test("documentation activity counts photo uploads and checklist completions with owner-wide and technician-self fencing", async () => {
   const fixture = createFixture();
   fixture.platformRepository.listTenantUsers = async () => ([

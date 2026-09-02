@@ -179,3 +179,12 @@ test("legacy template line without a catalog identifier remains saveable as an e
   assert.equal(draft.catalogItemId, "");
   assert.equal(draft.name, "Legacy documentation line");
 });
+
+test("Edit in Composer opens the selected draft with its existing composer data", () => {
+  const source = fs.readFileSync(path.resolve("apps/web/src/features/quotes/components/quoteEngine/NexOpsQuotesPage.tsx"), "utf8");
+
+  assert.match(source, /function openQuoteComposer\(quote: QuoteRecord\): void/);
+  assert.match(source, /setComposer\(composerFromQuote\(quote,/);
+  assert.match(source, /setQuoteBuilderMode\("new"\);/);
+  assert.match(source, /onClick=\{\(\) => openQuoteComposer\(selectedQuote\)\}/);
+});

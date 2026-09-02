@@ -54,3 +54,11 @@ test("Requests uses Title Case for named interface areas and controls", () => {
 test("Requests keeps explanatory copy in sentence case", () => {
   assert.ok(source.includes("Capture, review, and move verified service requests into quotes or jobs without losing their client and property context."));
 });
+
+test("Requests retains the default roster when request-form metadata is unavailable", () => {
+  assert.match(source, /const requestsBody = await fetch\(`\/api\/crm\/requests/);
+  assert.match(source, /setRequests\(nextRequests\);/);
+  assert.match(source, /const formsBody = await fetch\(`\/api\/crm\/request-forms/);
+  assert.match(source, /Request form setup is unavailable\./);
+  assert.doesNotMatch(source, /Promise\.all\(\[\s*fetch\(`\/api\/crm\/requests/);
+});
