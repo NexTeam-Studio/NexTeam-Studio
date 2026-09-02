@@ -36,6 +36,7 @@ import { FirestoreMediaRepository, MemoryMediaRepository, type MediaRepository }
 import { registerNativeMediaRoutes } from "./fielddocs/nativeMediaRoutes.js";
 import { CommsApprovalExecutor } from "./comms/approvalExecutor.js";
 import { createCommsRailFromEnv } from "./comms/gmailRegistry.js";
+import { TenantBrandingEmailSendAdapter } from "./comms/tenantBrandingEmail.js";
 import { ContentApprovalExecutor } from "./content/approvalExecutor.js";
 import { registerNexReachRoutes } from "./content/nexreachRoutes.js";
 import { NexReachService } from "./content/nexreachService.js";
@@ -118,6 +119,28 @@ const nativeCrmRepository = adminDb ? new FirestoreNativeCrmRepository(adminDb) 
 const fieldDocsService = new FieldDocsService({ mediaRepository, crmRepository: nativeCrmRepository });
 const nativeCrmProvider = new NativeAdapter(nativeCrmRepository, runtimeTenantId);
 const platformRepository = adminDb ? new FirestorePlatformRepository(adminDb) : new InMemoryPlatformRepository();
+if (commsRail.sendAdapter) {
+  const transactionalAdapter = commsRail.sendAdapter;
+  commsRail.sendAdapter = new TenantBrandingEmailSendAdapter(transactionalAdapter, async (tenantId) => {
+    const [branding, profile] = await Promise.all([
+      platformRepository.getTenantBranding(tenantId),
+      platformRepository.getTenantProfile(tenantId)
+    ]);
+    const address = profile?.primaryContact?.address;
+    const addressText = address && typeof address === "object"
+      ? Object.values(address).filter((value): value is string => typeof value === "string" && Boolean(value.trim())).join(", ")
+      : undefined;
+    return {
+      branding,
+      contact: profile?.primaryContact ? {
+        email: profile.primaryContact.email,
+        phone: profile.primaryContact.phone,
+        address: addressText,
+        website: profile.website
+      } : profile?.website ? { website: profile.website } : null
+    };
+  }, commsRail.senderEmail);
+}
 const platformStorage = adminDb ? new FirebaseStorageWriter(process.env.FIREBASE_STORAGE_BUCKET || process.env.VITE_FIREBASE_STORAGE_BUCKET) : new MemoryStorageWriter();
 const intakeRepository = adminDb ? new FirestoreIntakeRepository(adminDb) : new InMemoryIntakeRepository();
 const intakeService = new IntakeService(intakeRepository, platformRepository);
