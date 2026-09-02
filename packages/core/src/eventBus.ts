@@ -2,6 +2,8 @@ import type { Firestore } from "firebase-admin/firestore";
 import type { BusEvent, EventBus, EventType, ID } from "./types.js";
 import { busEventSchema } from "./schemas.js";
 
+const DEFAULT_EVENT_LIST_LIMIT = 250;
+
 function makeId(): ID {
   return `evt_${crypto.randomUUID()}`;
 }
@@ -37,10 +39,15 @@ export class InMemoryEventBus implements EventBus {
     }
   }
 
-  subscribe(type: EventType, handlerName: string, h: (e: BusEvent) => Promise<void>): void {
+  subscribe(type: EventType, handlerName: string, h: (e: BusEvent) => Promise<void>): () => void {
     const handlers = this.handlers.get(type) ?? [];
-    handlers.push({ name: handlerName, h });
+    const handler = { name: handlerName, h };
+    handlers.push(handler);
     this.handlers.set(type, handlers);
+    return () => {
+      const current = this.handlers.get(type) ?? [];
+      this.handlers.set(type, current.filter((registered) => registered !== handler));
+    };
   }
 
   async listEvents(input: {
@@ -58,6 +65,8 @@ export class InMemoryEventBus implements EventBus {
 }
 
 export class FirestoreEventBus implements EventBus {
+  private readonly handlers = new Map<EventType, Array<{ name: string; h: (e: BusEvent) => Promise<void> }>>();
+
   constructor(private readonly db: Firestore) {}
 
   async emit(e: Omit<BusEvent, "id" | "ts" | "processedBy">): Promise<void> {
@@ -87,38 +96,38 @@ export class FirestoreEventBus implements EventBus {
       }
       transaction.set(ref, event);
     });
+    await this.dispatch(event);
   }
 
-  subscribe(type: EventType, handlerName: string, h: (e: BusEvent) => Promise<void>): void {
-    this.db.collection("events").where("type", "==", type).onSnapshot((snapshot) => {
-      for (const change of snapshot.docChanges()) {
-        if (change.type === "removed") {
-          continue;
+  private async dispatch(event: BusEvent): Promise<void> {
+    for (const handler of this.handlers.get(event.type) ?? []) {
+      if (event.processedBy.includes(handler.name)) continue;
+      await handler.h(event);
+      await this.db.runTransaction(async (transaction) => {
+        const ref = this.db.collection("events").doc(event.id);
+        const latest = await transaction.get(ref);
+        if (!latest.exists) return;
+        const current = busEventSchema.parse(latest.data()) as BusEvent;
+        if (current.tenantId !== event.tenantId) {
+          throw new Error(`Event ${event.id} tenant changed before acknowledgement.`);
         }
-        const parsed = busEventSchema.safeParse(change.doc.data());
-        if (!parsed.success) {
-          continue;
-        }
-        const event = parsed.data as BusEvent;
-        if (event.processedBy.includes(handlerName)) {
-          continue;
-        }
-        void h(event).then(async () => {
-          await this.db.runTransaction(async (transaction) => {
-            const latest = await transaction.get(change.doc.ref);
-            if (!latest.exists) return;
-            const current = busEventSchema.parse(latest.data()) as BusEvent;
-            if (current.tenantId !== event.tenantId) {
-              throw new Error(`Event ${event.id} tenant changed before acknowledgement.`);
-            }
-            transaction.set(change.doc.ref, {
-              ...current,
-              processedBy: [...new Set([...current.processedBy, handlerName])]
-            });
-          });
+        transaction.set(ref, {
+          ...current,
+          processedBy: [...new Set([...current.processedBy, handler.name])]
         });
-      }
-    });
+      });
+    }
+  }
+
+  subscribe(type: EventType, handlerName: string, h: (e: BusEvent) => Promise<void>): () => void {
+    const handlers = this.handlers.get(type) ?? [];
+    const handler = { name: handlerName, h };
+    handlers.push(handler);
+    this.handlers.set(type, handlers);
+    return () => {
+      const current = this.handlers.get(type) ?? [];
+      this.handlers.set(type, current.filter((registered) => registered !== handler));
+    };
   }
 
   async listEvents(input: {
@@ -126,6 +135,7 @@ export class FirestoreEventBus implements EventBus {
     limit?: number | undefined;
     types?: EventType[] | undefined;
   } = {}): Promise<BusEvent[]> {
+    const requestedLimit = input.limit && input.limit > 0 ? input.limit : DEFAULT_EVENT_LIST_LIMIT;
     let query: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = this.db.collection("events");
     if (input.tenantId) {
       query = query.where("tenantId", "==", input.tenantId);
@@ -134,9 +144,7 @@ export class FirestoreEventBus implements EventBus {
       query = query.where("type", "==", input.types[0]);
     }
     query = query.orderBy("ts", "desc");
-    if (input.limit && input.limit > 0) {
-      query = query.limit(input.limit);
-    }
+    query = query.limit(requestedLimit);
     let snapshot: FirebaseFirestore.QuerySnapshot<FirebaseFirestore.DocumentData>;
     try {
       snapshot = await query.get();
@@ -148,7 +156,10 @@ export class FirestoreEventBus implements EventBus {
       }
       // A newly provisioned tenant can briefly be missing the optional read index.
       // Keep the activity surface available until the declarative index deployment catches up.
-      snapshot = await this.db.collection("events").where("tenantId", "==", input.tenantId).get();
+      snapshot = await this.db.collection("events")
+        .where("tenantId", "==", input.tenantId)
+        .limit(requestedLimit)
+        .get();
     }
     const parsed = snapshot.docs
       .map((doc) => busEventSchema.safeParse(doc.data()))
@@ -156,6 +167,6 @@ export class FirestoreEventBus implements EventBus {
       .map((result) => result.data)
       .filter((event) => !input.types?.length || input.types.includes(event.type))
       .sort((left, right) => right.ts.localeCompare(left.ts));
-    return input.limit && input.limit > 0 ? parsed.slice(0, input.limit) : parsed;
+    return parsed.slice(0, requestedLimit);
   }
 }

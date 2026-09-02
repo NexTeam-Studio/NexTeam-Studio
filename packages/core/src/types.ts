@@ -1806,7 +1806,7 @@ export interface BusEvent {
 export interface EventBus {
   emit(e: Omit<BusEvent, "id" | "ts" | "processedBy">): Promise<void>;
   emitOnce(idempotencyKey: ID, e: Omit<BusEvent, "id" | "ts" | "processedBy">): Promise<void>;
-  subscribe(type: EventType, handlerName: string, h: (e: BusEvent) => Promise<void>): void;
+  subscribe(type: EventType, handlerName: string, h: (e: BusEvent) => Promise<void>): () => void;
   listEvents(input?: {
     tenantId?: ID | undefined;
     limit?: number | undefined;
