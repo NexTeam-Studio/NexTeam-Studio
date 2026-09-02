@@ -42,8 +42,8 @@ test("shared tenant reader bounds the default page and returns an opaque continu
   assert.deepEqual(page, { records: [{ id: "client_251" }], nextCursor: undefined });
   assert.deepEqual(db.operations, [
     ["where", "tenantId", "==", "tenant_1"],
-    ["orderBy"],
-    ["limit", 250]
+    ["limit", 250],
+    ["orderBy"]
   ]);
 });
 

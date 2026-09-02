@@ -1,6 +1,7 @@
 import type { Firestore } from "firebase-admin/firestore";
 import { setTenantOwnedDocument } from "../../../../core/tenantOwnedWrite.js";
 import { asDocumentData } from "../persistence/firestoreRepositoryBase.js";
+import { DEFAULT_FIRESTORE_READ_LIMIT, recordFirestoreRead } from "@nexteam/core";
 import { compensationFactSchema, laborFactSchema, type CompensationFact, type LaborFact, type TimePayEvent, type TimePayRepository } from "./timePayFoundation.js";
 
 export class FirestoreTimePayRepository implements TimePayRepository {
@@ -12,5 +13,5 @@ export class FirestoreTimePayRepository implements TimePayRepository {
   async getCompensation(tenantId: string, id: string) { const row = await this.db.collection("compensationFacts").doc(id).get(); if (!row.exists) return null; const fact = compensationFactSchema.parse(row.data()); return fact.tenantId === tenantId ? fact : null; }
   async saveCompensation(fact: CompensationFact) { const parsed = compensationFactSchema.parse(fact); await setTenantOwnedDocument({ db: this.db, collection: "compensationFacts", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Compensation fact ${parsed.id}` }); return parsed; }
   async appendEvent(event: TimePayEvent) { await setTenantOwnedDocument({ db: this.db, collection: "timePayEvents", id: event.id, tenantId: event.tenantId, data: asDocumentData(event), label: `Time/pay event ${event.id}` }); }
-  async listEvents(tenantId: string, factId?: string) { let query = this.db.collection("timePayEvents").where("tenantId", "==", tenantId); if (factId) query = query.where("factId", "==", factId); const rows = await query.limit(250).get(); return rows.docs.map((d) => d.data() as TimePayEvent).sort((a, b) => a.occurredAt.localeCompare(b.occurredAt)); }
+  async listEvents(tenantId: string, factId?: string) { let query = this.db.collection("timePayEvents").where("tenantId", "==", tenantId); if (factId) query = query.where("factId", "==", factId); const rows = await query.limit(DEFAULT_FIRESTORE_READ_LIMIT).get(); recordFirestoreRead({ collection: "timePayEvents", operation: "time-pay-events", tenantId, returnedDocumentCount: rows.docs.length, limit: DEFAULT_FIRESTORE_READ_LIMIT, filters: factId ? ["tenantId", "factId"] : ["tenantId"] }); return rows.docs.map((d) => d.data() as TimePayEvent).sort((a, b) => a.occurredAt.localeCompare(b.occurredAt)); }
 }

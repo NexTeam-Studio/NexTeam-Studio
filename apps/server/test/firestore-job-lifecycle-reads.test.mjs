@@ -13,6 +13,10 @@ function firestoreWithLifecycleEvent() {
           operations.push(["where", field, operator, value]);
           return this;
         },
+        limit(value) {
+          operations.push(["limit", value]);
+          return this;
+        },
         async get() {
           return {
             docs: [{ data: () => ({
@@ -39,7 +43,8 @@ test("job detail lifecycle history queries only the selected job", async () => {
   assert.equal(events.length, 1);
   assert.deepEqual(db.operations, [
     ["where", "tenantId", "==", "tenant_1"],
-    ["where", "jobId", "==", "job_1"]
+    ["where", "jobId", "==", "job_1"],
+    ["limit", 250]
   ]);
 });
 

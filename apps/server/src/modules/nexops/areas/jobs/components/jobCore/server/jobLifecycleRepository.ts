@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Firestore, DocumentData } from "firebase-admin/firestore";
-import { RailError, customerDocumentPackageDeliveryAttemptSchema, customerDocumentPackageSchema, eventTypeSchema, type CustomerDocumentPackage, type CustomerDocumentPackageDeliveryAttempt, type EventType } from "@nexteam/core";
+import { DEFAULT_FIRESTORE_READ_LIMIT, RailError, customerDocumentPackageDeliveryAttemptSchema, customerDocumentPackageSchema, eventTypeSchema, recordFirestoreRead, type CustomerDocumentPackage, type CustomerDocumentPackageDeliveryAttempt, type EventType } from "@nexteam/core";
 import { z } from "zod";
 import { assertMemoryTenantOwner, setTenantOwnedDocument } from "../../../../../../../core/tenantOwnedWrite.js";
 import {
@@ -246,7 +246,9 @@ export class FirestoreJobLifecycleRepository implements JobLifecycleRepository {
     const snapshot = await this.db.collection("jobLifecycleEvents")
       .where("tenantId", "==", tenantId)
       .where("jobId", "==", jobId)
+      .limit(DEFAULT_FIRESTORE_READ_LIMIT)
       .get();
+    recordFirestoreRead({ collection: "jobLifecycleEvents", operation: "job-lifecycle-history", tenantId, returnedDocumentCount: snapshot.docs.length, limit: DEFAULT_FIRESTORE_READ_LIMIT, filters: ["tenantId", "jobId"] });
     return snapshot.docs
       .map((doc) => lifecycleEventSchema.parse(doc.data()) as JobLifecycleEventRecord)
       .sort((left, right) => left.createdAt.localeCompare(right.createdAt));

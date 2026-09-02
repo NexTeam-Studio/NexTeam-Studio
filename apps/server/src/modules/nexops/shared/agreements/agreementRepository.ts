@@ -1,6 +1,7 @@
 import type { Firestore } from "firebase-admin/firestore";
 import { setTenantOwnedDocument } from "../../../../core/tenantOwnedWrite.js";
 import { asDocumentData } from "../persistence/firestoreRepositoryBase.js";
+import { DEFAULT_FIRESTORE_READ_LIMIT, recordFirestoreRead } from "@nexteam/core";
 import { agreementSchema, type Agreement, type AgreementEvent, type AgreementRepository } from "./agreementFoundation.js";
 
 export class FirestoreAgreementRepository implements AgreementRepository {
@@ -9,5 +10,5 @@ export class FirestoreAgreementRepository implements AgreementRepository {
   async get(tenantId: string, id: string) { const snapshot = await this.db.collection("serviceAgreements").doc(id).get(); if (!snapshot.exists) return null; const agreement = agreementSchema.parse(snapshot.data()); return agreement.tenantId === tenantId ? agreement : null; }
   async save(agreement: Agreement) { const parsed = agreementSchema.parse(agreement); await setTenantOwnedDocument({ db: this.db, collection: "serviceAgreements", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Agreement ${parsed.id}` }); return parsed; }
   async appendEvent(event: AgreementEvent) { await setTenantOwnedDocument({ db: this.db, collection: "serviceAgreementEvents", id: event.id, tenantId: event.tenantId, data: asDocumentData(event), label: `Agreement event ${event.id}` }); }
-  async listEvents(tenantId: string, agreementId: string) { const snapshot = await this.db.collection("serviceAgreementEvents").where("tenantId", "==", tenantId).where("agreementId", "==", agreementId).get(); return snapshot.docs.map((doc) => doc.data() as AgreementEvent).sort((a, b) => a.occurredAt.localeCompare(b.occurredAt)); }
+  async listEvents(tenantId: string, agreementId: string) { const snapshot = await this.db.collection("serviceAgreementEvents").where("tenantId", "==", tenantId).where("agreementId", "==", agreementId).limit(DEFAULT_FIRESTORE_READ_LIMIT).get(); recordFirestoreRead({ collection: "serviceAgreementEvents", operation: "agreement-events", tenantId, returnedDocumentCount: snapshot.docs.length, limit: DEFAULT_FIRESTORE_READ_LIMIT, filters: ["tenantId", "agreementId"] }); return snapshot.docs.map((doc) => doc.data() as AgreementEvent).sort((a, b) => a.occurredAt.localeCompare(b.occurredAt)); }
 }

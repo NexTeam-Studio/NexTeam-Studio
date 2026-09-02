@@ -1,5 +1,5 @@
 import type { Firestore } from "firebase-admin/firestore";
-import { clientSchema, propertySchema, type Client, type Property } from "@nexteam/core";
+import { clientSchema, DEFAULT_FIRESTORE_READ_LIMIT, propertySchema, type Client, type Property } from "@nexteam/core";
 
 
 import { asDocumentData, createTenantFirestoreReader } from "../../../../../shared/persistence/firestoreRepositoryBase.js";
@@ -21,18 +21,19 @@ export function createContactFirestoreRepository(db: Firestore) {
       },
 
     async deletePropertiesForClient(tenantId: string, clientId: string): Promise<string[]> {
-        const snapshot = await db
-          .collection("properties")
-          .where("tenantId", "==", tenantId)
-          .where("clientId", "==", clientId)
-          .get();
-        if (snapshot.empty) {
-          return [];
-        }
         const deletedIds: string[] = [];
-        for (const doc of snapshot.docs) {
-          const deleted = await deleteTenantOwnedDocument({ db, collection: "properties", id: doc.id, tenantId, label: `Property ${doc.id}` });
-          if (deleted) deletedIds.push(doc.id);
+        while (true) {
+          const snapshot = await db
+            .collection("properties")
+            .where("tenantId", "==", tenantId)
+            .where("clientId", "==", clientId)
+            .limit(DEFAULT_FIRESTORE_READ_LIMIT)
+            .get();
+          if (snapshot.empty) break;
+          for (const doc of snapshot.docs) {
+            const deleted = await deleteTenantOwnedDocument({ db, collection: "properties", id: doc.id, tenantId, label: `Property ${doc.id}` });
+            if (deleted) deletedIds.push(doc.id);
+          }
         }
         return deletedIds;
       },

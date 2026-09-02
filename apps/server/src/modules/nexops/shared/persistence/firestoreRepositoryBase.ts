@@ -1,9 +1,8 @@
 import { FieldPath, type DocumentData, type Firestore } from "firebase-admin/firestore";
+import { boundedTenantQuery, DEFAULT_FIRESTORE_READ_LIMIT, recordFirestoreRead } from "@nexteam/core";
 import type { ZodSchema } from "zod";
 
 export type NativeCollectionName = "clients" | "properties" | "requests" | "requestForms" | "crmSettings" | "quoteTemplates" | "jobs" | "quotes" | "invoices";
-
-const DEFAULT_TENANT_PAGE_SIZE = 250;
 
 export type TenantListPage<T> = {
   records: T[];
@@ -34,15 +33,20 @@ export function createTenantFirestoreReader(db: Firestore) {
       schema: ZodSchema<T>,
       input: { limit?: number | undefined; cursor?: string | undefined } = {}
     ): Promise<TenantListPage<T>> {
-      const limit = Math.min(Math.max(input.limit ?? DEFAULT_TENANT_PAGE_SIZE, 1), DEFAULT_TENANT_PAGE_SIZE);
-      let query = db.collection(collectionName)
-        .where("tenantId", "==", tenantId)
-        .orderBy(FieldPath.documentId())
-        .limit(limit);
+      const limit = Math.min(Math.max(input.limit ?? DEFAULT_FIRESTORE_READ_LIMIT, 1), DEFAULT_FIRESTORE_READ_LIMIT);
+      let query = boundedTenantQuery(db, collectionName, tenantId, { limit }).orderBy(FieldPath.documentId());
       if (input.cursor) {
         query = query.startAfter(input.cursor);
       }
       const snapshot = await query.get();
+      recordFirestoreRead({
+        collection: collectionName,
+        operation: "tenant-list-page",
+        tenantId,
+        returnedDocumentCount: snapshot.docs.length,
+        limit,
+        filters: ["tenantId"]
+      });
       return {
         records: snapshot.docs.map((doc) => schema.parse(doc.data())),
         nextCursor: snapshot.docs.length === limit ? snapshot.docs.at(-1)?.id : undefined

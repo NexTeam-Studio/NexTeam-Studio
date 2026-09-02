@@ -1,8 +1,9 @@
 import type { Firestore } from "firebase-admin/firestore";
 import type { BusEvent, EventBus, EventType, ID } from "./types.js";
+import { boundedTenantQuery, DEFAULT_FIRESTORE_READ_LIMIT, recordFirestoreRead } from "./firestoreReadSafety.js";
 import { busEventSchema } from "./schemas.js";
 
-const DEFAULT_EVENT_LIST_LIMIT = 250;
+const DEFAULT_EVENT_LIST_LIMIT = DEFAULT_FIRESTORE_READ_LIMIT;
 
 function makeId(): ID {
   return `evt_${crypto.randomUUID()}`;
@@ -135,11 +136,11 @@ export class FirestoreEventBus implements EventBus {
     limit?: number | undefined;
     types?: EventType[] | undefined;
   } = {}): Promise<BusEvent[]> {
-    const requestedLimit = input.limit && input.limit > 0 ? input.limit : DEFAULT_EVENT_LIST_LIMIT;
-    let query: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = this.db.collection("events");
-    if (input.tenantId) {
-      query = query.where("tenantId", "==", input.tenantId);
+    if (!input.tenantId) {
+      throw new Error("Firestore event reads require a tenantId.");
     }
+    const requestedLimit = Math.min(input.limit && input.limit > 0 ? input.limit : DEFAULT_EVENT_LIST_LIMIT, DEFAULT_EVENT_LIST_LIMIT);
+    let query: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = boundedTenantQuery(this.db, "events", input.tenantId, { limit: requestedLimit });
     if (input.types?.length === 1) {
       query = query.where("type", "==", input.types[0]);
     }
@@ -151,16 +152,14 @@ export class FirestoreEventBus implements EventBus {
     } catch (error) {
       const missingIndex = error instanceof Error
         && (error.message.includes("requires an index") || error.message.includes("FAILED_PRECONDITION"));
-      if (!input.tenantId || !missingIndex) {
+      if (!missingIndex) {
         throw error;
       }
       // A newly provisioned tenant can briefly be missing the optional read index.
       // Keep the activity surface available until the declarative index deployment catches up.
-      snapshot = await this.db.collection("events")
-        .where("tenantId", "==", input.tenantId)
-        .limit(requestedLimit)
-        .get();
+      snapshot = await boundedTenantQuery(this.db, "events", input.tenantId, { limit: requestedLimit }).get();
     }
+    recordFirestoreRead({ collection: "events", operation: "event-list", tenantId: input.tenantId, returnedDocumentCount: snapshot.docs.length, limit: requestedLimit, filters: input.types?.length === 1 ? ["tenantId", "type"] : ["tenantId"] });
     const parsed = snapshot.docs
       .map((doc) => busEventSchema.safeParse(doc.data()))
       .filter((result): result is { success: true; data: BusEvent } => result.success)
