@@ -36,7 +36,8 @@ test("request routes create, update, convert, archive, and reopen while preservi
         sentEmails.push(outbound);
         return { id: `sent_${sentEmails.length}` };
       }
-    }
+    },
+    senderEmail: "staging@example.test"
   };
   const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CompositeApprovalExecutor([
     { canExecute: (item) => item.execute.service === "comms" && item.execute.op === "sendEmail", executor: new CommsApprovalExecutor(commsRail) },
@@ -48,10 +49,11 @@ test("request routes create, update, convert, archive, and reopen while preservi
     approvalQueue,
     memoryRepository: repository,
     platformRepository: {
-      listTenantUsers: async () => [{ id: "owner_1", tenantId: "aquatrace", displayName: "Chris", role: "OWNER", active: true, email: "owner@example.test" }]
+      listTenantUsers: async () => [{ id: "owner_1", tenantId: "aquatrace", displayName: "Chris", role: "OWNER", active: true, email: "owner@example.test" }],
+      getTenantBranding: async () => ({ tenantId: "aquatrace", displayName: "Aquatrace", colors: { primary: "#08776f", secondary: "#0a2430", accent: "#98ff00", accentText: "#102333", background: "#f4f7f5", surface: "#ffffff", text: "#14232d", mutedText: "#5f6d75" } })
     },
     commsRail,
-    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false", NEXOPS_PUBLIC_BASE_URL: "https://nexstage.example.test" }
   });
 
   const server = await new Promise((resolve) => {
@@ -112,6 +114,13 @@ test("request routes create, update, convert, archive, and reopen while preservi
     assert.ok(publicSubmissionBody.request.notifications?.clientConfirmationAt, "the email-only client confirmation is sent through the approval rail");
     assert.equal(sentEmails.length, 2, "public request submission sends one internal notification and one client confirmation");
     assert.deepEqual(sentEmails.map((email) => email.to), [["service@aquatraceleak.com"], ["public-intake@example.test"]]);
+    assert.match(sentEmails[0].bodyHtml, /Open request in NexOps/);
+    assert.match(sentEmails[1].bodyHtml, /Visit Aquatrace/);
+    assert.match(sentEmails[0].bodyHtml, /#08776f/);
+    assert.equal(sentEmails[0].from, "Aquatrace via NexOps <staging@example.test>");
+    assert.equal(sentEmails[1].from, "Aquatrace <staging@example.test>");
+    assert.match(sentEmails[0].bodyText, /matches an existing client on file|No matching client was found/);
+    assert.doesNotMatch(sentEmails[0].bodyText, /Exact match hit/);
     assert.ok(publicSubmissionBody.request.selectedClientId, "public submission links to a saved client immediately");
     const publicClient = (await repository.listClients("aquatrace")).find((client) => client.id === publicSubmissionBody.request.selectedClientId);
     assert.ok(publicClient, "the linked client is persisted in the tenant client database");

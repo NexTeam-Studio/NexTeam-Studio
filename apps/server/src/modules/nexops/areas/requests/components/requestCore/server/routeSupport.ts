@@ -81,7 +81,8 @@ export function createRequestRouteSupport(input: {
       approvalQueue: input.deps.approvalQueue,
       commsRail: input.deps.commsRail,
       platformRepository: input.deps.platformRepository,
-      crmRepository: repository
+      crmRepository: repository,
+      publicBaseUrl: input.env.NEXOPS_PUBLIC_BASE_URL?.trim() || undefined
     });
     if (notified.notifications && (
       notified.notifications.adminNotifiedAt !== created.notifications?.adminNotifiedAt

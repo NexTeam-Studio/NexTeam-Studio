@@ -46,7 +46,7 @@ import { assertTenantDocumentOwner, setPlatformOwnedDocument, setTenantOwnedDocu
 import type { TenantOwnerInvite } from "./tenantOwnerInvite.js";
 import { platformUserAuditSchema, platformUserSchema, type PlatformUser, type PlatformUserAudit } from "./team.js";
 import { platformSecurityAuditSchema, platformSessionSchema, type PlatformSecurityAudit, type PlatformSession } from "./sessionSecurity.js";
-import { defaultNexCommandCommunicationTemplates, defaultNexCommandOnboardingTemplates, nexCommandCommunicationTemplateSchema, nexCommandOnboardingTemplateSchema, type NexCommandCommunicationTemplate, type NexCommandOnboardingTemplate } from "./templateLibrary.js";
+import { defaultNexCommandCommunicationTemplates, defaultNexCommandOnboardingTemplates, nexCommandCommunicationTemplateSchema, nexCommandOnboardingTemplateSchema, normalizeNexCommandCommunicationTemplates, type NexCommandCommunicationTemplate, type NexCommandOnboardingTemplate } from "./templateLibrary.js";
 
 function defaultApproval(): Tenant["approval"] {
   return {
@@ -304,9 +304,9 @@ export class InMemoryPlatformRepository implements PlatformRepository {
   }
 
   async listNexCommandCommunicationTemplates(): Promise<NexCommandCommunicationTemplate[]> {
-    return this.nexCommandCommunicationTemplates.size
+    return normalizeNexCommandCommunicationTemplates(this.nexCommandCommunicationTemplates.size
       ? [...this.nexCommandCommunicationTemplates.values()].map(firestoreDoc)
-      : defaultNexCommandCommunicationTemplates();
+      : defaultNexCommandCommunicationTemplates());
   }
   async saveNexCommandCommunicationTemplate(template: NexCommandCommunicationTemplate): Promise<NexCommandCommunicationTemplate> {
     const parsed = nexCommandCommunicationTemplateSchema.parse(template) as NexCommandCommunicationTemplate;
@@ -721,7 +721,9 @@ export class FirestorePlatformRepository implements PlatformRepository {
 
   async listNexCommandCommunicationTemplates(): Promise<NexCommandCommunicationTemplate[]> {
     const snapshot = await this.db.collection("nexCommandCommunicationTemplates").get();
-    return snapshot.empty ? defaultNexCommandCommunicationTemplates() : snapshot.docs.map((doc) => nexCommandCommunicationTemplateSchema.parse(doc.data()) as NexCommandCommunicationTemplate);
+    return normalizeNexCommandCommunicationTemplates(
+      snapshot.empty ? defaultNexCommandCommunicationTemplates() : snapshot.docs.map((doc) => nexCommandCommunicationTemplateSchema.parse(doc.data()) as NexCommandCommunicationTemplate)
+    );
   }
   async saveNexCommandCommunicationTemplate(template: NexCommandCommunicationTemplate): Promise<NexCommandCommunicationTemplate> {
     const parsed = nexCommandCommunicationTemplateSchema.parse(template) as NexCommandCommunicationTemplate;

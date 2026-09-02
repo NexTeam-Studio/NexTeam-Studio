@@ -201,6 +201,20 @@ export function defaultCommunicationTemplates(tenantId: string) {
       updatedAt: timestamp
     },
     {
+      id: `comms_new_request_internal_alert_${tenantId}`,
+      tenantId,
+      category: "new_request_internal_alert",
+      label: "New request — internal alert",
+      description: "Staff notification when a new service request is received.",
+      emailEnabled: true,
+      smsEnabled: true,
+      emailSubject: "New request from {{CLIENT_NAME}}",
+      emailBody: "A new request has been submitted.\n\nClient: {{CLIENT_NAME}}\nEmail: {{CLIENT_EMAIL}}\nPhone: {{CLIENT_PHONE}}\nService address: {{SERVICE_ADDRESS}}\n\nRequest details:\n{{REQUEST_SUMMARY}}\n\n{{MATCH_STATUS}}",
+      smsBody: "New request from {{CLIENT_NAME}} at {{SERVICE_ADDRESS}}. {{MATCH_STATUS}}",
+      createdAt: timestamp,
+      updatedAt: timestamp
+    },
+    {
       id: `comms_quote_send_${tenantId}`,
       tenantId,
       category: "quote_send",

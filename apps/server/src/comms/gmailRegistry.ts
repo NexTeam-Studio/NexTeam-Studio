@@ -8,6 +8,8 @@ export interface CommsRail {
   sendAdapter: EmailSendProvider | null;
   sendSms?: ((message: OutboundSms) => Promise<SendReceipt>) | undefined;
   operatorEmail?: string | undefined;
+  /** Verified sending address, exposed only so workflow code can choose a display name safely. */
+  senderEmail?: string | undefined;
 }
 
 export type TransactionalProviderStatus = {
@@ -206,6 +208,7 @@ export function createCommsRailFromEnv(env: NodeJS.ProcessEnv): CommsRail {
     sendSms: value(env, "TWILIO_ACCOUNT_SID") && value(env, "TWILIO_AUTH_TOKEN") && value(env, "TWILIO_FROM_NUMBER")
       ? (message) => sendSmsViaTwilio(env, message)
       : undefined,
-    operatorEmail: value(env, "NEXI_OPERATOR_EMAIL") || value(env, "OPERATOR_EMAIL") || undefined
+    operatorEmail: value(env, "NEXI_OPERATOR_EMAIL") || value(env, "OPERATOR_EMAIL") || undefined,
+    senderEmail: resendConfig?.from.match(/<([^>]+)>/)?.[1] ?? resendConfig?.from
   };
 }

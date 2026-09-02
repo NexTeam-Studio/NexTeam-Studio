@@ -39,6 +39,14 @@ export function defaultNexCommandCommunicationTemplates(): NexCommandCommunicati
   }));
 }
 
+/** Preserves master edits while adding new platform categories to an existing library. */
+export function normalizeNexCommandCommunicationTemplates(
+  templates: NexCommandCommunicationTemplate[]
+): NexCommandCommunicationTemplate[] {
+  const existing = new Map(templates.map((template) => [template.category, template]));
+  return defaultNexCommandCommunicationTemplates().map((fallback) => existing.get(fallback.category) ?? fallback);
+}
+
 export function defaultNexCommandOnboardingTemplates(): NexCommandOnboardingTemplate[] {
   const createdAt = "2026-08-31T00:00:00.000Z";
   return [

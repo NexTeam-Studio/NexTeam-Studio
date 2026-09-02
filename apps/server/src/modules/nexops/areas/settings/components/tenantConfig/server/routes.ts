@@ -158,7 +158,9 @@ export function registerTenantConfigRoutes(context: CrmRouteContext): void {
       const reset = { ...fallback, createdAt: current?.createdAt ?? fallback.createdAt, updatedAt: timestamp };
       const saved = await repository.saveCrmSettings({
         ...settings,
-        communicationTemplates: templates.map((template) => template.category === fallback.category ? reset : template),
+        communicationTemplates: templates.some((template) => template.category === fallback.category)
+          ? templates.map((template) => template.category === fallback.category ? reset : template)
+          : [...templates, reset],
         updatedAt: timestamp
       });
       res.json({ ok: true, settings: saved, template: reset, wasCustomized: current ? !communicationTemplateMatchesDefault(current, fallback) : false });

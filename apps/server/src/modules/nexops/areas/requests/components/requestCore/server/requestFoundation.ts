@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { addressFromIntakeFields, addressStorageKey, RailError, type Address, type ApprovalQueueService, type Client, type IntakeFieldDefinition, type IntakeFieldValue, type IntakeSnapshot, type Property, type Quote, type RequestForm, type ServiceRequest, type ServiceRequestMatch, type TenantUser } from "@nexteam/core";
+import { addressFromIntakeFields, addressStorageKey, RailError, type Address, type ApprovalQueueService, type Client, type IntakeFieldDefinition, type IntakeFieldValue, type IntakeSnapshot, type Property, type Quote, type RequestForm, type ServiceRequest, type ServiceRequestMatch, type TenantBranding, type TenantUser } from "@nexteam/core";
 import type { NativeCrmRepository } from "@nexteam/providers";
 import type { CommsRail } from "../../../../../../../comms/gmailRegistry.js";
 import type { PlatformRepository } from "../../../../../../../platform/repository.js";
@@ -10,8 +10,9 @@ import { materializeQuoteRecord } from "../../../../quotes/components/quoteEngin
 export interface RequestAutomationDeps {
   approvalQueue?: ApprovalQueueService | undefined;
   commsRail?: CommsRail | undefined;
-  platformRepository?: Pick<PlatformRepository, "listTenantUsers"> | undefined;
-  crmRepository?: Pick<NativeCrmRepository, "getCrmSettings"> | undefined;
+  platformRepository?: Pick<PlatformRepository, "listTenantUsers"> & Partial<Pick<PlatformRepository, "getTenantBranding">> | undefined;
+  crmRepository?: Pick<NativeCrmRepository, "getCrmSettings"> & Partial<Pick<NativeCrmRepository, "getRequestForm">> | undefined;
+  publicBaseUrl?: string | undefined;
 }
 
 export interface RequestFieldPatch {
@@ -988,11 +989,46 @@ function notificationRecipients(users: TenantUser[], operatorEmail?: string | un
   )];
 }
 
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#039;" })[character] ?? character);
+}
+
+function requestEmailParagraphs(bodyText: string): string {
+  return bodyText.split(/\n{2,}/).map((paragraph) => `<p style="margin:0 0 18px;white-space:pre-line;">${escapeHtml(paragraph)}</p>`).join("");
+}
+
+/** One branded wrapper is used for both customer and staff request emails. */
+function brandedRequestEmail(input: {
+  branding: TenantBranding | null;
+  bodyText: string;
+  cta?: { label: string; href: string } | undefined;
+  footer?: { privacyUrl?: string | undefined; termsUrl?: string | undefined } | undefined;
+}): string {
+  const name = input.branding?.displayName || "NexOps";
+  const primary = input.branding?.colors.primary || "#00796b";
+  const accent = input.branding?.colors.accent || "#98ff00";
+  const logo = input.branding?.logo?.url
+    ? `<img src="${escapeHtml(input.branding.logo.url)}" alt="${escapeHtml(name)}" style="max-height:56px;max-width:220px;display:block;margin:0 auto;" />`
+    : `<div style="font-size:28px;font-weight:800;color:${accent};text-align:center;">${escapeHtml(name)}</div>`;
+  const cta = input.cta ? `<p style="margin:24px 0;text-align:center;"><a href="${escapeHtml(input.cta.href)}" style="display:inline-block;background:${primary};color:#ffffff;text-decoration:none;border-radius:7px;padding:14px 22px;font-weight:700;">${escapeHtml(input.cta.label)}</a></p>` : "";
+  const links = [
+    input.footer?.privacyUrl ? `<a href="${escapeHtml(input.footer.privacyUrl)}" style="color:${primary};">Privacy policy</a>` : "",
+    input.footer?.termsUrl ? `<a href="${escapeHtml(input.footer.termsUrl)}" style="color:${primary};">Terms of service</a>` : ""
+  ].filter(Boolean).join(" &nbsp;|&nbsp; ");
+  return `<!doctype html><html><body style="margin:0;padding:24px;background:#f4f7f5;font-family:Arial,sans-serif;color:#14232d;"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center"><table role="presentation" width="100%" style="max-width:640px;background:#ffffff;border-radius:16px;overflow:hidden;"><tr><td style="background:${primary};padding:28px 32px;">${logo}</td></tr><tr><td style="padding:32px;font-size:16px;line-height:1.55;">${requestEmailParagraphs(input.bodyText)}${cta}</td></tr><tr><td style="padding:22px 32px;background:#f4f7f5;color:#5f6d75;font-size:12px;text-align:center;">${links || escapeHtml(name)}${links ? `<br /><br />${escapeHtml(name)}` : ""}</td></tr></table></td></tr></table></body></html>`;
+}
+
+function outboundSender(rail: CommsRail | undefined, displayName: string): string | undefined {
+  return rail?.senderEmail ? `${displayName} <${rail.senderEmail}>` : undefined;
+}
+
 async function queueEmail(input: {
   tenantId: string;
   to: string[];
   subject: string;
   bodyText: string;
+  bodyHtml?: string | undefined;
+  from?: string | undefined;
   approvalQueue?: ApprovalQueueService | undefined;
   commsRail?: CommsRail | undefined;
 }): Promise<{ approvalId?: string | undefined; sentAt?: string | undefined }> {
@@ -1016,7 +1052,9 @@ async function queueEmail(input: {
           mailbox: input.commsRail.sendAdapter.mailbox,
           to: input.to,
           subject: input.subject,
-          bodyText: input.bodyText
+          bodyText: input.bodyText,
+          ...(input.bodyHtml ? { bodyHtml: input.bodyHtml } : {}),
+          ...(input.from ? { from: input.from } : {})
         }
       }
     },
@@ -1033,6 +1071,11 @@ export async function notifyRequestCreated(
 ): Promise<ServiceRequest> {
   const settings = automation.crmRepository ? await automation.crmRepository.getCrmSettings(request.tenantId) : undefined;
   const requestVariables = requestTemplateVariables(request);
+  const branding = automation.platformRepository?.getTenantBranding ? await automation.platformRepository.getTenantBranding(request.tenantId) : null;
+  const form = request.formId && automation.crmRepository?.getRequestForm ? await automation.crmRepository.getRequestForm(request.tenantId, request.formId) : null;
+  const baseUrl = automation.publicBaseUrl?.replace(/\/$/, "");
+  const publicUrl = form && baseUrl ? `${baseUrl}${requestFormSharePath(form)}` : undefined;
+  const internalUrl = baseUrl ? `${baseUrl}/nexops/requests/${encodeURIComponent(request.id)}` : undefined;
   const users = automation.platformRepository ? await automation.platformRepository.listTenantUsers(request.tenantId) : [];
   const configuredRecipient = settings?.workspaceSettings.requestsBooking.internalNotificationRecipient;
   // A configured recipient is the tenant's explicit operational mailbox. When
@@ -1041,21 +1084,25 @@ export async function notifyRequestCreated(
   const adminRecipients = configuredRecipient
     ? [configuredRecipient.trim().toLowerCase()]
     : notificationRecipients(users, automation.commsRail?.operatorEmail);
-  const matchLabel = request.match.matchedBy === "none"
-    ? "No exact email or phone match found. Manual review is required."
-    : `Exact match hit on ${request.match.matchedBy.replace("exact_", "").replaceAll("_", " ")}. Manual review is still required before downstream action.`;
+  const internalAlert = resolveTemplateMessage({
+    settings,
+    category: "new_request_internal_alert",
+    channel: "email",
+    fallbackSubject: "New request from {{CLIENT_NAME}}",
+    fallbackBodyText: "A new request has been submitted.\n\nClient: {{CLIENT_NAME}}\nEmail: {{CLIENT_EMAIL}}\nPhone: {{CLIENT_PHONE}}\nService address: {{SERVICE_ADDRESS}}\n\nRequest details:\n{{REQUEST_SUMMARY}}\n\n{{MATCH_STATUS}}",
+    variables: requestVariables
+  });
   const adminSend = await queueEmail({
     tenantId: request.tenantId,
     to: adminRecipients,
-    subject: `New request: ${request.clientName}`,
-    bodyText: [
-      `Client: ${request.clientName}`,
-      request.email ? `Email: ${request.email}` : "",
-      request.phone ? `Phone: ${request.phone}` : "",
-      request.propertyAddress ? `Address: ${request.propertyAddress.street1}, ${request.propertyAddress.city}, ${request.propertyAddress.province} ${request.propertyAddress.postalCode}` : "",
-      `Request: ${request.narrative}`,
-      matchLabel
-    ].filter(Boolean).join("\n"),
+    subject: internalAlert.subject,
+    bodyText: internalAlert.bodyText,
+    bodyHtml: brandedRequestEmail({
+      branding,
+      bodyText: internalAlert.bodyText,
+      cta: internalUrl ? { label: "Open request in NexOps", href: internalUrl } : undefined
+    }),
+    from: outboundSender(automation.commsRail, `${branding?.displayName || "NexOps"} via NexOps`),
     approvalQueue: automation.approvalQueue,
     commsRail: automation.commsRail
   });
@@ -1079,6 +1126,13 @@ export async function notifyRequestCreated(
         to: [request.email],
         subject: requestConfirmation.subject,
         bodyText: requestConfirmation.bodyText,
+        bodyHtml: brandedRequestEmail({
+          branding,
+          bodyText: requestConfirmation.bodyText,
+          cta: publicUrl ? { label: `Visit ${branding?.displayName || "our website"}`, href: publicUrl } : undefined,
+          footer: form?.footerConsent ? { privacyUrl: form.footerConsent.privacyUrl, termsUrl: form.footerConsent.termsUrl } : undefined
+        }),
+        from: outboundSender(automation.commsRail, branding?.displayName || "NexOps"),
         approvalQueue: automation.approvalQueue,
         commsRail: automation.commsRail
       })

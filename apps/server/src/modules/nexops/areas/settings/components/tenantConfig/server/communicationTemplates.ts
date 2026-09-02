@@ -12,6 +12,7 @@ import type { ScheduledVisit } from "../../../../../../../scheduling/schedulingE
 
 export type CommunicationCategory =
   | "request_confirmation"
+  | "new_request_internal_alert"
   | "quote_send"
   | "quote_approval_confirmation"
   | "deposit_paid_confirmation"
@@ -46,7 +47,7 @@ interface TemplateRecord {
 }
 
 export const COMMUNICATION_TEMPLATE_CATEGORIES: readonly CommunicationCategory[] = [
-  "request_confirmation", "booking_confirmation", "declining_work", "assessment_reminder", "checklist_copy",
+  "request_confirmation", "new_request_internal_alert", "booking_confirmation", "declining_work", "assessment_reminder", "checklist_copy",
   "quote_send", "quote_approval_confirmation", "job_booking_confirmation", "visit_rescheduled", "visit_reminder",
   "job_checklist_copy", "job_follow_up", "invoice_send", "invoice_reminder", "payment_receipt",
   "deposit_paid_confirmation", "statement_send", "payment_method_request", "signed_document_copy",
@@ -263,6 +264,9 @@ function channelEnabledFromTemplate(template: TemplateRecord | undefined, channe
 }
 
 export function requestTemplateVariables(request: ServiceRequest): Record<string, string> {
+  const matchStatus = request.match.matchedBy === "none"
+    ? "No matching client was found. Review this request before taking action."
+    : "This request matches an existing client on file. Review it before taking action.";
   return {
     TENANT_NAME: titleCaseTenant(request.tenantId),
     CLIENT_NAME: request.clientName,
@@ -270,7 +274,8 @@ export function requestTemplateVariables(request: ServiceRequest): Record<string
     REQUEST_SUMMARY: request.narrative || request.subject,
     REQUEST_SUBJECT: request.subject,
     CLIENT_EMAIL: clean(request.email),
-    CLIENT_PHONE: clean(request.phone)
+    CLIENT_PHONE: clean(request.phone),
+    MATCH_STATUS: matchStatus
   };
 }
 

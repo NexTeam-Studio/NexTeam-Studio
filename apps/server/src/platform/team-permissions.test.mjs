@@ -132,7 +132,7 @@ test("NexCommand master and onboarding templates are platform-owned and persist 
     const master = await fetch(`${base}/api/platform/admin/templates/communications`);
     assert.equal(master.status, 200);
     const initial = await master.json();
-    assert.equal(initial.templates.length, 22);
+    assert.equal(initial.templates.length, 23);
     const quote = initial.templates.find((template) => template.category === "quote_send");
     assert.ok(quote);
     const saved = await fetch(`${base}/api/platform/admin/templates/communications/quote_send`, {
@@ -292,7 +292,7 @@ test("protected Owner photo upload is validated, UID-scoped, audited, gates tena
     assert.equal(tenantListQueries(), 1);
     const masterTemplates = await fetch(`${base}/api/platform/admin/templates/communications`, { headers });
     assert.equal(masterTemplates.status, 200);
-    assert.equal((await masterTemplates.json()).templates.length, 22);
+    assert.equal((await masterTemplates.json()).templates.length, 23);
     const tenantAttempt = await fetch(`${base}/api/platform/admin/templates/communications`, { headers: { authorization: "Bearer firebase-tenant" } });
     assert.equal(tenantAttempt.status, 401);
     assert.equal((await repository.listPlatformUserAudits("protected_owner")).at(-1).action, "platform_user.updated");

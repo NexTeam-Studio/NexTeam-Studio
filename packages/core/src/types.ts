@@ -1625,6 +1625,8 @@ export interface OutboundEmail {
   subject: string;
   bodyText: string;
   bodyHtml?: string | undefined;
+  /** Display identity constrained by the transactional adapter to its verified mailbox. */
+  from?: string | undefined;
   attachments?: OutboundEmailAttachment[] | undefined;
   replyToMessageId?: ID | undefined;
 }

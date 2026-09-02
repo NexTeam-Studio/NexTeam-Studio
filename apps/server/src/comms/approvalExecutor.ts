@@ -38,6 +38,7 @@ function outboundEmail(value: unknown, stableIdempotencyKey?: string): OutboundE
     subject: String(record.subject),
     bodyText: String(record.bodyText),
     bodyHtml: record.bodyHtml ? String(record.bodyHtml) : undefined,
+    from: record.from ? String(record.from) : undefined,
     attachments: outboundAttachments(record.attachments),
     replyToMessageId: record.replyToMessageId ? String(record.replyToMessageId) : undefined
   };
