@@ -720,7 +720,7 @@ export function quoteDominantAction(quote: QuoteRecord): {
       return {
         action: "convert-to-job",
         label: "Convert to Job",
-        hint: "Take the approved quote snapshot into work exactly once.",
+        hint: "Create the linked job from this approved quote exactly once.",
         tone: "dominant"
       };
     }
@@ -2373,7 +2373,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
                 >
                   <NexopsProgressStrip
                     label="Quote Lifecycle Rail"
-                    detail={selectedQuote.convertedJobId ? "Commercial approval is complete and the work snapshot already exists." : "The commercial state drives whether this quote can still be edited, approved, renewed, or converted."}
+                    detail={selectedQuote.convertedJobId ? "Commercial approval is complete and a linked job has been created." : "The commercial state drives whether this quote can still be edited, approved, renewed, or converted."}
                     percent={quoteLifecyclePercent(selectedQuote.status)}
                   />
                   <div className="nexops-kit-pill-row">
@@ -2381,7 +2381,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
                     <NexopsStatusPill label={selectedQuote.approvalRules.requireDeposit ? "Deposit gate on" : "No deposit gate"} tone={selectedQuote.approvalRules.requireDeposit ? "warning" : "quiet"} />
                     <NexopsStatusPill label={selectedQuote.approvalRules.requireCardOnFile ? "Card-on-file on" : "Card optional"} tone={selectedQuote.approvalRules.requireCardOnFile ? "secondary" : "quiet"} />
                     <NexopsStatusPill label={selectedQuote.paymentSchedule?.enabled ? "Milestones staged" : "Single-stage billing"} tone={selectedQuote.paymentSchedule?.enabled ? "secondary" : "quiet"} />
-                    <NexopsStatusPill label={selectedQuote.convertedJobId ? "Job snapshot exists" : "No job snapshot yet"} tone={selectedQuote.convertedJobId ? "success" : "quiet"} />
+                    <NexopsStatusPill label={selectedQuote.convertedJobId ? "Job created" : "No job created yet"} tone={selectedQuote.convertedJobId ? "success" : "quiet"} />
                   </div>
                   {selectedQuoteBlockedReason ? (
                     <NexopsBanner
@@ -2626,7 +2626,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
                     </li>
                     <li>
                       <strong>Job link</strong>
-                      <span>{selectedQuote.convertedJobId ? `Converted once into job ${selectedQuote.convertedJobId}` : "No job snapshot has been created from this quote yet."}</span>
+                      <span>{selectedQuote.convertedJobId ? `Converted once into job ${selectedQuote.convertedJobId}` : "No job has been created from this quote yet."}</span>
                     </li>
                     <li>
                       <strong>Portal delivery</strong>

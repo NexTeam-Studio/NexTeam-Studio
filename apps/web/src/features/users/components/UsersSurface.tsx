@@ -144,10 +144,10 @@ function MemberEditor(props: { member: TeamMember; ownProfile?: boolean; canMana
 
   useEffect(() => { let cancelled = false; if (!props.tenantId || !props.getAccessToken) return; void (async () => { try { const token = await props.getAccessToken?.(); const response = await fetch(`/api/nexops/users/${encodeURIComponent(props.member.id)}/profile?tenantId=${encodeURIComponent(props.tenantId ?? "")}`, { headers: token ? { authorization: `Bearer ${token}` } : {} }); const body = await response.json() as { ok: boolean; profile?: Partial<ProfileDraft> | null }; if (body.ok && body.profile && !cancelled) setProfileDraft((current) => ({ ...current, ...body.profile, notificationPreferences: { ...current.notificationPreferences, ...body.profile?.notificationPreferences } })); } catch { /* Existing identity values remain editable when initial load fails. */ } })(); return () => { cancelled = true; }; }, [props.member.id, props.tenantId, props.getAccessToken]);
 
-  async function saveChanges(): Promise<void> {
+  async function saveChanges(profileToSave: ProfileDraft = profileDraft): Promise<void> {
     if (!props.tenantId || !props.getAccessToken) { setSaveError("Profile storage is not connected."); return; }
     setSaving(true); setSaveError("");
-    try { const token = await props.getAccessToken(); if (!props.ownProfile && props.canManageTeam) { const teamResponse = await fetch(`/api/platform/tenants/${encodeURIComponent(props.tenantId)}/users`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify({ id: props.member.id, displayName: props.member.name, email: props.member.email || undefined, role: roleCode(role), active: props.member.active ?? props.member.assigned, permissionOverrides: access }) }); const teamBody = await teamResponse.json() as { ok?: boolean; error?: string }; if (!teamResponse.ok || !teamBody.ok) throw new Error(teamBody.error ?? "Unable to save team permissions."); } const response = await fetch(`/api/nexops/users/${encodeURIComponent(props.member.id)}/profile`, { method: "PUT", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify({ tenantId: props.tenantId, profile: profileDraft }) }); const body = await response.json() as { ok: boolean; error?: string; profile?: ProfileDraft }; if (!response.ok || !body.ok) throw new Error(body.error ?? "Unable to save profile."); if (body.profile) setProfileDraft(body.profile); props.onSave(); setDirty(false); } catch (error) { setSaveError(error instanceof Error ? error.message : "Unable to save profile."); } finally { setSaving(false); }
+    try { const token = await props.getAccessToken(); if (!props.ownProfile && props.canManageTeam) { const teamResponse = await fetch(`/api/platform/tenants/${encodeURIComponent(props.tenantId)}/users`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify({ id: props.member.id, displayName: props.member.name, email: props.member.email || undefined, role: roleCode(role), active: props.member.active ?? props.member.assigned, permissionOverrides: access }) }); const teamBody = await teamResponse.json() as { ok?: boolean; error?: string }; if (!teamResponse.ok || !teamBody.ok) throw new Error(teamBody.error ?? "Unable to save team permissions."); } const response = await fetch(`/api/nexops/users/${encodeURIComponent(props.member.id)}/profile`, { method: "PUT", headers: { "content-type": "application/json", authorization: `Bearer ${token}` }, body: JSON.stringify({ tenantId: props.tenantId, profile: profileToSave }) }); const body = await response.json() as { ok: boolean; error?: string; profile?: ProfileDraft }; if (!response.ok || !body.ok) throw new Error(body.error ?? "Unable to save profile."); if (body.profile) setProfileDraft(body.profile); props.onSave(); setDirty(false); } catch (error) { setSaveError(error instanceof Error ? error.message : "Unable to save profile."); } finally { setSaving(false); }
   }
 
   async function selectProfilePhoto(file: File | undefined): Promise<void> {
@@ -160,9 +160,11 @@ function MemberEditor(props: { member: TeamMember; ownProfile?: boolean; canMana
       reader.onerror = () => reject(new Error("Unable to read profile photo."));
       reader.readAsDataURL(file);
     });
-    setProfileDraft((current) => ({ ...current, avatarDataUrl: dataUrl }));
+    const nextProfile = { ...profileDraft, avatarDataUrl: dataUrl };
+    setProfileDraft(nextProfile);
     setSaveError("");
     setDirty(true);
+    await saveChanges(nextProfile);
   }
 
   return <main className="users-surface users-member-editor">

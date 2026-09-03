@@ -302,6 +302,26 @@
   background: rgba(233, 248, 244, 0.96);
 }
 
+.nexops-schedule-assigned-tech {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(15, 106, 103, 0.2);
+  border-radius: 14px;
+  background: rgba(233, 248, 244, 0.7);
+}
+
+.nexops-schedule-assigned-tech img {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.nexops-schedule-assigned-tech span { display: grid; gap: 2px; }
+.nexops-schedule-assigned-tech small { color: #60757b; }
+
 @media (max-width: 1080px) {
   .nexops-schedule-month-grid,
 .nexops-schedule-week-grid {

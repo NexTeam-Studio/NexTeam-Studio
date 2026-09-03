@@ -22,6 +22,10 @@ interface TeamMember {
   name: string;
 }
 
+function teamProfilePhotoUrl(tenantId: string, userId: string): string {
+  return `/api/public/tenants/${encodeURIComponent(tenantId)}/team/${encodeURIComponent(userId)}/profile-photo`;
+}
+
 interface ScheduleWorkspaceVisit {
   id: string;
   jobId: string;
@@ -1159,12 +1163,17 @@ export function NexOpsSchedulePage(props: {
                       <textarea rows={3} value={draft.details} onChange={(event) => patchVisitDraft(draft.id, { details: event.target.value })} placeholder="Gate code, entry notes, or per-visit instructions" />
                     </label>
                     <div className="nexops-schedule-assignment-grid">
-                      {workspace?.teamMembers.map((member) => (
-                        <label key={`${draft.id}_${member.id}`} className={draft.assignedTo.includes(member.id) ? "active" : ""}>
-                          <input type="checkbox" checked={draft.assignedTo.includes(member.id)} onChange={() => toggleDraftAssignment(draft.id, member.id)} />
-                          <span>{member.name}</span>
-                        </label>
-                      ))}
+                      <label className="nexops-field">
+                        <span>Assign team member</span>
+                        <select value={draft.assignedTo[0] ?? ""} onChange={(event) => patchVisitDraft(draft.id, { assignedTo: event.target.value ? [event.target.value] : [] })}>
+                          <option value="">Select Team</option>
+                          {workspace?.teamMembers.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}
+                        </select>
+                      </label>
+                      {draft.assignedTo[0] ? (() => {
+                        const technician = workspace?.teamMembers.find((member) => member.id === draft.assignedTo[0]);
+                        return technician ? <div className="nexops-schedule-assigned-tech"><img src={teamProfilePhotoUrl(props.tenantId, technician.id)} alt="" onError={(event) => { event.currentTarget.style.display = "none"; }} /><span><small>Assigned technician</small><strong>{technician.name}</strong></span></div> : null;
+                      })() : null}
                     </div>
                   </section>
                 ))}

@@ -36,6 +36,28 @@ const profileSchema = z.object({
 export type UserProfile = z.infer<typeof profileSchema>;
 
 export function registerUsersRoutes(app: Express, env: NodeJS.ProcessEnv): void {
+  // This image-only route is deliberately public because its only use is the
+  // assigned-technician card in a client-facing booking email. It never
+  // exposes profile fields or a directory listing.
+  app.get("/api/public/tenants/:tenantId/team/:userId/profile-photo", async (req: Request, res: Response) => {
+    try {
+      const tenantId = req.params.tenantId;
+      const userId = req.params.userId;
+      if (!tenantId || !userId) throw new RailError("Team profile photo was not found.", { provider: "native", op: "publicTeamPhoto", status: 404 });
+      const db = getAdminDb(env);
+      if (!db) throw new RailError("Profile storage is unavailable.", { provider: "firebase", op: "publicTeamPhoto", status: 503 });
+      const stored = (await db.collection("tenantUserProfiles").doc(`${tenantId}_${userId}`).get()).data();
+      const avatarDataUrl = stored?.tenantId === tenantId ? profileSchema.safeParse(stored.profile).data?.avatarDataUrl ?? "" : "";
+      const match = avatarDataUrl.match(/^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/);
+      if (!match) throw new RailError("Team profile photo was not found.", { provider: "native", op: "publicTeamPhoto", status: 404 });
+      const mimeType = match[1]!;
+      const encodedPhoto = match[2]!;
+      res.setHeader("cache-control", "public, max-age=3600");
+      res.type(mimeType);
+      res.send(Buffer.from(encodedPhoto, "base64"));
+    } catch (error) { sendError(res, error); }
+  });
+
   app.get("/api/nexops/users/:id/profile", async (req: Request, res: Response) => {
     try {
       const tenantId = String(req.query.tenantId ?? "").trim();

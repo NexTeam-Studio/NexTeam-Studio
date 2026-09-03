@@ -144,6 +144,8 @@ export interface BookingConfirmationPreview {
   googleCalendarUrl: string;
   outlookCalendarUrl: string;
   calendarFilename: string;
+  technicianName: string;
+  technicianPhotoUrl?: string | undefined;
 }
 
 export interface SendBookingConfirmationInput {
@@ -157,6 +159,7 @@ export interface SendBookingConfirmationInput {
   bodyText?: string | undefined;
   sendCopy?: boolean | undefined;
   copyTarget?: string | undefined;
+  publicBaseUrl?: string | undefined;
 }
 
 interface JobLifecycleDeps {
@@ -857,7 +860,7 @@ export class JobLifecycleService {
     };
   }
 
-  async prepareBookingConfirmation(tenantId: string, jobId: string, visitId?: string | undefined): Promise<BookingConfirmationPreview> {
+  async prepareBookingConfirmation(tenantId: string, jobId: string, visitId?: string | undefined, publicBaseUrl?: string | undefined): Promise<BookingConfirmationPreview> {
     const detail = requireJobLifecycleRecord(await this.getJobDetail(tenantId, jobId), `Native job ${jobId} was not found.`, "prepareBookingConfirmation");
     const sortedVisits = [...detail.visits].sort((left, right) => left.start.localeCompare(right.start));
     const visit = visitId
@@ -926,11 +929,13 @@ export class JobLifecycleService {
       googleCalendarUrl: googleUrl,
       outlookCalendarUrl: outlookUrl,
       calendarFilename: `booking-${selectedVisit.id}.ics`
+      ,technicianName: technicianLabel
+      ,...(publicBaseUrl && selectedVisit.assignedTo[0] ? { technicianPhotoUrl: `${publicBaseUrl.replace(/\/$/, "")}/api/public/tenants/${encodeURIComponent(tenantId)}/team/${encodeURIComponent(selectedVisit.assignedTo[0])}/profile-photo` } : {})
     };
   }
 
   async sendBookingConfirmation(input: SendBookingConfirmationInput): Promise<{ job: JobDetailRecord; visit: ScheduledVisit }> {
-    const preview = await this.prepareBookingConfirmation(input.tenantId, input.jobId, input.visitId);
+    const preview = await this.prepareBookingConfirmation(input.tenantId, input.jobId, input.visitId, input.publicBaseUrl);
     const target = input.target?.trim() || (input.mode === "email" ? preview.emailTarget : preview.smsTarget);
     if (!target) {
       throw new RailError(`A ${input.mode === "email" ? "client email" : "client phone number"} is required before sending a booking confirmation.`, { provider: "native", op: "sendBookingConfirmation", status: 400 });
@@ -945,7 +950,8 @@ export class JobLifecycleService {
       if (!this.deps.commsRail?.sendAdapter) {
         throw new RailError("Email delivery is not configured for this tenant.", { provider: "native", op: "sendBookingConfirmation", status: 501 });
       }
-      const htmlBody = `<p>${escapeHtml(bodyText).replace(/\n/g, "<br/>")}</p><p><a href="${preview.googleCalendarUrl}">Add to Google Calendar</a> | <a href="${preview.outlookCalendarUrl}">Add to Outlook</a></p>`;
+      const technicianCard = preview.technicianPhotoUrl ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:18px 0"><tr><td><img src="${escapeHtml(preview.technicianPhotoUrl)}" width="64" height="64" alt="${escapeHtml(preview.technicianName)}" style="border-radius:50%;display:block;object-fit:cover" /></td><td style="padding-left:12px"><strong>Your assigned technician</strong><br/>${escapeHtml(preview.technicianName)}</td></tr></table>` : `<p><strong>Your assigned technician:</strong> ${escapeHtml(preview.technicianName)}</p>`;
+      const htmlBody = `<p>${escapeHtml(bodyText).replace(/\n/g, "<br/>")}</p>${technicianCard}<p><a href="${preview.googleCalendarUrl}">Add to Google Calendar</a> | <a href="${preview.outlookCalendarUrl}">Add to Outlook</a></p>`;
       await this.deps.commsRail.sendAdapter.sendEmail({
         tenantId: input.tenantId,
         mailbox: this.deps.commsRail.sendAdapter.mailbox,

@@ -14,6 +14,7 @@ export function registerVisitCoreRoutes(context: CrmRouteContext): void {
     jobLifecycle,
     portalHub,
     portalPathWithTenant,
+    publicOrigin,
     renderPortalAppointmentsHtml,
     requirePortalSession,
     requireQuoteAccess,
@@ -84,7 +85,7 @@ export function registerVisitCoreRoutes(context: CrmRouteContext): void {
         : defaultTenantId(env);
       const visitId = typeof req.query.visitId === "string" && req.query.visitId.trim() ? req.query.visitId : undefined;
       const access = await requireQuoteAccess(req, tenantId, "prepareBookingConfirmation");
-      const preview = await jobLifecycle().prepareBookingConfirmation(tenantId, jobId, visitId);
+      const preview = await jobLifecycle().prepareBookingConfirmation(tenantId, jobId, visitId, publicOrigin(req));
       res.json({ ok: true, tenantId, actorRole: access.role, preview });
     } catch (error) {
       sendRouteError(res, error);
@@ -111,6 +112,7 @@ export function registerVisitCoreRoutes(context: CrmRouteContext): void {
         ...(input.bodyText !== undefined ? { bodyText: input.bodyText } : {}),
         ...(input.sendCopy !== undefined ? { sendCopy: input.sendCopy } : {}),
         ...(input.copyTarget !== undefined ? { copyTarget: input.copyTarget } : {})
+        ,publicBaseUrl: publicOrigin(req)
       });
       res.json({ ok: true, tenantId, actorRole: access.role, ...sent });
     } catch (error) {

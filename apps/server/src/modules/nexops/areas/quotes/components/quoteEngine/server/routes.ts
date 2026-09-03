@@ -430,8 +430,9 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
         type: "quote.approved",
         payload: { quoteId: approved.id, clientId: approved.clientId, approvedAt, approvedBy: access.tenantUserId, approvedByRole: access.role }
       });
-      const converted = await convertApprovedQuoteToJob(approved, access.tenantUserId);
-      res.json({ ok: true, tenantId, actorRole: access.role, ...converted });
+      // Approval records the commercial decision only. Creating operational
+      // work is an explicit office action from the approved quote.
+      res.json({ ok: true, tenantId, actorRole: access.role, quote: approved });
     } catch (error) {
       sendRouteError(res, error);
     }
