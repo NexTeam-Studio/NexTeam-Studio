@@ -2,6 +2,23 @@
 
 Last updated: 2026-07-22
 
+## Deferred: Canonical field library for forms and communications
+
+- Build a tenant-facing reference library of canonical CRM/intake fields.
+  Form builders must be able to browse approved fields, choose a canonical
+  mapping for a form control, and see which fields create or update client,
+  property, request, quote, job, and visit data.
+- Communication-template editors must be able to browse and insert the
+  template variables available for the selected lifecycle event, with plain
+  language descriptions and a preview of the resolved value.
+- Keep the canonical key separate from the tenant-facing field label. A tenant
+  may rename a label (for example, "Best email"), while the underlying
+  `email` mapping remains stable for client matching, CRM materialization, and
+  template delivery.
+- Custom/unmapped fields must remain saved on the intake record, but the UI
+  must make clear that they do not automatically populate a standard CRM
+  field or template variable until an explicit mapping is created.
+
 ## Deferred: Tier 2 subcontractor access
 
 - A job-scoped external subcontractor tier is a locked fast-follow after the
