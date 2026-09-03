@@ -284,6 +284,13 @@ interface QuoteMutationResponse {
   error?: string;
 }
 
+interface QuoteDetailResponse {
+  ok: boolean;
+  quote?: QuoteRecord;
+  client?: ClientOption;
+  error?: string;
+}
+
 interface SettingsMutationResponse {
   ok: boolean;
   settings?: CrmSettingsRecord;
@@ -1123,6 +1130,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
   const [quoteRosterFilterOpen, setQuoteRosterFilterOpen] = useState(false);
   const [expandedFilteredQuoteId, setExpandedFilteredQuoteId] = useState("");
   const [selectedQuoteId, setSelectedQuoteId] = useState("");
+  const [selectedQuoteClient, setSelectedQuoteClient] = useState<ClientOption | null>(null);
   const [statusMessage, setStatusMessage] = useState("Loading quotes...");
   const [busy, setBusy] = useState("");
   const [portalLinks, setPortalLinks] = useState<Record<string, string>>({});
@@ -1149,7 +1157,9 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
   const [createdProperties, setCreatedProperties] = useState<PropertyOption[]>([]);
 
   const selectedQuote = quotes.find((quote) => quote.id === selectedQuoteId);
-  const selectedClient = props.clients.find((client) => client.id === selectedQuote?.clientId);
+  const selectedClient = selectedQuoteClient?.id === selectedQuote?.clientId
+    ? selectedQuoteClient
+    : props.clients.find((client) => client.id === selectedQuote?.clientId);
   const composerClient = props.clients.find((client) => client.id === composer.clientId);
   const composerProperties = [...props.properties, ...createdProperties.filter((created) => !props.properties.some((property) => property.id === created.id))]
     .filter((property) => property.clientId === composer.clientId);
@@ -1322,6 +1332,38 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
       };
     });
   }, [composer.clientId, props.clients, props.properties, selectedTemplate]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!selectedQuote?.id || !selectedQuote.clientId) {
+      setSelectedQuoteClient(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+    const rosterClient = props.clients.find((client) => client.id === selectedQuote.clientId);
+    if (rosterClient) {
+      setSelectedQuoteClient(rosterClient);
+      return () => {
+        cancelled = true;
+      };
+    }
+    void fetch(`/api/crm/quotes/${encodeURIComponent(selectedQuote.id)}?tenantId=${encodeURIComponent(props.tenantId)}`)
+      .then((response) => response.json() as Promise<QuoteDetailResponse>)
+      .then((body) => {
+        if (!cancelled) {
+          setSelectedQuoteClient(body.ok ? body.client ?? null : null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSelectedQuoteClient(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedQuote?.id, selectedQuote?.clientId, props.clients, props.tenantId]);
 
   useEffect(() => {
     if (!selectedQuote) {

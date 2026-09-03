@@ -56,9 +56,17 @@ export function createQuoteRouteSupport(input: {
     // A send-time edit is a one-off override, but it must never strip the only
     // usable client path to the quote. This also repairs legacy drafts whose
     // pre-send editor resolved {{PORTAL_URL}} before a token existed.
-    const bodyText = request.mode === "mark_sent" || requestedBody.includes(portalUrl)
+    // A resend issues a fresh token. Remove any previous copy of this quote's
+    // portal path before appending the current one, so a client sees exactly
+    // one actionable approval link.
+    const stalePortalPath = new RegExp(
+      `/portal/quotes/${request.quote.id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\?tenantId=[^\\s&]+&token=[^\\s]+`,
+      "g"
+    );
+    const bodyWithoutStalePortal = requestedBody.replace(stalePortalPath, "").trim();
+    const bodyText = request.mode === "mark_sent"
       ? requestedBody
-      : `${requestedBody.trim()}${requestedBody.trim() ? "\n\n" : ""}${portalUrl}`;
+      : `${bodyWithoutStalePortal}${bodyWithoutStalePortal ? "\n\n" : ""}${portalUrl}`;
     const sentAt = new Date().toISOString();
     const delivery: QuoteDeliveryRecord = {
       id: `quote_delivery_${randomUUID()}`,
