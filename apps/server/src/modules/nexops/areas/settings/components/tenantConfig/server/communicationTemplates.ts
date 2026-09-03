@@ -37,6 +37,20 @@ export type CommunicationCategory =
 
 export type CommunicationChannel = "email" | "sms";
 
+/**
+ * Clients created from current NexOps intake store the person's name in the
+ * structured `personName` value. Older records may only have `name`, so all
+ * customer-facing templates must resolve both representations.
+ */
+export function clientDisplayName(client: Client | undefined, fallback = ""): string {
+  if (!client) return fallback;
+  const person = [client.personName?.firstName, client.personName?.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  return person || client.name || fallback;
+}
+
 interface TemplateRecord {
   category: string;
   emailEnabled: boolean;
@@ -287,7 +301,7 @@ export function quoteTemplateVariables(input: {
   const quoteNumber = input.quote.number ?? input.quote.id;
   return {
     TENANT_NAME: titleCaseTenant(input.quote.tenantId),
-    CLIENT_NAME: input.client?.name ?? input.quote.clientId,
+    CLIENT_NAME: clientDisplayName(input.client, input.quote.clientId),
     CLIENT_EMAIL: clean(input.client?.emails?.[0]),
     CLIENT_PHONE: clean(input.client?.phones?.[0]),
     QUOTE_NUMBER: quoteNumber,

@@ -1,5 +1,6 @@
 import type { Client, DocumentDesignSettings, Quote, ReceiptReview } from "@nexteam/core";
 import { quotePdfLines } from "./quotePdfTemplate.js";
+import { clientDisplayName } from "../../../../settings/components/tenantConfig/server/communicationTemplates.js";
 import { escapeDocumentHtml as escapeHtml } from "../../../../../../../shared/documentRendering/htmlEngine.js";
 import { renderTextPdf } from "../../../../../../../shared/documentRendering/pdfEngine.js";
 import { NEXPORTAL_LOGO_SRC, portalChromeStyles, renderPortalChrome, type PortalChromeOptions } from "../../../../../../../shared/documentRendering/portalChrome.js";
@@ -443,8 +444,8 @@ export function renderQuotePortalHtml(
         ${!isProofState && blockedReason ? `<div class="panel blocked"><strong>This quote cannot be approved right now.</strong><p>${escapeHtml(blockedReason)}</p></div>` : ""}
         <div class="summary">
           <section class="panel">
-            <h2>${escapeHtml(client?.name ?? quote.clientId)}</h2>
-            <p class="muted">Quote review for ${escapeHtml(client?.company ?? client?.name ?? "your service request")}.</p>
+            <h2>${escapeHtml(clientDisplayName(client, quote.clientId))}</h2>
+            <p class="muted">Quote review for ${escapeHtml(client?.company ?? clientDisplayName(client, "your service request"))}.</p>
             <table>
               <thead>
                 <tr><th>Item</th><th>Qty</th><th>Unit</th><th>Total</th></tr>
