@@ -1128,6 +1128,14 @@ function defaultQuoteSendDraft(
   };
 }
 
+function oppositeQuoteDeliveryMode(quote: QuoteRecord): "email" | "sms" | null {
+  const lastDelivered = [...(quote.delivery ?? [])]
+    .reverse()
+    .find((delivery) => delivery.mode === "email" || delivery.mode === "sms");
+  if (!lastDelivered) return null;
+  return lastDelivered.mode === "email" ? "sms" : "email";
+}
+
 export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactElement {
   const [quotes, setQuotes] = useState<QuoteRecord[]>([]);
   const [templates, setTemplates] = useState<QuoteTemplateRecord[]>([]);
@@ -2588,6 +2596,21 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
                   </label>
                   <div className="nexops-inline-actions">
                     <button type="button" onClick={() => void runQuoteAction("send")} disabled={Boolean(busy) || !selectedQuoteCanSend}>{busy === "send" ? "Sending..." : selectedQuote.status === "sent" || selectedQuote.status === "approved" || selectedQuote.status === "approved_internal" || selectedQuote.status === "signed" ? "Resend Quote" : "Send Quote"}</button>
+                    {oppositeQuoteDeliveryMode(selectedQuote) ? (
+                      <button
+                        type="button"
+                        disabled={Boolean(busy) || !selectedQuoteCanSend}
+                        onClick={() => setSendDraft(defaultQuoteSendDraft(
+                          selectedQuote,
+                          selectedClient,
+                          settingsRecord,
+                          portalLinks[selectedQuote.id],
+                          oppositeQuoteDeliveryMode(selectedQuote)!
+                        ))}
+                      >
+                        Resend by {oppositeQuoteDeliveryMode(selectedQuote) === "email" ? "Email" : "SMS"}
+                      </button>
+                    ) : null}
                     {portalLinks[selectedQuote.id] ? <small>{portalLinks[selectedQuote.id]}</small> : <small>Live portal link appears here after send or renew.</small>}
                   </div>
                   {!selectedQuoteCanSend && quoteSendBlockedReason(selectedQuote) ? <p className="nexops-quote-blocked-note">{quoteSendBlockedReason(selectedQuote)}</p> : null}

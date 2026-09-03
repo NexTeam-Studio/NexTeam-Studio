@@ -495,8 +495,6 @@ interface CloseoutDeliveryDraft {
   recipient: string;
   subject: string;
   bodyText: string;
-  copyTarget: string;
-  sendCopy: boolean;
 }
 
 /**
@@ -530,8 +528,6 @@ interface BookingConfirmationDraft {
   target: string;
   subject: string;
   bodyText: string;
-  sendCopy: boolean;
-  copyTarget: string;
 }
 
 function clientLabel(client: ClientOption): string {
@@ -624,9 +620,7 @@ function defaultBookingDraft(preview: BookingConfirmationPreview, mode: "email" 
     mode,
     target: mode === "email" ? (preview.emailTarget ?? "") : (preview.smsTarget ?? ""),
     subject: mode === "email" ? preview.emailSubject : "",
-    bodyText: mode === "email" ? preview.emailBodyText : preview.smsBodyText,
-    sendCopy: true,
-    copyTarget: preview.defaultCopyTarget ?? ""
+    bodyText: mode === "email" ? preview.emailBodyText : preview.smsBodyText
   };
 }
 
@@ -987,9 +981,7 @@ export function NexOpsJobsPage(props: {
       setCloseoutDeliveryDraft({
         recipient: body.preview.email.recipient ?? "",
         subject: body.preview.email.subject,
-        bodyText: body.preview.email.bodyText,
-        copyTarget: body.preview.email.defaultCopyTarget ?? "",
-        sendCopy: Boolean(body.preview.email.defaultCopyTarget)
+        bodyText: body.preview.email.bodyText
       });
       setCloseoutDeliveryStatus(body.preview.package.selectedArtifactRefs.length ? "Review this package before a separate delivery action." : "Select and save at least one artifact before delivery review.");
     } catch {
@@ -1013,8 +1005,6 @@ export function NexOpsJobsPage(props: {
           recipient: closeoutDeliveryDraft.recipient,
           subject: closeoutDeliveryDraft.subject,
           bodyText: closeoutDeliveryDraft.bodyText,
-          ...(closeoutDeliveryDraft.copyTarget ? { copyTarget: closeoutDeliveryDraft.copyTarget } : {}),
-          sendCopy: closeoutDeliveryDraft.sendCopy,
           selectedArtifactRefs: closeoutDelivery.package.selectedArtifactRefs
         })
       }).then((response) => response.json() as Promise<CloseoutDeliveryResponse>);
@@ -1753,9 +1743,7 @@ export function NexOpsJobsPage(props: {
           mode: bookingDraft.mode,
           ...(bookingDraft.target.trim() ? { target: bookingDraft.target.trim() } : {}),
           ...(bookingDraft.subject.trim() ? { subject: bookingDraft.subject.trim() } : {}),
-          ...(bookingDraft.bodyText.trim() ? { bodyText: bookingDraft.bodyText.trim() } : {}),
-          sendCopy: bookingDraft.sendCopy,
-          ...(bookingDraft.copyTarget.trim() ? { copyTarget: bookingDraft.copyTarget.trim() } : {})
+          ...(bookingDraft.bodyText.trim() ? { bodyText: bookingDraft.bodyText.trim() } : {})
         })
       }).then((response) => response.json() as Promise<JobMutationResponse>);
       if (!body.ok) {
@@ -2121,11 +2109,8 @@ export function NexOpsJobsPage(props: {
                         </div>
                       ) : null}
                       <div className="nexops-inline-actions">
-                        <button type="button" disabled={!bookingPreview.emailEnabled} onClick={() => { setBookingDraft(defaultBookingDraft(bookingPreview, "email")); setBookingSheetOpen(true); }}>Send by Email</button>
-                        <button type="button" disabled={!bookingPreview.smsEnabled} onClick={() => { setBookingDraft(defaultBookingDraft(bookingPreview, "sms")); setBookingSheetOpen(true); }}>Send by Text</button>
-                        {bookingConfirmationWasSent(detail, bookingPreview.visit.id) ? (
-                          <button type="button" disabled={bookingBusy} onClick={() => setBookingSheetOpen(true)}>Resend Booking Confirmation</button>
-                        ) : null}
+                        <button type="button" disabled={!bookingPreview.emailEnabled} onClick={() => { setBookingDraft(defaultBookingDraft(bookingPreview, "email")); setBookingSheetOpen(true); }}>{bookingConfirmationWasSent(detail, bookingPreview.visit.id) ? "Resend by Email" : "Send by Email"}</button>
+                        <button type="button" disabled={!bookingPreview.smsEnabled} onClick={() => { setBookingDraft(defaultBookingDraft(bookingPreview, "sms")); setBookingSheetOpen(true); }}>{bookingConfirmationWasSent(detail, bookingPreview.visit.id) ? "Resend by Text" : "Send by Text"}</button>
                         <a href={bookingPreview.googleCalendarUrl} target="_blank" rel="noreferrer">Add to Google Calendar</a>
                         <a href={bookingPreview.outlookCalendarUrl} target="_blank" rel="noreferrer">Add to Outlook</a>
                       </div>
@@ -2464,11 +2449,9 @@ export function NexOpsJobsPage(props: {
                           <label>Recipient email<input aria-label="Recipient email" type="email" value={closeoutDeliveryDraft?.recipient ?? ""} onChange={(event) => setCloseoutDeliveryDraft((current) => current ? { ...current, recipient: event.target.value } : current)} /></label>
                           <label>Email subject<input aria-label="Email subject" value={closeoutDeliveryDraft?.subject ?? ""} onChange={(event) => setCloseoutDeliveryDraft((current) => current ? { ...current, subject: event.target.value } : current)} /></label>
                           <label className="nexops-density-form-full">Email message<textarea aria-label="Email message" rows={7} value={closeoutDeliveryDraft?.bodyText ?? ""} onChange={(event) => setCloseoutDeliveryDraft((current) => current ? { ...current, bodyText: event.target.value } : current)} /></label>
-                          <label>Copy to self/company<input aria-label="Copy to self/company" type="email" value={closeoutDeliveryDraft?.copyTarget ?? ""} onChange={(event) => setCloseoutDeliveryDraft((current) => current ? { ...current, copyTarget: event.target.value } : current)} /></label>
-                          <label className="nexops-jobs-sublist-item"><input aria-label="Send the copy" type="checkbox" checked={closeoutDeliveryDraft?.sendCopy ?? false} onChange={(event) => setCloseoutDeliveryDraft((current) => current ? { ...current, sendCopy: event.target.checked } : current)} />Send the copy</label>
                         </div>
                         <div className="nexops-density-inline-facts"><article><h3>Email</h3><p>{closeoutDelivery.email.available ? "Available for this reviewed package" : closeoutDelivery.email.unavailableReason}</p></article><article><h3>SMS</h3><p>{closeoutDelivery.sms.unavailableReason}</p></article><article><h3>Both</h3><p>Unavailable until the SMS provider is connected.</p></article></div>
-                        <div className="nexops-inline-actions"><button type="button" onClick={() => { setCloseoutDelivery(null); setCloseoutDeliveryDraft(null); setCloseoutDeliveryStatus("Edit the saved attachment selection, save it, then return to delivery review."); }}>Edit Saved Attachments</button><button type="button" disabled={closeoutDeliveryBusy || !closeoutDeliveryDraft?.recipient.trim() || (!closeoutDelivery.email.available && closeoutDelivery.email.unavailableReason !== "A recipient email is required before this package can be sent.")} onClick={() => void sendCloseoutPackageDelivery()}>{closeoutDeliveryBusy ? "Sending..." : "Send Closeout Email"}</button><span>Sending records delivery separately; selecting an artifact never marks it delivered.</span></div>
+                        <div className="nexops-inline-actions"><button type="button" onClick={() => { setCloseoutDelivery(null); setCloseoutDeliveryDraft(null); setCloseoutDeliveryStatus("Edit the saved attachment selection, save it, then return to delivery review."); }}>Edit Saved Attachments</button><button type="button" disabled={closeoutDeliveryBusy || !closeoutDeliveryDraft?.recipient.trim() || (!closeoutDelivery.email.available && closeoutDelivery.email.unavailableReason !== "A recipient email is required before this package can be sent.")} onClick={() => void sendCloseoutPackageDelivery()}>{closeoutDeliveryBusy ? "Sending..." : closeoutDelivery.attempts.length ? "Resend Closeout Email" : "Send Closeout Email"}</button><span>Sending records delivery separately; selecting an artifact never marks it delivered.</span></div>
                         {closeoutDelivery.attempts.length ? <div className="nexops-jobs-history">{closeoutDelivery.attempts.map((attempt) => <div key={attempt.id}><strong>{attempt.channel} {attempt.status}</strong><span>{attempt.recipient} Â· {formatDateTime(attempt.createdAt)}</span></div>)}</div> : null}
                       </section>
                     ) : null}
@@ -2595,15 +2578,6 @@ export function NexOpsJobsPage(props: {
               <span>Message Body</span>
               <textarea rows={bookingDraft.mode === "email" ? 7 : 5} value={bookingDraft.bodyText} onChange={(event) => setBookingDraft((current) => current ? { ...current, bodyText: event.target.value } : current)} />
             </label>
-            {bookingDraft.mode === "email" ? (
-              <div className="nexops-request-builder-grid">
-                <label className="nexops-check-field inline"><input type="checkbox" checked={bookingDraft.sendCopy} onChange={(event) => setBookingDraft((current) => current ? { ...current, sendCopy: event.target.checked } : current)} /> Send Me a Copy</label>
-                <label className="nexops-field">
-                  <span>Copy Target</span>
-                  <input value={bookingDraft.copyTarget} onChange={(event) => setBookingDraft((current) => current ? { ...current, copyTarget: event.target.value } : current)} placeholder={bookingPreview.defaultCopyTarget ?? "Office email"} />
-                </label>
-              </div>
-            ) : null}
             <div className="nexops-inline-actions">
               {bookingDraft.mode === "email" ? <small>{bookingPreview.calendarFilename} plus Google/Outlook links will be included.</small> : <small>Text keeps the confirmation short and field-friendly.</small>}
             </div>

@@ -614,7 +614,6 @@ export class JobLifecycleService {
       tenantId: input.tenantId,
       mailbox: sendAdapter.mailbox,
       to: [recipient],
-      ...(input.copyTarget?.trim() && input.sendCopy !== false ? { cc: [input.copyTarget.trim()] } : {}),
       subject,
       bodyText,
       bodyHtml: `<p>${escapeHtml(bodyText).replace(/\n/g, "<br/>")}</p>`,
@@ -627,7 +626,6 @@ export class JobLifecycleService {
       packageId: preview.package.id,
       channel: "email",
       recipient,
-      ...(input.copyTarget?.trim() && input.sendCopy !== false ? { copyTarget: input.copyTarget.trim() } : {}),
       subject,
       bodyText,
       selectedArtifactRefs: preview.package.selectedArtifactRefs,
@@ -942,7 +940,9 @@ export class JobLifecycleService {
     }
     const subject = input.subject?.trim() || preview.emailSubject;
     const bodyText = input.bodyText?.trim() || (input.mode === "email" ? preview.emailBodyText : preview.smsBodyText);
-    const copyTarget = (input.copyTarget ?? preview.defaultCopyTarget)?.trim();
+    // A booking confirmation goes only to the selected client channel. A
+    // company copy must never be inferred from tenant defaults.
+    const copyTarget = input.sendCopy === true ? input.copyTarget?.trim() : undefined;
     if (input.mode === "email") {
       if (!preview.emailEnabled) {
         throw new RailError("Email booking confirmations are disabled in Settings.", { provider: "native", op: "sendBookingConfirmation", status: 409 });
@@ -956,7 +956,7 @@ export class JobLifecycleService {
         tenantId: input.tenantId,
         mailbox: this.deps.commsRail.sendAdapter.mailbox,
         to: [target],
-        ...(copyTarget && (input.sendCopy ?? true) ? { cc: [copyTarget] } : {}),
+        ...(copyTarget ? { cc: [copyTarget] } : {}),
         subject,
         bodyText,
         bodyHtml: htmlBody,
@@ -982,7 +982,7 @@ export class JobLifecycleService {
         mode: input.mode,
         target,
         subject,
-        ...(copyTarget && input.mode === "email" && (input.sendCopy ?? true) ? { copyTarget } : {})
+        ...(copyTarget && input.mode === "email" ? { copyTarget } : {})
       }
     });
     const refreshed = requireJobLifecycleRecord(await this.getJobDetail(input.tenantId, input.jobId), `Native job ${input.jobId} was not found.`, "sendBookingConfirmation");
