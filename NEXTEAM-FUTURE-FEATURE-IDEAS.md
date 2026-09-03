@@ -18,6 +18,20 @@ Last updated: 2026-07-22
 - Custom/unmapped fields must remain saved on the intake record, but the UI
   must make clear that they do not automatically populate a standard CRM
   field or template variable until an explicit mapping is created.
+- **Global library ownership:** NexCommand administrators own the global
+  canonical-field library. New global fields and edits made there become
+  available for future use by every tenant; they do not silently rewrite
+  historical tenant data or existing forms/templates.
+- **Tenant extensions:** Tenants may create tenant-only custom fields. Those
+  fields belong only to the creating tenant unless an administrator promotes a
+  reviewed version into the global library. Tenant-only fields must remain
+  isolated by tenant ID and never appear as selectable fields for another
+  tenant.
+- **Promotion review:** Produce a daily NexCommand administrator report of
+  newly created or materially changed tenant-only fields, including tenant,
+  label, key, type, and current mapping status (never customer values). The
+  report is advisory: an administrator explicitly decides whether to add an
+  equivalent field to the global library.
 
 ## Deferred: Tier 2 subcontractor access
 
