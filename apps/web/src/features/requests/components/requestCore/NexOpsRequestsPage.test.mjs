@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import { requestClientFieldDefaults } from "./NexOpsRequestsPage.tsx";
 
 const source = readFileSync(new URL("./NexOpsRequestsPage.tsx", import.meta.url), "utf8");
 
@@ -38,15 +39,7 @@ test("Requests uses the shared roster and detail templates", () => {
 });
 
 test("Requests uses Title Case for named interface areas and controls", () => {
-  for (const label of [
-    "Create Request",
-    "New Client",
-    "Existing Client",
-    "Request Form",
-    "Search Requests",
-    "Request Detail",
-    "Next Office Move"
-  ]) {
+  for (const label of ["Create Request", "New Client", "Existing Client", "Request Form", "Search Requests", "Request Detail", "Next Office Move"]) {
     assert.ok(source.includes(label), `missing ${label}`);
   }
 });
@@ -62,4 +55,21 @@ test("Requests retains the default roster when request-form metadata is unavaila
   assert.match(source, /const formsBody = await fetch\(`\/api\/crm\/request-forms/);
   assert.match(source, /Request form setup is unavailable\./);
   assert.doesNotMatch(source, /Promise\.all\(\[\s*fetch\(`\/api\/crm\/requests/);
+});
+
+test("selecting an existing client prepopulates editable request contact fields", () => {
+  const defaults = requestClientFieldDefaults([
+    { key: "first_name", label: "First name", type: "text", group: "contact" },
+    { key: "last_name", label: "Last name", type: "text", group: "contact" },
+    { key: "company_name", label: "Company name", type: "text", group: "contact" },
+    { key: "email", label: "Email", type: "email", group: "contact" },
+    { key: "phone", label: "Phone", type: "phone", group: "contact" }
+  ], {
+    id: "client_test",
+    name: "TEST ONLY — NO CUSTOMER DATA",
+    personName: { firstName: "Test", lastName: "Only" },
+    emails: ["chris1bata@gmail.com"],
+    phones: ["555-0100"]
+  });
+  assert.deepEqual(defaults, { first_name: "Test", last_name: "Only", company_name: "", email: "chris1bata@gmail.com", phone: "555-0100" });
 });
