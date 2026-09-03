@@ -76,9 +76,13 @@ export const portalQuoteApprovalInputSchema = z.object({
   typedName: z.string().optional(),
   drawnDataUrl: z.string().optional(),
   deposit: z.object({
-    cardholderName: z.string().min(1).optional(),
-    cardBrand: z.string().optional(),
-    cardLast4: z.string().regex(/^\d{4}$/).optional(),
+    // Older portal pages always submit this nested object, even when the
+    // optional card controls are not rendered. FormData serializes those
+    // absent controls as null, so normalize null to an omitted value while
+    // preserving validation for supplied values.
+    cardholderName: z.string().min(1).nullable().optional().transform((value) => value ?? undefined),
+    cardBrand: z.string().nullable().optional().transform((value) => value ?? undefined),
+    cardLast4: z.string().regex(/^\d{4}$/).nullable().optional().transform((value) => value ?? undefined),
     cardOnFileAuthorized: z.boolean().optional()
   }).optional()
 });

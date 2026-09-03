@@ -319,19 +319,28 @@ export function renderQuotePortalHtml(
         event.preventDefault();
         approveResponse.textContent = "Submitting approval...";
         const formData = new FormData(approveForm);
+        const optionalValue = (name) => {
+          const value = formData.get(name);
+          return typeof value === "string" && value.trim() ? value : undefined;
+        };
+        const cardholderName = optionalValue("cardholderName");
+        const cardBrand = optionalValue("cardBrand");
+        const cardLast4 = optionalValue("cardLast4");
+        const cardOnFileAuthorized = formData.get("cardOnFileAuthorized") === "on";
+        const deposit = {
+          ...(cardholderName ? { cardholderName } : {}),
+          ...(cardBrand ? { cardBrand } : {}),
+          ...(cardLast4 ? { cardLast4 } : {}),
+          ...(cardOnFileAuthorized ? { cardOnFileAuthorized: true } : {})
+        };
         const payload = {
           tenantId: formData.get("tenantId"),
           token: formData.get("token"),
           customerName: formData.get("customerName"),
           signatureMode: formData.get("signatureMode"),
-          typedName: formData.get("typedName"),
-          drawnDataUrl: formData.get("drawnDataUrl"),
-          deposit: {
-            cardholderName: formData.get("cardholderName"),
-            cardBrand: formData.get("cardBrand"),
-            cardLast4: formData.get("cardLast4"),
-            cardOnFileAuthorized: formData.get("cardOnFileAuthorized") === "on"
-          }
+          ...(optionalValue("typedName") ? { typedName: optionalValue("typedName") } : {}),
+          ...(optionalValue("drawnDataUrl") ? { drawnDataUrl: optionalValue("drawnDataUrl") } : {}),
+          ...(Object.keys(deposit).length ? { deposit } : {})
         };
         const response = await fetch(${JSON.stringify(approvalPath)}, {
           method: "POST",

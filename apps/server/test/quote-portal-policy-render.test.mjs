@@ -30,6 +30,8 @@ test("signature-only portal hides obsolete deposit and card controls", () => {
   assert.doesNotMatch(html, /name="cardholderName"/);
   assert.doesNotMatch(html, /Card brand/);
   assert.doesNotMatch(html, /50% deposit/);
+  assert.match(html, /const optionalValue = \(name\) =>/);
+  assert.match(html, /Object\.keys\(deposit\)\.length \? \{ deposit \} : \{\}/);
 });
 
 test("portal terms remove default deposit wording when the policy does not require a deposit", () => {
