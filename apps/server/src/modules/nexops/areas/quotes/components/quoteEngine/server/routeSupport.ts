@@ -17,7 +17,12 @@ export function createQuoteRouteSupport(input: {
     const existing = await repository.getQuote(tenantId, quoteId);
     const quote = existing ? await syncExpiredQuote(repository, existing) : null;
     if (!quote) throw new RailError(`Native quote ${quoteId} was not found.`, { provider: "native", op: "getQuote", status: 404 });
-    const client = (await provider.getClients("")).find((candidate) => candidate.id === quote.clientId);
+    // Quote reads must not depend on the bounded client roster. A client past
+    // the first roster page is still the quote's canonical customer and must
+    // be available to portal rendering and outbound template variables.
+    const client = quote.clientId && repository.getClient
+      ? await repository.getClient(tenantId, quote.clientId)
+      : (await provider.getClients("")).find((candidate) => candidate.id === quote.clientId);
     return client ? { provider, quote, client } : { provider, quote };
   }
 
