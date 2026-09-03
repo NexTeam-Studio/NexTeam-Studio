@@ -5,17 +5,26 @@ import { createInvoiceFromQuoteBodySchema, createQuoteRouteBodySchema, quoteArch
 import { portalSessionQuoteApprovalBodySchema, portalSessionQuoteChangeRequestBodySchema } from "../../../../../../nexportal/components/portalCore/server/routeSchemas.js";
 import { approveQuoteAfterDepositPreflight } from "../domain/atomicDepositApproval.js";
 
-async function assertQuotePropertyContext(
+export async function resolveQuotePropertyContext(
   repository: { listProperties(tenantId: string): Promise<Array<{ id: string; clientId: string }>> },
   tenantId: string,
   clientId: string,
-  propertyId?: string
-): Promise<void> {
-  if (!propertyId) return;
+  propertyId?: string,
+  inheritedPropertyId?: string
+): Promise<string | undefined> {
+  if (!propertyId) return undefined;
   const property = (await repository.listProperties(tenantId)).find((candidate) => candidate.id === propertyId);
-  if (!property || property.clientId !== clientId) {
-    throw new RailError("The selected service location does not belong to this client.", { provider: "native", op: "saveQuote", status: 400 });
+  if (property?.clientId === clientId) {
+    return propertyId;
   }
+  // A legacy request conversion can retain a property after its client was
+  // merged or removed. Do not let that stale inherited reference block an
+  // unrelated quote edit; drop only the inherited value. New invalid choices
+  // still receive the normal ownership error below.
+  if (propertyId === inheritedPropertyId) {
+    return undefined;
+  }
+  throw new RailError("The selected service location does not belong to this client.", { provider: "native", op: "saveQuote", status: 400 });
 }
 
 export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
@@ -180,7 +189,7 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
       }
       const access = await requireQuoteAccess(req, input.tenantId, "createQuote");
       const repository = repositoryForTenant();
-      await assertQuotePropertyContext(repository, input.tenantId, input.clientId, input.propertyId);
+      const propertyId = await resolveQuotePropertyContext(repository, input.tenantId, input.clientId, input.propertyId);
       const linkedRequest = input.requestId
         ? await repository.getRequest(input.tenantId, input.requestId)
         : undefined;
@@ -199,7 +208,10 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
         }
       }
       const provider = providerForTenant(input.tenantId);
-      const quote = await provider.createQuote(await materializeQuoteRecord(repository, input));
+      const quote = await provider.createQuote(await materializeQuoteRecord(repository, {
+        ...input,
+        ...(propertyId ? { propertyId } : {})
+      }));
       if (linkedRequest) {
         await repository.updateRequest(linkedRequest.id, {
           tenantId: input.tenantId,
@@ -263,8 +275,8 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
         throw new RailError("Expired or declined quotes must be renewed instead of edited directly.", { provider: "native", op: "updateQuote", status: 409 });
       }
       const nextClientId = input.clientId ?? existing.quote.clientId;
-      const nextPropertyId = input.propertyId !== undefined ? input.propertyId : existing.quote.propertyId;
-      await assertQuotePropertyContext(repository, tenantId, nextClientId, nextPropertyId);
+      const requestedPropertyId = input.propertyId !== undefined ? input.propertyId : existing.quote.propertyId;
+      const nextPropertyId = await resolveQuotePropertyContext(repository, tenantId, nextClientId, requestedPropertyId, existing.quote.propertyId);
       const rebuilt = await materializeQuoteRecord(repository, {
         tenantId,
         clientId: nextClientId,
