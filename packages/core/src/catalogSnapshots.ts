@@ -29,6 +29,7 @@ export function catalogSelectionSnapshot(input: CatalogSelection & {
     quantity,
     unitPrice,
     total: Number((quantity * unitPrice).toFixed(2)),
+    ...(input.taxable !== undefined ? { taxable: input.taxable } : {}),
     source: "custom",
     ...(input.clientSelectable !== undefined ? { clientSelectable: input.clientSelectable } : {}),
     ...(input.defaultSelected !== undefined ? { defaultSelected: input.defaultSelected } : {})

@@ -2,7 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-import { catalogCodeSeed, catalogItemFromDraft } from "../NexOpsCatalog.tsx";
+import { blankCatalogItemDraft, catalogCodeSeed, catalogItemFromDraft } from "../NexOpsCatalog.tsx";
+
+test("new catalog items default to non-taxable", () => {
+  assert.equal(blankCatalogItemDraft().taxable, false);
+});
 
 test("Catalog owns reusable item normalization independently of consuming documents", () => {
   assert.equal(catalogCodeSeed("  annual filter service  "), "ANNUAL-FILTER-SERVICE");

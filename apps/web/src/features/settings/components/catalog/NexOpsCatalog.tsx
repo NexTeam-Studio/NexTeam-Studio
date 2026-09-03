@@ -77,7 +77,7 @@ export function blankCatalogItemDraft(seed = ""): CatalogItemDraft {
     price: 0,
     category: "service",
     tag: "Service",
-    taxable: true,
+    taxable: false,
     visible: true,
     source: "tenant"
   };

@@ -780,6 +780,8 @@ export interface LineItem {
   quantity: number;
   unitPrice: number;
   total: number;
+  /** Whether this snapshot participates in a document-level tax rate. */
+  taxable?: boolean | undefined;
   source?: "catalog" | "custom" | undefined;
   /** Immutable tenant catalog record selected when this line was created. */
   catalogItemId?: ID | undefined;

@@ -18,6 +18,7 @@ export const quoteLineItemInputSchema = z.object({
   description: z.string().optional(),
   quantity: z.number().positive().default(1),
   unitPrice: z.number().min(0).optional(),
+  taxable: z.boolean().optional(),
   clientSelectable: z.boolean().optional(),
   defaultSelected: z.boolean().optional()
 }).superRefine((value, ctx) => {
@@ -139,6 +140,7 @@ function buildLineItem(settings: CrmSettings, input: z.infer<typeof quoteLineIte
       price: catalogItem.price,
       quantity: input.quantity,
       unitPrice: input.unitPrice,
+      taxable: input.taxable ?? catalogItem.taxable ?? false,
       clientSelectable: input.clientSelectable,
       defaultSelected: input.defaultSelected
     });
@@ -153,6 +155,7 @@ function buildLineItem(settings: CrmSettings, input: z.infer<typeof quoteLineIte
     quantity: input.quantity,
     unitPrice,
     total: roundMoney(input.quantity * unitPrice),
+    taxable: input.taxable ?? false,
     source: "custom",
     clientSelectable: input.clientSelectable,
     defaultSelected: input.defaultSelected
@@ -176,13 +179,15 @@ function discountAmount(subtotal: number, discount?: QuoteDiscount | undefined):
 export function calculateQuoteTotals(lineItems: LineItem[], discount?: QuoteDiscount | undefined, taxRate = 0): QuoteTotals {
   const subtotal = roundMoney(lineItems.reduce((sum, item) => sum + item.total, 0));
   const discountValue = Math.min(subtotal, discountAmount(subtotal, discount));
-  const taxable = Math.max(0, subtotal - discountValue);
+  const taxableSubtotal = roundMoney(lineItems.filter((item) => item.taxable === true).reduce((sum, item) => sum + item.total, 0));
+  const taxableDiscount = subtotal > 0 ? roundMoney(discountValue * (taxableSubtotal / subtotal)) : 0;
+  const taxable = Math.max(0, taxableSubtotal - taxableDiscount);
   const tax = roundMoney(taxable * (taxRate / 100));
   return {
     subtotal,
     ...(discountValue > 0 ? { discount: discountValue } : {}),
     tax,
-    total: roundMoney(taxable + tax),
+    total: roundMoney(subtotal - discountValue + tax),
     ...(taxRate > 0 ? { taxRate } : {})
   };
 }
@@ -274,6 +279,7 @@ export async function materializeQuoteRecord(
       description: item.description,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
+      taxable: item.taxable,
       clientSelectable: item.clientSelectable,
       defaultSelected: item.defaultSelected
     };

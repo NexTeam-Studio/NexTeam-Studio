@@ -18,7 +18,8 @@ export const draftQuoteInputSchema = z.object({
     code: z.string().min(1),
     name: z.string().min(1),
     description: z.string().optional(),
-    price: z.number().min(0)
+    price: z.number().min(0),
+    taxable: z.boolean().optional()
   })),
   items: z.array(quoteCatalogItemInputSchema).min(1)
 });
@@ -43,7 +44,8 @@ export function buildQuoteDraft(input: DraftQuoteInput): QuoteDraft {
       id: `line_${catalogItem.code.toLowerCase()}_${index + 1}`,
       code: catalogItem.code, name: catalogItem.name, description: catalogItem.description,
       price: catalogItem.price, quantity: item.quantity,
-      unitPrice: centsToCurrency(item.unitPriceCents ?? Math.round(catalogItem.price * 100))
+      unitPrice: centsToCurrency(item.unitPriceCents ?? Math.round(catalogItem.price * 100)),
+      taxable: catalogItem.taxable ?? false
     });
   });
   return {

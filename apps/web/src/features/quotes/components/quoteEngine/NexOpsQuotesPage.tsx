@@ -316,6 +316,7 @@ interface QuoteLineDraft {
   description: string;
   quantity: number;
   unitPrice: number;
+  taxable: boolean;
   clientSelectable: boolean;
   defaultSelected: boolean;
 }
@@ -761,12 +762,12 @@ function catalogItem(catalogItems: ProductServiceCatalogItem[], id: string) {
 function lineDraftFromCatalogItem(item: ProductServiceCatalogItem): QuoteLineDraft {
   const snapshot = catalogSelectionSnapshot({
     id: rowId("catalog"), code: item.code, name: item.name, description: item.description,
-    price: item.price, quantity: 1, clientSelectable: false, defaultSelected: true
+    price: item.price, quantity: 1, taxable: item.taxable, clientSelectable: false, defaultSelected: true
   });
   return {
     rowId: snapshot.id, kind: "custom", catalogItemId: "", catalogCode: "",
     code: snapshot.code, name: snapshot.name, description: snapshot.description ?? "",
-    quantity: snapshot.quantity, unitPrice: snapshot.unitPrice,
+    quantity: snapshot.quantity, unitPrice: snapshot.unitPrice, taxable: snapshot.taxable ?? false,
     clientSelectable: snapshot.clientSelectable ?? false, defaultSelected: snapshot.defaultSelected ?? true
   };
 }
@@ -785,6 +786,7 @@ export function lineDraftFromQuoteItem(item: QuoteLineItem): QuoteLineDraft {
     description: item.description ?? "",
     quantity: item.quantity,
     unitPrice: item.unitPrice,
+    taxable: item.taxable ?? false,
     clientSelectable: Boolean(item.clientSelectable),
     defaultSelected: item.defaultSelected !== false
   };
@@ -802,13 +804,15 @@ function discountPreview(items: QuoteLineDraft[], kind: DiscountKind, value: num
 function calculateDraftTotals(items: QuoteLineDraft[], discountKind: DiscountKind, discountValue: number, taxRate: number): QuoteTotals {
   const subtotal = roundMoney(items.reduce((sum, item) => sum + roundMoney(item.quantity * item.unitPrice), 0));
   const discount = discountPreview(items, discountKind, discountValue);
-  const taxable = Math.max(0, subtotal - discount);
+  const taxableSubtotal = roundMoney(items.filter((item) => item.taxable).reduce((sum, item) => sum + roundMoney(item.quantity * item.unitPrice), 0));
+  const taxableDiscount = subtotal > 0 ? roundMoney(discount * (taxableSubtotal / subtotal)) : 0;
+  const taxable = Math.max(0, taxableSubtotal - taxableDiscount);
   const tax = roundMoney(taxable * (taxRate / 100));
   return {
     subtotal,
     ...(discount > 0 ? { discount } : {}),
     tax,
-    total: roundMoney(taxable + tax),
+    total: roundMoney(subtotal - discount + tax),
     ...(taxRate > 0 ? { taxRate } : {})
   };
 }
@@ -972,6 +976,7 @@ function quotePayload(composer: QuoteComposerDraft, tenantId: string) {
       ...(item.description.trim() ? { description: item.description.trim() } : {}),
       quantity: item.quantity,
       ...(item.kind === "custom" || item.unitPrice ? { unitPrice: item.unitPrice } : {}),
+      taxable: item.taxable,
       clientSelectable: item.clientSelectable,
       defaultSelected: item.defaultSelected
     })),
@@ -1006,6 +1011,7 @@ function templateLineItemsFromComposer(items: QuoteLineDraft[]): QuoteLineItem[]
     source: item.kind,
     ...(item.catalogItemId ? { catalogItemId: item.catalogItemId } : {}),
     ...(item.catalogCode ? { catalogCode: item.catalogCode } : {}),
+    taxable: item.taxable,
     clientSelectable: item.clientSelectable,
     defaultSelected: item.defaultSelected
   }));
@@ -1459,7 +1465,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
       ...current,
       items: [...current.items, {
         rowId: rowId("custom"), kind: "custom", catalogItemId: "", catalogCode: "", code: "",
-        name, description: "", quantity: 1, unitPrice: 0, clientSelectable: false, defaultSelected: true
+        name, description: "", quantity: 1, unitPrice: 0, taxable: false, clientSelectable: false, defaultSelected: true
       }]
     }));
     setCatalogPickerOpen(false);
@@ -1941,6 +1947,10 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
                         <span>Unit Price</span>
                         <input type="number" min="0" step="0.01" value={item.unitPrice} onChange={(event) => updateLine(item.rowId, { unitPrice: Math.max(0, Number(event.target.value || 0)) })} />
                       </label>
+                      <label className="nexops-check-field inline">
+                        <input type="checkbox" checked={item.taxable} onChange={(event) => updateLine(item.rowId, { taxable: event.target.checked })} />
+                        Taxable
+                      </label>
                     </div>
                     <div className="nexops-quote-line-footer">
                       <strong>{money(roundMoney(item.quantity * item.unitPrice))}</strong>
@@ -1949,6 +1959,10 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
                   </div>
                 ))}
               </div>
+              <label className="nexops-field">
+                <span>Tax Rate (%)</span>
+                <input type="number" min="0" step="0.01" value={composer.taxRate} onChange={(event) => setComposer((current) => ({ ...current, taxRate: Math.max(0, Number(event.target.value || 0)) }))} />
+              </label>
               <div className="nexops-quote-pricing-summary" aria-label="Quote pricing summary">
                 <div><span>Subtotal</span><strong>{money(draftTotals.subtotal)}</strong></div>
                 <div><span>Discount</span><strong>{money(draftTotals.discount ?? 0)}</strong></div>
