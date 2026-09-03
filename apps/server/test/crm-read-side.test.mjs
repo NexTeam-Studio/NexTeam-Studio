@@ -64,6 +64,64 @@ const job = {
   externalIds: { [LEGACY_CRM_KEY]: "legacy_job_1" }
 };
 
+async function createQuoteApprovalPortalFixture({ title = "Portal approval boundary quote" } = {}) {
+  const repository = new MemoryNativeCrmRepository({ clients: [client], properties: [property], jobs: [] });
+  const adapter = new NativeAdapter(repository, "aquatrace");
+  const ledgerService = new LedgerService({
+    crmRepository: repository,
+    ledgerRepository: new MemoryLedgerRepository(),
+    eventBus: { async emit() {}, async emitOnce() {} }
+  });
+  const jobLifecycleService = new JobLifecycleService({
+    crmRepository: repository,
+    schedulingRepository: new InMemorySchedulingRepository(),
+    lifecycleRepository: new MemoryJobLifecycleRepository(),
+    eventBus: { async emit() {}, async emitOnce() {} },
+    ledgerService
+  });
+  const app = express();
+  app.use(express.json());
+  registerCrmRoutes(app, {
+    approvalQueue: new ApprovalQueueService(new InMemoryApprovalQueueRepository(), new CrmApprovalExecutor(adapter, jobLifecycleService, ledgerService)),
+    memoryRepository: repository,
+    jobLifecycleService,
+    ledgerService,
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
+  });
+  const server = await new Promise((resolve) => {
+    const started = app.listen(0, () => resolve(started));
+  });
+  const address = server.address();
+  assert.equal(typeof address, "object");
+  const base = `http://127.0.0.1:${address.port}`;
+  const createResponse = await fetch(`${base}/api/crm/quotes`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      tenantId: "aquatrace",
+      clientId: "client_1",
+      title,
+      items: [{ kind: "custom", code: "APPROVAL", name: "Approval scope", quantity: 1, unitPrice: 10 }],
+      approvalRules: { requireSignature: true, requireDeposit: false, requireCardOnFile: false },
+      delivery: { mode: "mark_sent" }
+    })
+  });
+  const created = await createResponse.json();
+  assert.equal(createResponse.status, 201);
+  assert.equal(created.ok, true);
+  const portalUrl = new URL(`${base}${created.portalUrl}`);
+  const token = portalUrl.searchParams.get("token");
+  assert.ok(token);
+  return {
+    base,
+    repository,
+    quote: created.quote,
+    portalUrl,
+    token,
+    close: () => new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()))
+  };
+}
+
 test("CRM quote and invoice native schemas parse", () => {
   quoteSchema.parse({
     id: "quote_1",
@@ -1156,8 +1214,15 @@ test("CRM quote routes create, send, approve, convert, invoice, and renew quotes
     assert.equal(approveBody.quote.status, "approved");
     assert.equal(approveBody.quote.signature.typedName, "Deborah Justice");
     assert.equal(approveBody.quote.deposit.cardOnFileAuthorized, true);
-    assert.match(approveBody.job.number, /^JOB-/);
-    assert.equal(approveBody.quote.convertedJobId, approveBody.job.id);
+    assert.equal(approveBody.job, undefined);
+    assert.equal(approveBody.quote.convertedJobId, undefined);
+    const approvalAlert = sentEmails.find((message) =>
+      Array.isArray(message.to)
+      && message.to.includes("owner@example.test")
+      && message.subject === `Quote approved: ${approveBody.quote.number}`
+    );
+    assert.ok(approvalAlert);
+    assert.match(approvalAlert.bodyText, /Deborah Justice approved quote/);
     const depositPaidEmail = sentEmails.find((message) =>
       Array.isArray(message.to)
       && message.to.includes("owner@example.test")
@@ -1195,8 +1260,8 @@ test("CRM quote routes create, send, approve, convert, invoice, and renew quotes
     const jobBody = await jobResponse.json();
     assert.equal(jobBody.ok, true);
     assert.match(jobBody.job.number, /^JOB-/);
-    assert.equal(jobBody.reused, true);
-    assert.equal(jobBody.job.id, approveBody.job.id);
+    assert.equal(jobBody.reused, false);
+    assert.equal(jobBody.quote.convertedJobId, jobBody.job.id);
 
     const secondJobResponse = await fetch(`${base}/api/crm/quotes/${createBody.quote.id}/convert-to-job`, {
       method: "POST",
@@ -1339,6 +1404,69 @@ test("CRM quote change requests store per-line comments plus a freeform note", a
     assert.equal(changeBody.quote.changeRequests[0].lineComments[0].lineItemId, firstLineId);
   } finally {
     await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  }
+});
+
+test("quote approval portal renders an isolated single-quote approval shell", async () => {
+  const fixture = await createQuoteApprovalPortalFixture();
+  try {
+    const response = await fetch(fixture.portalUrl);
+    const html = await response.text();
+
+    assert.equal(response.status, 200);
+    assert.match(html, /Approve quote/i);
+    assert.match(html, /Request changes/i);
+    assert.match(html, new RegExp(fixture.quote.number));
+    assert.doesNotMatch(html, /Client Hub/i);
+    assert.doesNotMatch(html, /\bInvoices\b/i);
+    assert.doesNotMatch(html, /\bStatements\b/i);
+    assert.doesNotMatch(html, /href="\/portal\/(?!quotes\/)/i);
+  } finally {
+    await fixture.close();
+  }
+});
+
+test("quote approval portal presents drawn signature as the default mode", async () => {
+  const fixture = await createQuoteApprovalPortalFixture({ title: "Drawn default quote" });
+  try {
+    const response = await fetch(fixture.portalUrl);
+    const html = await response.text();
+
+    assert.equal(response.status, 200);
+    assert.match(html, /data-signature-tab="drawn"/);
+    assert.match(html, /name="signatureMode" value="drawn" checked/);
+    assert.match(html, /<canvas id="signature-canvas"/);
+    assert.doesNotMatch(html, /name="signatureMode" value="typed" checked/);
+  } finally {
+    await fixture.close();
+  }
+});
+
+test("quote approval accepts and persists a drawn canvas signature", async () => {
+  const fixture = await createQuoteApprovalPortalFixture({ title: "Drawn signature persistence quote" });
+  const drawnDataUrl = "data:image/png;base64,c2lnbmF0dXJl";
+  try {
+    const response = await fetch(`${fixture.base}/api/portal/quotes/${fixture.quote.id}/approve`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        tenantId: "aquatrace",
+        token: fixture.token,
+        customerName: "Deborah Justice",
+        signatureMode: "drawn",
+        drawnDataUrl
+      })
+    });
+    const body = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(body.ok, true);
+    assert.equal(body.quote.status, "approved");
+    assert.equal(body.quote.signature.mode, "drawn");
+    assert.equal(body.quote.signature.drawnDataUrl, drawnDataUrl);
+    assert.equal("typedName" in body.quote.signature, false);
+  } finally {
+    await fixture.close();
   }
 });
 

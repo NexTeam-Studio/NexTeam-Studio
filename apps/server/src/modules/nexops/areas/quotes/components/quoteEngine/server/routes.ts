@@ -112,6 +112,34 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
     };
   }
 
+  async function sendQuoteApprovalOfficeAlert(input: {
+    quote: Quote;
+    clientName: string;
+    quotePortalUrl: string;
+    tenantId: string;
+  }) {
+    if (!deps.commsRail?.sendAdapter || !deps.platformRepository) return;
+    const officeRecipients = [...new Set(
+      (await deps.platformRepository.listTenantUsers(input.tenantId))
+        .filter((user) => user.active && (user.role === "OWNER" || user.role === "OFFICE_ADMIN"))
+        .flatMap((user) => user.email ? [user.email.trim().toLowerCase()] : [])
+    )];
+    if (!officeRecipients.length) return;
+    await deps.commsRail.sendAdapter.sendEmail({
+      tenantId: input.quote.tenantId,
+      mailbox: deps.commsRail.sendAdapter.mailbox,
+      to: officeRecipients,
+      subject: `Quote approved: ${input.quote.number ?? input.quote.id}`,
+      bodyText: [
+        `${input.clientName} approved quote ${input.quote.number ?? input.quote.id}.`,
+        `Total: ${input.quote.totals.total.toFixed(2)}`,
+        "",
+        "The quote is ready for an office user to convert into a job.",
+        input.quotePortalUrl
+      ].join("\n")
+    });
+  }
+
   async function repairLegacyQuoteClient(tenantId: string, quote: Quote) {
     if (!quote.requestId) {
       return { quote, client: undefined };
@@ -757,6 +785,12 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
           });
         }
       }
+      await sendQuoteApprovalOfficeAlert({
+        quote: approved,
+        clientName: snapshot.client.name,
+        quotePortalUrl,
+        tenantId: portalAccess.tenantId
+      });
       if (approved.deposit?.capturedAt && deps.commsRail?.sendAdapter && deps.platformRepository) {
         const officeRecipients = [...new Set(
           (await deps.platformRepository.listTenantUsers(portalAccess.tenantId))
@@ -798,8 +832,7 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
           });
         }
       }
-      const converted = await convertApprovedQuoteToJob(approved, approved.approvedBy ?? "portal");
-      res.json({ ok: true, ...converted });
+      res.json({ ok: true, quote: approved });
     } catch (error) {
       sendRouteError(res, error);
     }
@@ -983,6 +1016,12 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
           });
         }
       }
+      await sendQuoteApprovalOfficeAlert({
+        quote: approved,
+        clientName: client?.name ?? approved.clientId,
+        quotePortalUrl,
+        tenantId: input.tenantId
+      });
       if (approved.deposit?.capturedAt && deps.commsRail?.sendAdapter && deps.platformRepository) {
         const officeRecipients = [...new Set(
           (await deps.platformRepository.listTenantUsers(input.tenantId))
@@ -1024,8 +1063,7 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
           });
         }
       }
-      const converted = await convertApprovedQuoteToJob(approved, approved.approvedBy ?? "portal");
-      res.json({ ok: true, ...converted });
+      res.json({ ok: true, quote: approved });
     } catch (error) {
       sendRouteError(res, error);
     }
