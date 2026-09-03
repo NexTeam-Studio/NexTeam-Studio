@@ -87,6 +87,13 @@ test("request conversion is review-gated, retry-safe, and preserves the intake s
     });
     assert.equal(firstConversion.status, 201);
     const firstBody = await firstConversion.json();
+    const quotesResponse = await fetch(`${base}/api/crm/quotes?tenantId=tenant_demo`);
+    const quotesBody = await quotesResponse.json();
+    assert.equal(quotesResponse.status, 200);
+    const convertedQuote = quotesBody.quotes.find((quote) => quote.id === firstBody.quote.id);
+    assert.equal(convertedQuote?.status, "draft");
+    assert.equal(convertedQuote?.requestId, request.id);
+    assert.equal(convertedQuote?.clientId, firstBody.request.selectedClientId);
 
     const retry = await fetch(`${base}/api/crm/requests/${request.id}/convert-to-quote`, {
       method: "POST",

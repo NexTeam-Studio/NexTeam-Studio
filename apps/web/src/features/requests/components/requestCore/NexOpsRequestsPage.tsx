@@ -156,6 +156,7 @@ interface NexOpsRequestsPageProps {
   onCrmMutation?: () => void;
   focusedRequestId?: string;
   onOpenRequest?: (requestId: string) => void;
+  onOpenQuote?: (quoteId: string) => void;
   onReturnToRequestRoster?: () => void;
   onScheduleAssessment?: (jobId: string) => void;
   initialClientId?: string;
@@ -735,6 +736,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
       props.onCrmMutation?.();
       if (body.quote?.id) {
         setStatusMessage(`Request converted to quote ${body.quote.id}.`);
+        props.onOpenQuote?.(body.quote.id);
       } else if (body.job?.id) {
         setStatusMessage(`Assessment job ${body.job.id} is ready to place on the schedule.`);
         if (scheduleAfterJob) {

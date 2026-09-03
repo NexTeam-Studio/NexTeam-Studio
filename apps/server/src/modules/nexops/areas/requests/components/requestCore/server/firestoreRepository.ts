@@ -1,5 +1,5 @@
 import type { Firestore } from "firebase-admin/firestore";
-import { requestFormSchema, serviceRequestSchema, RailError, type RequestForm, type ServiceRequest } from "@nexteam/core";
+import { quoteSchema, requestFormSchema, serviceRequestSchema, RailError, type Quote, type RequestForm, type ServiceRequest } from "@nexteam/core";
 
 
 import { asDocumentData, createTenantFirestoreReader } from "../../../../../shared/persistence/firestoreRepositoryBase.js";
@@ -27,6 +27,43 @@ export function createRequestFirestoreRepository(db: Firestore) {
         await setTenantOwnedDocument({ db, collection: "requests", id: parsed.id, tenantId: parsed.tenantId, data: asDocumentData(parsed), label: `Request ${parsed.id}` });
         return parsed;
       },
+
+    /**
+     * A request must never point at a quote that was not durably written.
+     * Keep both sides of the conversion in the same Firestore transaction.
+     */
+    async createQuoteAndMarkRequestConverted(input: {
+      quote: Quote;
+      requestId: string;
+      tenantId: string;
+      clientId: string;
+      propertyId?: string | undefined;
+    }): Promise<{ quote: Quote; request: ServiceRequest }> {
+      const quote = quoteSchema.parse(input.quote) as Quote;
+      const requestRef = db.collection("requests").doc(input.requestId);
+      const quoteRef = db.collection("quotes").doc(quote.id);
+      return db.runTransaction(async (transaction) => {
+        const requestSnapshot = await transaction.get(requestRef);
+        if (!requestSnapshot.exists) {
+          throw new RailError(`Request ${input.requestId} was not found.`, { provider: "firebase", op: "convertRequestToQuote", status: 404 });
+        }
+        const existing = serviceRequestSchema.parse(requestSnapshot.data()) as ServiceRequest;
+        if (existing.tenantId !== input.tenantId) {
+          throw new RailError(`Request ${input.requestId} belongs to another tenant.`, { provider: "firebase", op: "convertRequestToQuote", status: 409 });
+        }
+        const nextRequest = serviceRequestSchema.parse({
+          ...existing,
+          status: "converted_to_quote",
+          convertedQuoteId: quote.id,
+          selectedClientId: input.clientId,
+          ...(input.propertyId ? { selectedPropertyId: input.propertyId } : {}),
+          updatedAt: quote.updatedAt ?? new Date().toISOString()
+        }) as ServiceRequest;
+        transaction.set(quoteRef, asDocumentData(quote));
+        transaction.set(requestRef, asDocumentData(nextRequest));
+        return { quote, request: nextRequest };
+      });
+    },
 
     async deleteRequest(tenantId: string, requestId: string): Promise<void> {
         await deleteTenantOwnedDocument({ db, collection: "requests", id: requestId, tenantId, label: `Request ${requestId}` });

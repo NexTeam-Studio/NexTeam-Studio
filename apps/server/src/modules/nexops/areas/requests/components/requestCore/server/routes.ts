@@ -346,13 +346,19 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
         ? req.body.tenantId
         : defaultTenantId(env);
       await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "convertRequestToQuote" });
-      const request = await getRequestOrThrow(tenantId, requestId);
+      let request = await getRequestOrThrow(tenantId, requestId);
       if (request.convertedQuoteId) {
         const quote = await repositoryForTenant().getQuote(tenantId, request.convertedQuoteId);
         if (quote) {
           res.json({ ok: true, alreadyConverted: true, request, quote });
           return;
         }
+        request = await repositoryForTenant().updateRequest(request.id, {
+          tenantId,
+          status: "new",
+          convertedQuoteId: undefined,
+          updatedAt: new Date().toISOString()
+        });
       }
       if (request.status === "converted_to_job" || request.convertedJobId) {
         throw new RailError("This request already created a job and cannot also create a quote.", {

@@ -948,16 +948,39 @@ export async function convertRequestToQuote(repository: NativeCrmRepository, req
     items: [],
     intake: request.intake
   });
+  const atomicRepository = repository as NativeCrmRepository & {
+    createQuoteAndMarkRequestConverted?: (input: {
+      quote: Quote;
+      requestId: string;
+      tenantId: string;
+      clientId: string;
+      propertyId?: string | undefined;
+    }) => Promise<{ quote: Quote; request: ServiceRequest }>;
+  };
+  if (atomicRepository.createQuoteAndMarkRequestConverted) {
+    const converted = await atomicRepository.createQuoteAndMarkRequestConverted({
+      quote: draft,
+      requestId: request.id,
+      tenantId: request.tenantId,
+      clientId: materialized.client.id,
+      ...(materialized.property ? { propertyId: materialized.property.id } : {})
+    });
+    return { ...converted, property: materialized.property };
+  }
   const quote = await repository.createQuote(draft);
+  const verifiedQuote = await repository.getQuote(request.tenantId, quote.id);
+  if (!verifiedQuote || verifiedQuote.tenantId !== request.tenantId) {
+    throw new RailError("Quote creation did not persist; the request was left unchanged.", { provider: "native", op: "convertRequestToQuote", status: 500 });
+  }
   const updatedRequest = await repository.updateRequest(request.id, {
     tenantId: request.tenantId,
     status: "converted_to_quote",
-    convertedQuoteId: quote.id,
+    convertedQuoteId: verifiedQuote.id,
     selectedClientId: materialized.client.id,
     selectedPropertyId: materialized.property?.id,
     updatedAt: now()
   });
-  return { quote, request: updatedRequest, property: materialized.property };
+  return { quote: verifiedQuote, request: updatedRequest, property: materialized.property };
 }
 
 export async function convertRequestToJob(repository: NativeCrmRepository, request: ServiceRequest): Promise<{ job: NonNullable<Awaited<ReturnType<NativeCrmRepository["upsertJob"]>>>; request: ServiceRequest; property?: Property | undefined }> {

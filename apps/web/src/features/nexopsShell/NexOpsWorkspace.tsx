@@ -864,6 +864,13 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
             window.history.pushState({}, "", buildRequestDetailPath(requestId));
             window.scrollTo({ top: 0, left: 0, behavior: "auto" });
           }}
+          onOpenQuote={(quoteId) => {
+            clearWorkspaceTargets();
+            setFocusedQuoteId(quoteId);
+            setActiveModule("quotes");
+            window.history.pushState({}, "", buildModulePath("quotes"));
+            window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+          }}
           onReturnToRequestRoster={() => {
             setFocusedRequestId("");
             window.history.pushState({}, "", buildModulePath("requests"));
