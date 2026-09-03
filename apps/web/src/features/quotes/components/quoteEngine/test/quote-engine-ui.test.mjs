@@ -5,6 +5,7 @@ import {
   quoteCanConvertToJob,
   quoteCanCreateInvoice,
   quoteCanManualApprove,
+  quoteMatchesRosterFilter,
   quoteCanSend,
   quoteConvertToJobBlockedReason,
   quoteDominantAction,
@@ -108,6 +109,13 @@ test("downstream buttons stay gated with explicit reasons", () => {
   );
 });
 
+test("approved roster retains an approved quote after its downstream job conversion", () => {
+  const convertedApprovedQuote = makeQuote({ status: "approved", convertedJobId: "job_42" });
+
+  assert.equal(quoteMatchesRosterFilter(convertedApprovedQuote, "approved"), true);
+  assert.equal(quoteMatchesRosterFilter(convertedApprovedQuote, "converted"), true);
+});
+
 test("quote workspace uses the shared business templates and retains the inline client/property choice flow", () => {
   const source = fs.readFileSync(path.resolve("apps/web/src/features/quotes/components/quoteEngine/NexOpsQuotesPage.tsx"), "utf8");
   assert.match(source, /NexOpsRosterTemplate/);
@@ -131,6 +139,8 @@ test("quote workspace uses the shared business templates and retains the inline 
   assert.match(source, /<NexOpsRosterSurface/);
   assert.match(source, /expandedFilteredQuoteId/);
   assert.match(source, /Open Quote/);
+  assert.match(source, /nexops-quote-filtered-address/);
+  assert.match(source, /propertyDisplayAddress\(property\)/);
   assert.match(source, /Awaiting Response/);
   assert.match(source, /Changes Requested/);
   assert.match(source, /Converted/);

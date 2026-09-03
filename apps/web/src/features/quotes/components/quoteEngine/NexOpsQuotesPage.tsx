@@ -1067,7 +1067,7 @@ function approvalSummary(rules: QuoteApprovalRules): string {
   return parts.join(" | ");
 }
 
-function quoteMatchesRosterFilter(quote: QuoteRecord, filter: QuoteRosterFilter): boolean {
+export function quoteMatchesRosterFilter(quote: QuoteRecord, filter: QuoteRosterFilter): boolean {
   if (filter === "draft") {
     return quote.status === "draft";
   }
@@ -1080,7 +1080,10 @@ function quoteMatchesRosterFilter(quote: QuoteRecord, filter: QuoteRosterFilter)
   if (filter === "converted") {
     return Boolean(quote.convertedJobId);
   }
-  return (quote.status === "approved" || quote.status === "approved_internal" || quote.status === "signed") && !quote.convertedJobId;
+  // Approval is the quote's commercial state. A later job conversion adds a
+  // downstream record; it must not make the approved quote disappear from
+  // the approved roster.
+  return quote.status === "approved" || quote.status === "approved_internal" || quote.status === "signed";
 }
 
 function defaultQuoteSendDraft(
@@ -1899,12 +1902,16 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
       {workspaceView === "roster" ? <NexOpsRosterSurface ariaLabel="Search and filter quotes" searchTitle="Search Quotes" resultNoun="Quote" resultCount={filteredQuotes.length} search={<label className="nexops-quote-roster-search"><span className="sr-only">Search quotes</span><input placeholder="Search quotes" value={quoteSearch} onChange={(event) => setQuoteSearch(event.target.value)} /></label>} filter={<button className="nexops-jobs-filter-pill nexops-quote-filter-trigger" type="button" aria-expanded={quoteRosterFilterOpen} aria-controls="quote-status-filter-options" onClick={() => setQuoteRosterFilterOpen((current) => !current)}><span className="nexops-quote-filter-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M4 7h16" /><path d="M7 12h10" /><path d="M10 17h4" /></svg></span><span className="nexops-quote-filter-label">Filter</span>{quoteRosterFilters.length ? <small>{filteredQuotes.length}</small> : null}</button>} filterOptions={quoteRosterFilterOpen ? <div className="nexops-quote-filter-options" id="quote-status-filter-options" aria-label="Quote status filters">{QUOTE_ROSTER_FILTERS.map((filter) => { const selected = quoteRosterFilters.includes(filter.value); return <button key={filter.value} type="button" role="checkbox" aria-checked={selected} className={`nexops-jobs-filter-pill${selected ? " active" : ""}`} onClick={() => setQuoteRosterFilters((current) => selected ? current.filter((value) => value !== filter.value) : [...current, filter.value])}><span className="nexops-quote-filter-check" aria-hidden="true">{selected ? "✓" : ""}</span><span>{filter.label}</span><small>{quoteRosterCounts[filter.value]}</small></button>; })}</div> : undefined} empty={!filteredQuotes.length ? <div className="nexops-quote-filtered-empty"><h2>No Quotes Match This View Yet</h2><p>Adjust the selected statuses or search terms to see quotes here.</p></div> : undefined}>
           {filteredQuotes.map((quote) => {
             const client = props.clients.find((candidate) => candidate.id === quote.clientId);
+            const property = quote.propertyId
+              ? props.properties.find((candidate) => candidate.id === quote.propertyId)
+              : props.properties.find((candidate) => candidate.clientId === quote.clientId);
             const expanded = expandedFilteredQuoteId === quote.id;
             return <article className={`nexops-quote-filtered-row${expanded ? " expanded" : ""}`} key={quote.id}>
               <button className="nexops-quote-filtered-identity-banner" type="button" aria-expanded={expanded} onClick={() => setExpandedFilteredQuoteId((current) => current === quote.id ? "" : quote.id)}>
                 <span className="nexops-quote-filtered-identity" data-label="Quote">
                   <strong>{quote.number ?? quote.id}</strong>
                   <small>{clientDisplayName(client)}</small>
+                  <small className="nexops-quote-filtered-address">{propertyDisplayAddress(property)}</small>
                 </span>
               </button>
               {expanded ? <div className="nexops-quote-filtered-details">

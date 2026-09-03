@@ -41,6 +41,7 @@
 .nexops-quote-filtered-identity-banner strong, .nexops-quote-filtered-identity-banner small { display: block; }
 .nexops-quote-filtered-identity-banner strong { color: #d4ff20; font-size: 1.08rem; line-height: 1.2; }
 .nexops-quote-filtered-identity-banner small { margin-top: 3px; color: rgba(255, 255, 255, .88); font-size: .88rem; }
+.nexops-quote-filtered-identity-banner .nexops-quote-filtered-address { margin-top: 5px; color: rgba(255, 255, 255, .68); font-size: .76rem; font-weight: 650; }
 .nexops-quote-filtered-details { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(190px, 1fr) minmax(150px, .8fr) minmax(112px, .58fr); gap: 14px; }
 .nexops-quote-filtered-title, .nexops-quote-filtered-updated, .nexops-quote-filtered-status, .nexops-quote-filtered-activity { min-width: 0; display: grid; align-content: start; gap: 5px; color: #23404d; font-size: .9rem; overflow-wrap: anywhere; }
 .nexops-quote-filtered-title::before, .nexops-quote-filtered-updated::before, .nexops-quote-filtered-status::before, .nexops-quote-filtered-activity::before { content: attr(data-label); color: #667884; font-size: .68rem; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; }
