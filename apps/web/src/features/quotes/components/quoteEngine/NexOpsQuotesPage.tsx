@@ -2066,6 +2066,37 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
               </label>
             </section>
 
+            <section className="nexops-quote-panel nexops-quote-simple-section">
+              <h3>Approval Requirements</h3>
+              <div className="nexops-quote-toggle-grid">
+                <label className="nexops-check-field inline">
+                  <input type="checkbox" checked={composer.requireSignature} onChange={(event) => setComposer((current) => ({ ...current, requireSignature: event.target.checked }))} />
+                  Require client signature
+                </label>
+                <label className="nexops-check-field inline">
+                  <input type="checkbox" checked={composer.requireDeposit} onChange={(event) => setComposer((current) => ({ ...current, requireDeposit: event.target.checked }))} />
+                  Require deposit
+                </label>
+                <label className="nexops-check-field inline">
+                  <input type="checkbox" checked={composer.requireCardOnFile} onChange={(event) => setComposer((current) => ({ ...current, requireCardOnFile: event.target.checked }))} />
+                  Require card on file
+                </label>
+              </div>
+              {composer.requireDeposit || composer.requireCardOnFile ? <div className="nexops-request-builder-grid">
+                <label className="nexops-field">
+                  <span>Deposit type</span>
+                  <select value={composer.depositKind} onChange={(event) => setComposer((current) => ({ ...current, depositKind: event.target.value as DepositKind }))}>
+                    <option value="percent">Percent</option>
+                    <option value="amount">Flat amount</option>
+                  </select>
+                </label>
+                <label className="nexops-field">
+                  <span>{composer.depositKind === "percent" ? "Deposit percent" : "Deposit amount"}</span>
+                  <input type="number" min="0" step="0.01" value={composer.depositValue} onChange={(event) => setComposer((current) => ({ ...current, depositValue: Math.max(0, Number(event.target.value || 0)) }))} />
+                </label>
+              </div> : null}
+            </section>
+
             <section className="nexops-quote-panel">
               <h3>Contract / Disclaimer</h3>
               <label className="nexops-field">
