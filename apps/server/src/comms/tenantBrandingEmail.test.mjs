@@ -25,6 +25,24 @@ test("tenant branded email renders logo, colors, and contact block", () => {
   assert.match(html, /Hello customer/);
 });
 
+test("tenant operational adapter places a workflow CTA fragment inside the branded shell", async () => {
+  const sent = [];
+  const adapter = new TenantBrandingEmailSendAdapter({
+    mailbox: "TRANSACTIONAL",
+    async sendEmail(message) { sent.push(message); return { provider: "test", id: "cta", acceptedAt: "2026-09-03T00:00:00.000Z" }; }
+  }, async () => ({ branding, contact: { email: "service@aquatrace.example" } }));
+  await adapter.sendEmail({
+    tenantId: "aquatrace",
+    to: ["client@example.test"],
+    subject: "Quote ready",
+    bodyText: "Your quote is ready.",
+    bodyHtml: '<div data-nexteam-tenant-content="true"><a href="https://portal.example.test/quote">Review quote</a></div>'
+  });
+  assert.match(sent[0].bodyHtml, /aquatrace\.png/);
+  assert.match(sent[0].bodyHtml, /Review quote/);
+  assert.match(sent[0].bodyHtml, /service@aquatrace\.example/);
+});
+
 test("tenant operational adapter renders all 23 communication template emails without allowing a tenant setting to change the verified sender", async () => {
   const sent = [];
   const adapter = new TenantBrandingEmailSendAdapter({

@@ -279,8 +279,8 @@ function channelEnabledFromTemplate(template: TemplateRecord | undefined, channe
 
 export function requestTemplateVariables(request: ServiceRequest): Record<string, string> {
   const matchStatus = request.match.matchedBy === "none"
-    ? "No matching client was found. Review this request before taking action."
-    : "This request matches an existing client on file. Review it before taking action.";
+    ? "New client profile created — no existing client match found. Review this request before taking action."
+    : "Existing client record matched. Review this request before taking action.";
   return {
     TENANT_NAME: titleCaseTenant(request.tenantId),
     CLIENT_NAME: request.clientName,

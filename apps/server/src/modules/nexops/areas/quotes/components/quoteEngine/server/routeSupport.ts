@@ -5,6 +5,18 @@ import type { CommsRail } from "../../../../../../../comms/gmailRegistry.js";
 import { quoteTemplateVariables, renderTemplateText, resolveTemplateMessage } from "../../../../settings/components/tenantConfig/server/communicationTemplates.js";
 import { createPortalToken, hashPortalToken, portalUrlForQuote, quoteDeliveryMessage, syncExpiredQuote } from "../domain/quoteFoundation.js";
 
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#039;" })[character] ?? character);
+}
+
+function quoteEmailContent(bodyText: string, portalUrl: string): string {
+  const paragraphs = bodyText.split(/\n{2,}/).filter(Boolean)
+    .map((paragraph) => `<p style="margin:0 0 18px;white-space:pre-line;">${escapeHtml(paragraph)}</p>`)
+    .join("");
+  const escapedUrl = escapeHtml(portalUrl);
+  return `<div data-nexteam-tenant-content="true">${paragraphs}<p style="margin:28px 0;text-align:center;"><a href="${escapedUrl}" style="display:inline-block;background:#08776f;color:#ffffff;text-decoration:none;border-radius:7px;padding:14px 22px;font-weight:700;">Review quote</a></p><p style="margin:20px 0 0;font-size:12px;line-height:1.5;color:#5f6d75;">If the button does not work, copy and paste this link into your browser:<br /><a href="${escapedUrl}" style="color:#08776f;word-break:break-all;">${escapedUrl}</a></p></div>`;
+}
+
 export function createQuoteRouteSupport(input: {
   providerForTenant: (tenantId: string) => NativeAdapter;
   repositoryForTenant: () => NativeCrmRepository;
@@ -69,6 +81,9 @@ export function createQuoteRouteSupport(input: {
     const bodyText = request.mode === "mark_sent"
       ? requestedBody
       : `${bodyWithoutStalePortal}${bodyWithoutStalePortal ? "\n\n" : ""}${portalUrl}`;
+    const bodyHtml = request.mode === "mark_sent"
+      ? undefined
+      : quoteEmailContent(bodyWithoutStalePortal, portalUrl);
     const sentAt = new Date().toISOString();
     const delivery: QuoteDeliveryRecord = {
       id: `quote_delivery_${randomUUID()}`,
@@ -83,7 +98,7 @@ export function createQuoteRouteSupport(input: {
       const target = request.target?.trim() || request.client?.emails[0];
       if (!target) throw new RailError("An email destination is required to send this quote.", { provider: "native", op: "sendQuoteEmail", status: 400 });
       if (!input.commsRail?.sendAdapter) throw new RailError("Email delivery is not configured for this tenant.", { provider: "native", op: "sendQuoteEmail", status: 501 });
-      const receipt = await input.commsRail.sendAdapter.sendEmail({ tenantId: request.quote.tenantId, mailbox: input.commsRail.sendAdapter.mailbox, to: [target], subject, bodyText });
+      const receipt = await input.commsRail.sendAdapter.sendEmail({ tenantId: request.quote.tenantId, mailbox: input.commsRail.sendAdapter.mailbox, to: [target], subject, bodyText, ...(bodyHtml ? { bodyHtml } : {}) });
       delivery.target = target;
       delivery.receiptId = receipt.id;
     } else if (request.mode === "sms") {

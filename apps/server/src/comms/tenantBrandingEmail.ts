@@ -16,6 +16,8 @@ export interface TenantEmailBranding {
 
 export type TenantEmailBrandingResolver = (tenantId: string) => Promise<TenantEmailBranding>;
 
+const tenantContentFragmentMarker = "data-nexteam-tenant-content=\"true\"";
+
 function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#039;" })[character] ?? character);
 }
@@ -49,6 +51,12 @@ export function renderTenantBrandedEmail(input: {
   bodyText: string;
   branding: TenantBranding | null;
   contact: TenantEmailContactBlock | null;
+  /**
+   * A trusted workflow fragment that belongs inside the shared tenant email
+   * shell (for example, a CTA button).  Ordinary workflow HTML stays a full
+   * document and is preserved as-is below.
+   */
+  contentHtml?: string | undefined;
 }): string {
   const name = input.branding?.displayName?.trim() || "NexOps";
   const primary = input.branding?.colors.primary || "#00796b";
@@ -59,7 +67,12 @@ export function renderTenantBrandedEmail(input: {
   const logo = input.branding?.logo?.url?.trim()
     ? `<img src="${escapeHtml(input.branding.logo.url)}" alt="${escapeHtml(input.branding.logo.alt || `${name} logo`)}" style="max-height:56px;max-width:220px;display:block;margin:0 auto;" />`
     : `<div style="font-size:28px;font-weight:800;color:${accent};text-align:center;">${escapeHtml(name)}</div>`;
-  return `<!doctype html><html><body style="margin:0;padding:24px;background:${background};font-family:Arial,sans-serif;color:${text};"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center"><table role="presentation" width="100%" style="max-width:640px;background:${surface};border-radius:16px;overflow:hidden;"><tr><td style="background:${primary};padding:28px 32px;">${logo}</td></tr><tr><td style="padding:32px;font-size:16px;line-height:1.55;">${paragraphs(input.bodyText)}</td></tr><tr><td style="padding:22px 32px;background:${background};color:${text};font-size:12px;text-align:center;">${escapeHtml(name)}${contactLines(input.contact)}</td></tr></table></td></tr></table></body></html>`;
+  const content = input.contentHtml?.trim() || paragraphs(input.bodyText);
+  return `<!doctype html><html><body style="margin:0;padding:24px;background:${background};font-family:Arial,sans-serif;color:${text};"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center"><table role="presentation" width="100%" style="max-width:640px;background:${surface};border-radius:16px;overflow:hidden;"><tr><td style="background:${primary};padding:28px 32px;">${logo}</td></tr><tr><td style="padding:32px;font-size:16px;line-height:1.55;">${content}</td></tr><tr><td style="padding:22px 32px;background:${background};color:${text};font-size:12px;text-align:center;">${escapeHtml(name)}${contactLines(input.contact)}</td></tr></table></td></tr></table></body></html>`;
+}
+
+function isTenantContentFragment(value: string): boolean {
+  return value.includes(tenantContentFragmentMarker);
 }
 
 function senderName(from: string | undefined, displayName: string): string | undefined {
@@ -82,7 +95,9 @@ export class TenantBrandingEmailSendAdapter implements EmailSendProvider {
     return this.delegate.sendEmail({
       ...messageWithoutFrom,
       bodyHtml: message.bodyHtml
-        ? appendContactBlock(message.bodyHtml, tenant.branding, tenant.contact)
+        ? isTenantContentFragment(message.bodyHtml)
+          ? renderTenantBrandedEmail({ bodyText: message.bodyText, ...tenant, contentHtml: message.bodyHtml })
+          : appendContactBlock(message.bodyHtml, tenant.branding, tenant.contact)
         : renderTenantBrandedEmail({ bodyText: message.bodyText, ...tenant }),
       // Tenant operational email keeps the tenant-facing display name, but the
       // verified platform sender always owns the actual From address.

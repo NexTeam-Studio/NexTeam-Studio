@@ -1057,6 +1057,15 @@ function outboundSender(rail: CommsRail | undefined, displayName: string): strin
   return rail?.senderEmail ? `${displayName} <${rail.senderEmail}>` : undefined;
 }
 
+function clarifyLegacyMatchStatus(bodyText: string): string {
+  // Existing tenant templates may have saved the old default as literal text
+  // instead of the MATCH_STATUS variable. Preserve tenant customizations while
+  // upgrading only that exact legacy wording at send time.
+  return bodyText
+    .replace("No matching client was found. Review this request before taking action.", "New client profile created — no existing client match found. Review this request before taking action.")
+    .replace("This request matches an existing client on file. Review it before taking action.", "Existing client record matched. Review this request before taking action.");
+}
+
 async function queueEmail(input: {
   tenantId: string;
   to: string[];
@@ -1119,7 +1128,7 @@ export async function notifyRequestCreated(
   const adminRecipients = configuredRecipient
     ? [configuredRecipient.trim().toLowerCase()]
     : notificationRecipients(users, automation.commsRail?.operatorEmail);
-  const internalAlert = resolveTemplateMessage({
+  const internalAlertTemplate = resolveTemplateMessage({
     settings,
     category: "new_request_internal_alert",
     channel: "email",
@@ -1127,6 +1136,10 @@ export async function notifyRequestCreated(
     fallbackBodyText: "A new request has been submitted.\n\nClient: {{CLIENT_NAME}}\nEmail: {{CLIENT_EMAIL}}\nPhone: {{CLIENT_PHONE}}\nService address: {{SERVICE_ADDRESS}}\n\nRequest details:\n{{REQUEST_SUMMARY}}\n\n{{MATCH_STATUS}}",
     variables: requestVariables
   });
+  const internalAlert = {
+    ...internalAlertTemplate,
+    bodyText: clarifyLegacyMatchStatus(internalAlertTemplate.bodyText)
+  };
   const adminSend = await queueEmail({
     tenantId: request.tenantId,
     to: adminRecipients,

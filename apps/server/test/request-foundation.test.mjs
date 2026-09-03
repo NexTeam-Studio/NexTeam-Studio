@@ -123,7 +123,7 @@ test("request routes create, update, convert, archive, and reopen while preservi
     assert.match(sentEmails[0].bodyHtml, /#08776f/);
     assert.equal(sentEmails[0].from, "Aquatrace via NexOps <staging@example.test>");
     assert.equal(sentEmails[1].from, "Aquatrace <staging@example.test>");
-    assert.match(sentEmails[0].bodyText, /matches an existing client on file|No matching client was found/);
+    assert.match(sentEmails[0].bodyText, /Existing client record matched|New client profile created/);
     assert.doesNotMatch(sentEmails[0].bodyText, /Exact match hit/);
     assert.ok(publicSubmissionBody.request.selectedClientId, "public submission links to a saved client immediately");
     const publicClient = (await repository.listClients("aquatrace")).find((client) => client.id === publicSubmissionBody.request.selectedClientId);
