@@ -288,6 +288,7 @@ interface QuoteDetailResponse {
   ok: boolean;
   quote?: QuoteRecord;
   client?: ClientOption;
+  property?: PropertyOption;
   error?: string;
 }
 
@@ -1142,6 +1143,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
   const [expandedFilteredQuoteId, setExpandedFilteredQuoteId] = useState("");
   const [selectedQuoteId, setSelectedQuoteId] = useState("");
   const [selectedQuoteClient, setSelectedQuoteClient] = useState<ClientOption | null>(null);
+  const [rosterContexts, setRosterContexts] = useState<Record<string, { client?: ClientOption; property?: PropertyOption }>>({});
   const [statusMessage, setStatusMessage] = useState("Loading quotes...");
   const [busy, setBusy] = useState("");
   const [portalLinks, setPortalLinks] = useState<Record<string, string>>({});
@@ -1219,6 +1221,23 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
       setSettingsRecord(templatesBody.settings);
       const nextSettingsDraft = settingsDraftFromRecord(templatesBody.settings);
       setQuotes(nextQuotes);
+      const quotesNeedingRosterContext = nextQuotes.filter((quote) => {
+        const hasClient = props.clients.some((client) => client.id === quote.clientId);
+        const hasProperty = !quote.propertyId || props.properties.some((property) => property.id === quote.propertyId);
+        return !hasClient || !hasProperty;
+      });
+      if (quotesNeedingRosterContext.length) {
+        void Promise.all(quotesNeedingRosterContext.map(async (quote) => {
+          const response = await fetch(`/api/crm/quotes/${encodeURIComponent(quote.id)}?tenantId=${encodeURIComponent(props.tenantId)}`);
+          const body = await response.json() as QuoteDetailResponse;
+          return body.ok ? [quote.id, { client: body.client, property: body.property }] as const : null;
+        })).then((entries) => {
+          setRosterContexts((current) => ({
+            ...current,
+            ...Object.fromEntries(entries.filter((entry): entry is readonly [string, { client?: ClientOption; property?: PropertyOption }] => Boolean(entry)))
+          }));
+        }).catch(() => undefined);
+      }
       setTemplates(nextTemplates);
       setSettingsDraft(nextSettingsDraft);
       setTemplateDraft((current) => current.id ? current : emptyTemplateDraft(nextSettingsDraft));
@@ -1901,10 +1920,11 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
       >
       {workspaceView === "roster" ? <NexOpsRosterSurface ariaLabel="Search and filter quotes" searchTitle="Search Quotes" resultNoun="Quote" resultCount={filteredQuotes.length} search={<label className="nexops-quote-roster-search"><span className="sr-only">Search quotes</span><input placeholder="Search quotes" value={quoteSearch} onChange={(event) => setQuoteSearch(event.target.value)} /></label>} filter={<button className="nexops-jobs-filter-pill nexops-quote-filter-trigger" type="button" aria-expanded={quoteRosterFilterOpen} aria-controls="quote-status-filter-options" onClick={() => setQuoteRosterFilterOpen((current) => !current)}><span className="nexops-quote-filter-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M4 7h16" /><path d="M7 12h10" /><path d="M10 17h4" /></svg></span><span className="nexops-quote-filter-label">Filter</span>{quoteRosterFilters.length ? <small>{filteredQuotes.length}</small> : null}</button>} filterOptions={quoteRosterFilterOpen ? <div className="nexops-quote-filter-options" id="quote-status-filter-options" aria-label="Quote status filters">{QUOTE_ROSTER_FILTERS.map((filter) => { const selected = quoteRosterFilters.includes(filter.value); return <button key={filter.value} type="button" role="checkbox" aria-checked={selected} className={`nexops-jobs-filter-pill${selected ? " active" : ""}`} onClick={() => setQuoteRosterFilters((current) => selected ? current.filter((value) => value !== filter.value) : [...current, filter.value])}><span className="nexops-quote-filter-check" aria-hidden="true">{selected ? "✓" : ""}</span><span>{filter.label}</span><small>{quoteRosterCounts[filter.value]}</small></button>; })}</div> : undefined} empty={!filteredQuotes.length ? <div className="nexops-quote-filtered-empty"><h2>No Quotes Match This View Yet</h2><p>Adjust the selected statuses or search terms to see quotes here.</p></div> : undefined}>
           {filteredQuotes.map((quote) => {
-            const client = props.clients.find((candidate) => candidate.id === quote.clientId);
+            const rosterContext = rosterContexts[quote.id];
+            const client = props.clients.find((candidate) => candidate.id === quote.clientId) ?? rosterContext?.client;
             const property = quote.propertyId
-              ? props.properties.find((candidate) => candidate.id === quote.propertyId)
-              : props.properties.find((candidate) => candidate.clientId === quote.clientId);
+              ? props.properties.find((candidate) => candidate.id === quote.propertyId) ?? rosterContext?.property
+              : props.properties.find((candidate) => candidate.clientId === quote.clientId) ?? rosterContext?.property;
             const expanded = expandedFilteredQuoteId === quote.id;
             return <article className={`nexops-quote-filtered-row${expanded ? " expanded" : ""}`} key={quote.id}>
               <button className="nexops-quote-filtered-identity-banner" type="button" aria-expanded={expanded} onClick={() => setExpandedFilteredQuoteId((current) => current === quote.id ? "" : quote.id)}>

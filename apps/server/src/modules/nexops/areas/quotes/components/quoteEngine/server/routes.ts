@@ -203,7 +203,10 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
       const repaired = resolved.client ? resolved : await repairLegacyQuoteClient(tenantId, resolved.quote);
       const quote = repaired.quote;
       const client = repaired.client;
-      res.json({ ok: true, tenantId, actorRole: access.role, quote, client });
+      const property = quote.propertyId
+        ? (await repositoryForTenant().listProperties(tenantId)).find((candidate) => candidate.id === quote.propertyId && candidate.clientId === quote.clientId)
+        : undefined;
+      res.json({ ok: true, tenantId, actorRole: access.role, quote, client, property });
     } catch (error) {
       sendRouteError(res, error);
     }
