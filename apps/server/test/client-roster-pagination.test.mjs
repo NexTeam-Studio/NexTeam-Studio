@@ -46,3 +46,31 @@ test("Clients roster cursor API reaches a client beyond the first 250 records", 
     await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
   }
 });
+
+test("client picker search finds a client beyond the first 250 records by name and email", async () => {
+  const clients = Array.from({ length: 251 }, (_, index) => client(index + 1));
+  clients[250] = { ...clients[250], name: "TEST ONLY — NO CUSTOMER DATA", emails: ["chris1bata@gmail.com"] };
+  const repository = new MemoryNativeCrmRepository({ clients });
+  const app = express();
+  app.use(express.json());
+  registerCrmRoutes(app, {
+    approvalQueue: new ApprovalQueueService(new InMemoryApprovalQueueRepository()),
+    memoryRepository: repository,
+    env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
+  });
+  const server = await new Promise((resolve) => {
+    const started = app.listen(0, () => resolve(started));
+  });
+  try {
+    const address = server.address();
+    assert.equal(typeof address, "object");
+    const base = `http://127.0.0.1:${address.port}`;
+    for (const query of ["TEST ONLY", "chris1bata@gmail.com"]) {
+      const body = await fetch(`${base}/api/crm/clients?tenantId=aquatrace&q=${encodeURIComponent(query)}`).then((response) => response.json());
+      assert.equal(body.ok, true);
+      assert.deepEqual(body.clients.map((record) => record.id), ["client_251"]);
+    }
+  } finally {
+    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  }
+});

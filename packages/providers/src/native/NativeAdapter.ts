@@ -34,6 +34,7 @@ export interface NativeListPage<T> {
 export interface NativeCrmRepository {
   listClients(tenantId: string): Promise<Client[]>;
   listClientsPage?(tenantId: string, input?: { limit?: number | undefined; cursor?: string | undefined }): Promise<NativeListPage<Client>>;
+  searchClients?(tenantId: string, query: string): Promise<Client[]>;
   listProperties(tenantId: string): Promise<Property[]>;
   deleteClient(tenantId: string, clientId: string): Promise<void>;
   deletePropertiesForClient(tenantId: string, clientId: string): Promise<string[]>;
@@ -685,6 +686,10 @@ export class MemoryNativeCrmRepository implements NativeCrmRepository {
       records,
       nextCursor: records.length === limit ? records.at(-1)?.id : undefined
     };
+  }
+
+  async searchClients(tenantId: string, query: string): Promise<Client[]> {
+    return (await this.listClients(tenantId)).filter((client) => matchesQuery(clientSearchValues(client), query));
   }
 
   async listProperties(tenantId: string): Promise<Property[]> {

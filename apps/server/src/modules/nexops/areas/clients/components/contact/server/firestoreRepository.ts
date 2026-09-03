@@ -16,6 +16,29 @@ export function createContactFirestoreRepository(db: Firestore) {
       return listPageByTenant("clients", tenantId, clientSchema, input);
     },
 
+    async searchClients(tenantId: string, query: string): Promise<Client[]> {
+      const needle = query.trim();
+      if (!needle) return [];
+      const normalized = needle.toLocaleLowerCase();
+      const titleCase = normalized.replace(/(^|[\s-])\p{L}/gu, (letter) => letter.toLocaleUpperCase());
+      const prefixes = [...new Set([needle, normalized, normalized.toLocaleUpperCase(), titleCase])];
+      const nameQueries = prefixes.map((prefix) => db.collection("clients")
+        .where("tenantId", "==", tenantId)
+        .orderBy("name")
+        .startAt(prefix)
+        .endAt(`${prefix}\uf8ff`)
+        .limit(25)
+        .get());
+      const emailQuery = needle.includes("@")
+        ? db.collection("clients").where("tenantId", "==", tenantId).where("emails", "array-contains", normalized).limit(25).get()
+        : Promise.resolve(null);
+      const snapshots = await Promise.all([...nameQueries, emailQuery]);
+      return [...new Map(snapshots.flatMap((snapshot) => snapshot?.docs ?? []).map((doc) => {
+        const client = clientSchema.parse(doc.data()) as Client;
+        return [client.id, client] as const;
+      })).values()];
+    },
+
     async listProperties(tenantId: string): Promise<Property[]> {
         return (await listByTenant("properties", tenantId, propertySchema)) as Property[];
       },

@@ -40,6 +40,10 @@ export function registerContactRoutes(context: CrmRouteContext): void {
       const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
       const cursor = typeof req.query.cursor === "string" && req.query.cursor.trim() ? req.query.cursor : undefined;
       const repository = repositoryForTenant();
+      if (q && repository.searchClients) {
+        res.json({ ok: true, clients: await repository.searchClients(tenantId, q) });
+        return;
+      }
       if (!q && repository.listClientsPage) {
         const page = await repository.listClientsPage(tenantId, { cursor });
         res.json({ ok: true, clients: page.records, nextCursor: page.nextCursor });

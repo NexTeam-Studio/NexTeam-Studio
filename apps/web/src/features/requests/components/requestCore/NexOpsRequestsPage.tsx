@@ -327,6 +327,8 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
   const initialClientId = props.initialClientId && props.clients.some((client) => client.id === props.initialClientId) ? props.initialClientId : "";
   const [officeMode, setOfficeMode] = useState<"new_client" | "existing_client">(initialClientId ? "existing_client" : "new_client");
   const [selectedClientId, setSelectedClientId] = useState(initialClientId);
+  const [clientSearch, setClientSearch] = useState("");
+  const [clientSearchResults, setClientSearchResults] = useState<ClientOption[]>([]);
   const [propertyMode, setPropertyMode] = useState<"existing_property" | "new_property">("existing_property");
   const [selectedPropertyId, setSelectedPropertyId] = useState("");
   const [fieldDraft, setFieldDraft] = useState<Record<string, string | boolean | string[]>>({});
@@ -339,9 +341,15 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
   );
 
   const selectedClient = useMemo(
-    () => props.clients.find((client) => client.id === selectedClientId) ?? null,
-    [props.clients, selectedClientId]
+    () => clientSearchResults.find((client) => client.id === selectedClientId) ?? props.clients.find((client) => client.id === selectedClientId) ?? null,
+    [clientSearchResults, props.clients, selectedClientId]
   );
+
+  const clientChoices = useMemo(() => {
+    const unique = new Map<string, ClientOption>();
+    for (const client of [...clientSearchResults, ...props.clients]) unique.set(client.id, client);
+    return [...unique.values()];
+  }, [clientSearchResults, props.clients]);
 
   const existingProperties = useMemo(
     () => props.properties.filter((property) => property.clientId === selectedClientId),
@@ -419,6 +427,23 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
     }
     setSelectedFormId((current) => current && forms.some((form) => form.id === current) ? current : forms[0]!.id);
   }, [forms]);
+
+  useEffect(() => {
+    if (officeMode !== "existing_client" || clientSearch.trim().length < 2) {
+      setClientSearchResults([]);
+      return;
+    }
+    let cancelled = false;
+    void fetch(`/api/crm/clients?tenantId=${encodeURIComponent(props.tenantId)}&q=${encodeURIComponent(clientSearch.trim())}`)
+      .then((response) => response.json() as Promise<{ ok: boolean; clients?: ClientOption[] }>)
+      .then((body) => {
+        if (!cancelled) setClientSearchResults(body.ok ? body.clients ?? [] : []);
+      })
+      .catch(() => {
+        if (!cancelled) setClientSearchResults([]);
+      });
+    return () => { cancelled = true; };
+  }, [clientSearch, officeMode, props.tenantId]);
 
   useEffect(() => {
     if (!selectedClient || officeMode !== "existing_client") {
@@ -747,7 +772,8 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
               </section>
               <label className="nexops-field"><span>Request Form</span><select value={selectedForm?.id ?? ""} onChange={(event) => setSelectedFormId(event.target.value)}>{forms.map((form) => <option value={form.id} key={form.id}>{form.title}</option>)}</select></label>
               {officeMode === "existing_client" ? <>
-                <label className="nexops-field"><span>Existing Client</span><select value={selectedClientId} onChange={(event) => setSelectedClientId(event.target.value)}><option value="">Select Client</option>{props.clients.map((client) => <option value={client.id} key={client.id}>{clientDisplayName(client)}</option>)}</select></label>
+                <label className="nexops-field"><span>Find Existing Client</span><input value={clientSearch} placeholder="Search name or email" onChange={(event) => setClientSearch(event.target.value)} /></label>
+                <label className="nexops-field"><span>Existing Client</span><select value={selectedClientId} onChange={(event) => setSelectedClientId(event.target.value)}><option value="">Select Client</option>{clientChoices.map((client) => <option value={client.id} key={client.id}>{clientDisplayName(client)}</option>)}</select></label>
                 <label className="nexops-field"><span>Property Handling</span><select value={propertyMode} onChange={(event) => setPropertyMode(event.target.value as "existing_property" | "new_property")}><option value="existing_property">Use Existing Property</option><option value="new_property">Capture New Property</option></select></label>
                 {propertyMode === "existing_property" ? <label className="nexops-field"><span>Existing Property</span><select value={selectedPropertyId} onChange={(event) => setSelectedPropertyId(event.target.value)}><option value="">Select Property</option>{existingProperties.map((property) => <option value={property.id} key={property.id}>{property.siteName || property.label || property.address.street1}</option>)}</select></label> : null}
               </> : null}
