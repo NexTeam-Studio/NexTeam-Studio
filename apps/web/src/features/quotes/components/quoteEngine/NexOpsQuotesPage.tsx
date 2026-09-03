@@ -2106,6 +2106,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
             </section>
 
             <section className="nexops-quote-final-action">
+              <p className="nexops-quote-save-status" role="status" aria-live="polite">{statusMessage}</p>
               <button className="nexops-hero-primary-button" type="button" onClick={() => void saveQuote()} disabled={Boolean(busy) || !canSaveComposer(composer)}>{busy === "save-quote" ? "Saving..." : "Review & Send"}</button>
             </section>
             </> : null}

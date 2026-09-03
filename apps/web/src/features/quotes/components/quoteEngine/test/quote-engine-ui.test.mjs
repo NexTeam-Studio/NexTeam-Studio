@@ -164,6 +164,13 @@ test("quote builder keeps office defaults available without mixing configuration
   assert.match(source, /nexops-quote-builder-settings/);
 });
 
+test("quote builder exposes save failures next to its final action", () => {
+  const source = fs.readFileSync(path.resolve("apps/web/src/features/quotes/components/quoteEngine/NexOpsQuotesPage.tsx"), "utf8");
+
+  assert.match(source, /nexops-quote-save-status/);
+  assert.match(source, /role="status" aria-live="polite">\{statusMessage\}<\/p>/);
+});
+
 test("legacy template line without a catalog identifier remains saveable as an editable manual line", () => {
   const draft = lineDraftFromQuoteItem({
     id: "legacy_line",
