@@ -459,6 +459,14 @@ function clientDisplayName(client?: ClientOption): string {
   return person || client.name;
 }
 
+function clientGreetingName(client?: ClientOption): string {
+  if (!client) {
+    return "there";
+  }
+  const person = [client.personName?.firstName, client.personName?.lastName].filter(Boolean).join(" ").trim();
+  return person || client.name || clientDisplayName(client);
+}
+
 function propertyDisplayAddress(property?: PropertyOption): string {
   if (!property) {
     return "Service property selected";
@@ -1088,7 +1096,7 @@ function defaultQuoteSendDraft(
     channel: mode === "sms" ? "sms" : "email",
     fallbackSubject: quote.number ? `Quote ${quote.number}` : quote.title,
     fallbackBodyText: [
-      `Hi ${clientDisplayName(client)},`,
+      `Hi ${clientGreetingName(client)},`,
       "",
       `Your quote ${quote.number ?? quote.id} for ${quote.title} is ready to review.`,
       portalUrl ?? "",
@@ -1099,7 +1107,7 @@ function defaultQuoteSendDraft(
       quote,
       client: client ? {
         id: client.id,
-        name: clientDisplayName(client),
+        name: clientGreetingName(client),
         emails: client.emails,
         phones: client.phones,
         billingAddress: client.billingAddress
