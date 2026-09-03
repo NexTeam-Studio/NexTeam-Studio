@@ -39,6 +39,11 @@ export function createRequestRouteSupport(input: {
   async function createAndNotifyRequest(request: z.infer<typeof createRequestBodySchema> & Pick<RequestBuildInput, "fieldDefinitions">): Promise<ServiceRequest> {
     const tenantId = request.tenantId ?? input.defaultTenantId(input.env);
     const repository = input.repositoryForTenant();
+    const configuredForm = request.formId
+      ? await repository.getRequestForm(tenantId, request.formId)
+      : request.formSlug
+        ? await repository.getRequestFormBySlug(tenantId, request.formSlug)
+        : null;
     const built = await buildServiceRequest(repository, {
       tenantId,
       source: request.source,
@@ -51,7 +56,7 @@ export function createRequestRouteSupport(input: {
       consent: request.consent,
       allowIncomplete: request.allowIncomplete,
       customFields: request.customFields,
-      fieldDefinitions: request.fieldDefinitions,
+      fieldDefinitions: request.fieldDefinitions ?? configuredForm?.fieldDefinitions,
       fieldValues: request.fieldValues.map((field) => ({
         key: field.key,
         value: field.value,

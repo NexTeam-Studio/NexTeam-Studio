@@ -148,7 +148,9 @@ test("request routes create, update, convert, archive, and reopen while preservi
         formId: formsBody.forms[0].id,
         formSlug: formsBody.forms[0].slug,
         fieldValues: [
-          { key: "client_name", value: "Logan Sears" },
+          { key: "first_name", value: "Logan" },
+          { key: "last_name", value: "Sears" },
+          { key: "company_name", value: "Aquatrace Test Company" },
           { key: "email", value: "logan@example.test" },
           { key: "phone", value: "8645551212" },
           { key: "marketing_consent", value: true },
@@ -165,7 +167,8 @@ test("request routes create, update, convert, archive, and reopen while preservi
       })
     });
     const requestBody = await requestResponse.json();
-    assert.equal(requestBody.ok, true);
+    assert.equal(requestBody.ok, true, requestBody.error);
+    assert.equal(requestBody.request.clientName, "Logan Sears", "office Add New requests derive the required client name from first and last name");
     assert.equal(requestBody.request.consent.marketing, true);
     assert.equal(requestBody.request.intake.fieldIndex.gate_code, "4421");
     assert.equal(requestBody.request.intake.fieldIndex.marketing_consent, true);

@@ -530,6 +530,18 @@ export function requestFieldValuesFromInput(input: RequestBuildInput): IntakeFie
       visibility: fieldVisibility(entry.visibility)
     });
   }
+  // Some tenant forms collect a first and last name instead of exposing the
+  // canonical client_name field. Normalize that shape before validation so
+  // office intake, public intake, and API callers use the same identity.
+  if (!built.some((field) => field.key === "client_name")) {
+    const firstName = valueAsString(buildFieldIndex(built), "first_name");
+    const lastName = valueAsString(buildFieldIndex(built), "last_name");
+    const clientName = [firstName, lastName].filter(Boolean).join(" ");
+    const clientNameDefinition = definitions.get("client_name");
+    if (clientName && clientNameDefinition) {
+      built.push({ ...clientNameDefinition, value: clientName, visibility: FULL_VISIBILITY });
+    }
+  }
   return built;
 }
 
