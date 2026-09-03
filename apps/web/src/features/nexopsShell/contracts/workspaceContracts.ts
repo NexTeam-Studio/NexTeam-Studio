@@ -324,6 +324,7 @@ export interface ReviewSequenceRecord {
 export interface CrmClientsResponse {
   ok: boolean;
   clients?: CrmClient[];
+  nextCursor?: string;
   error?: string;
 }
 

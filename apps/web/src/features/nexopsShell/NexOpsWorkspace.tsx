@@ -99,8 +99,11 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
     payments,
     receiptReviews,
     status,
+    hasMoreClients,
+    loadingMoreClients,
     setClients,
-    refresh
+    refresh,
+    loadMoreClients
   } = useNexOpsWorkspaceRecords({
     tenantId: operatorContext.tenantId,
     activeClientProfileTab,
@@ -748,6 +751,9 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
       onNewClient={openNewClientWorkspace}
       onImport={() => setModule("imports")}
       onRefresh={() => void refresh()}
+      hasMoreClients={hasMoreClients}
+      loadingMoreClients={loadingMoreClients}
+      onLoadMoreClients={() => void loadMoreClients()}
     />;
   }
 

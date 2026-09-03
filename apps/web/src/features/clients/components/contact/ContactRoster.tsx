@@ -36,6 +36,9 @@ interface ContactRosterProps<Client extends ContactRosterClient> {
   onNewClient: () => void;
   onImport: () => void;
   onRefresh: () => void;
+  hasMoreClients: boolean;
+  loadingMoreClients: boolean;
+  onLoadMoreClients: () => void;
 }
 
 export function ContactRoster<Client extends ContactRosterClient>(props: ContactRosterProps<Client>): React.ReactElement {
@@ -63,7 +66,7 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
           <button type="button" onClick={props.onRefresh}>Refresh</button>
         </>}
       >
-      <NexOpsRosterSurface ariaLabel="Search and filter clients" searchTitle="Search Clients" resultCount={visibleClients.length} resultNoun="Client" showResults={Boolean(props.query.trim() || tagFilter || statusFilter !== "all")}
+      <NexOpsRosterSurface ariaLabel="Search and filter clients" searchTitle="Search Clients" resultCount={visibleClients.length} resultNoun="Client" showResults={Boolean(props.clients.length || props.query.trim() || tagFilter || statusFilter !== "all")}
         search={<label className="nexops-quote-roster-search"><span className="sr-only">Search Clients</span><input value={props.query} placeholder="Search Clients" onChange={(event) => props.onQueryChange(event.target.value)} /></label>}
         filter={<button className="nexops-jobs-filter-pill nexops-quote-filter-trigger" type="button" aria-expanded={filterOpen} onClick={() => setFilterOpen((current) => !current)}><span className="nexops-quote-filter-icon" aria-hidden="true">☷</span><span className="nexops-quote-filter-label">Filter</span></button>}
         filterOptions={filterOpen ? <div className="nexops-quote-filter-options" aria-label="Client filters"><label className="nexops-field"><span>Filter by Tag</span><select value={tagFilter} onChange={(event) => setTagFilter(event.target.value)}><option value="">All Tags</option>{tagOptions.map((tag) => <option key={tag} value={tag}>{tag}</option>)}</select></label>{(["all", "active", "lead", "archived"] as const).map((value) => <button key={value} type="button" role="radio" aria-checked={statusFilter === value} className={`nexops-jobs-filter-pill${statusFilter === value ? " active" : ""}`} onClick={() => setStatusFilter(value)}><span>{value === "all" ? "All Clients" : value === "lead" ? "Leads & Prospects" : `${value[0].toUpperCase()}${value.slice(1)} Clients`}</span><small>{value === "all" ? props.clients.length : props.clients.filter((client) => clientRosterStatusLabel(client, props.clientStatusLabel(client)).toLowerCase() === value).length}</small></button>)}</div> : null}
@@ -72,6 +75,7 @@ export function ContactRoster<Client extends ContactRosterClient>(props: Contact
             <button className="nexops-quote-filtered-identity-banner" type="button" onClick={() => props.onOpenClient(client.id)}><span className="nexops-quote-filtered-identity"><strong>{props.clientDisplayName(client)}</strong><small>{client.company?.trim() ? client.company : props.contactSummary(client)}</small></span></button>
             <div className="nexops-quote-filtered-details"><span className="nexops-quote-filtered-title" data-label="Primary Address">{props.clientPrimaryAddress(client)}</span><span className="nexops-quote-filtered-updated" data-label="Contact">{client.phones[0] ?? client.emails[0] ?? "No contact saved"}</span><span className="nexops-quote-filtered-status" data-label="Status"><mark>{clientRosterStatusLabel(client, props.clientStatusLabel(client))}</mark></span><span className="nexops-quote-filtered-activity" data-label="Client Record"><small>{client.tags?.[0] ? `Tag · ${client.tags[0]}` : "No recent activity"}</small><button className="nexops-quote-filtered-open" type="button" onClick={() => props.onOpenClient(client.id)}>Open Client <span aria-hidden="true">→</span></button></span></div>
           </article>)}
+          {props.hasMoreClients ? <button className="nexops-hero-primary-button" type="button" disabled={props.loadingMoreClients} onClick={props.onLoadMoreClients}>{props.loadingMoreClients ? "Loading clients…" : "Load more clients"}</button> : null}
       </NexOpsRosterSurface>
       </NexOpsRosterTemplate>
   );

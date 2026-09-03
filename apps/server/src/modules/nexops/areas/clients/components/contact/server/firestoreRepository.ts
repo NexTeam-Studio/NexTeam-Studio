@@ -6,11 +6,15 @@ import { asDocumentData, createTenantFirestoreReader } from "../../../../../shar
 import { deleteTenantOwnedDocument, setTenantOwnedDocument } from "../../../../../../../core/tenantOwnedWrite.js";
 
 export function createContactFirestoreRepository(db: Firestore) {
-  const { listByTenant } = createTenantFirestoreReader(db);
+  const { listByTenant, listPageByTenant } = createTenantFirestoreReader(db);
   return {
     async listClients(tenantId: string): Promise<Client[]> {
         return (await listByTenant("clients", tenantId, clientSchema)) as Client[];
       },
+
+    async listClientsPage(tenantId: string, input: { limit?: number | undefined; cursor?: string | undefined } = {}) {
+      return listPageByTenant("clients", tenantId, clientSchema, input);
+    },
 
     async listProperties(tenantId: string): Promise<Property[]> {
         return (await listByTenant("properties", tenantId, propertySchema)) as Property[];

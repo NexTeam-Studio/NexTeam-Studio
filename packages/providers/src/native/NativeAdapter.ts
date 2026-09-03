@@ -16,6 +16,7 @@ import {
   type QuoteTemplate,
   type RequestForm,
   type ServiceRequest,
+  DEFAULT_FIRESTORE_READ_LIMIT,
   defaultSecureOnboardingTasks,
   defaultWorkspaceSettings,
   jobSchema
@@ -25,8 +26,14 @@ import { advanceDocumentNumber } from "@nexteam/shared";
 
 export type TenantOwnedPatch<T extends { tenantId: string }> = Partial<T> & Pick<T, "tenantId">;
 
+export interface NativeListPage<T> {
+  records: T[];
+  nextCursor?: string | undefined;
+}
+
 export interface NativeCrmRepository {
   listClients(tenantId: string): Promise<Client[]>;
+  listClientsPage?(tenantId: string, input?: { limit?: number | undefined; cursor?: string | undefined }): Promise<NativeListPage<Client>>;
   listProperties(tenantId: string): Promise<Property[]>;
   deleteClient(tenantId: string, clientId: string): Promise<void>;
   deletePropertiesForClient(tenantId: string, clientId: string): Promise<string[]>;
@@ -667,6 +674,17 @@ export class MemoryNativeCrmRepository implements NativeCrmRepository {
 
   async listClients(tenantId: string): Promise<Client[]> {
     return (this.records.clients ?? []).filter((record) => record.tenantId === tenantId);
+  }
+
+  async listClientsPage(tenantId: string, input: { limit?: number | undefined; cursor?: string | undefined } = {}): Promise<NativeListPage<Client>> {
+    const limit = Math.min(Math.max(input.limit ?? DEFAULT_FIRESTORE_READ_LIMIT, 1), DEFAULT_FIRESTORE_READ_LIMIT);
+    const clients = (await this.listClients(tenantId)).sort((left, right) => left.id.localeCompare(right.id));
+    const start = input.cursor ? clients.findIndex((client) => client.id === input.cursor) + 1 : 0;
+    const records = clients.slice(Math.max(start, 0), Math.max(start, 0) + limit);
+    return {
+      records,
+      nextCursor: records.length === limit ? records.at(-1)?.id : undefined
+    };
   }
 
   async listProperties(tenantId: string): Promise<Property[]> {
