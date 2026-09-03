@@ -65,7 +65,7 @@ async function reviewRequest(base, requestId) {
   assert.equal(response.status, 200);
 }
 
-test("request conversion is review-gated, retry-safe, and preserves the intake snapshot", async () => {
+test("request conversion opens a builder and only marks the request converted after a line-item quote is saved", async () => {
   const { server, base } = await startApp();
   try {
     const formsResponse = await fetch(`${base}/api/crm/request-forms?tenantId=tenant_demo`);
@@ -80,30 +80,48 @@ test("request conversion is review-gated, retry-safe, and preserves the intake s
     assert.equal(beforeReview.status, 409);
 
     await reviewRequest(base, request.id);
-    const firstConversion = await fetch(`${base}/api/crm/requests/${request.id}/convert-to-quote`, {
+    const builder = await fetch(`${base}/api/crm/requests/${request.id}/convert-to-quote`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ tenantId: "tenant_demo" })
     });
-    assert.equal(firstConversion.status, 201);
-    const firstBody = await firstConversion.json();
+    assert.equal(builder.status, 200);
+    const builderBody = await builder.json();
+    assert.equal(builderBody.quoteBuilder.requestId, request.id);
     const quotesResponse = await fetch(`${base}/api/crm/quotes?tenantId=tenant_demo`);
     const quotesBody = await quotesResponse.json();
     assert.equal(quotesResponse.status, 200);
-    const convertedQuote = quotesBody.quotes.find((quote) => quote.id === firstBody.quote.id);
+    assert.equal(quotesBody.quotes.length, 0);
+
+    const savedQuote = await fetch(`${base}/api/crm/quotes`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        tenantId: "tenant_demo",
+        clientId: request.selectedClientId,
+        propertyId: request.selectedPropertyId,
+        requestId: request.id,
+        title: request.subject,
+        items: [{ kind: "custom", name: "Leak Detection", quantity: 1, unitPrice: 595, taxable: false }],
+        delivery: { mode: "draft" }
+      })
+    });
+    assert.equal(savedQuote.status, 201);
+    const savedBody = await savedQuote.json();
+    const quotesAfterSave = await fetch(`${base}/api/crm/quotes?tenantId=tenant_demo`);
+    const quotesAfterSaveBody = await quotesAfterSave.json();
+    const convertedQuote = quotesAfterSaveBody.quotes.find((quote) => quote.id === savedBody.quote.id);
     assert.equal(convertedQuote?.status, "draft");
     assert.equal(convertedQuote?.requestId, request.id);
-    assert.equal(convertedQuote?.clientId, firstBody.request.selectedClientId);
+    assert.equal(convertedQuote?.clientId, request.selectedClientId);
+    assert.equal(convertedQuote?.lineItems.length, 1);
 
     const retry = await fetch(`${base}/api/crm/requests/${request.id}/convert-to-quote`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ tenantId: "tenant_demo" })
     });
-    const retryBody = await retry.json();
-    assert.equal(retry.status, 200);
-    assert.equal(retryBody.alreadyConverted, true);
-    assert.equal(retryBody.quote.id, firstBody.quote.id);
+    assert.equal(retry.status, 409);
 
     const changedAfterConversion = await fetch(`${base}/api/crm/requests/${request.id}`, {
       method: "PATCH",

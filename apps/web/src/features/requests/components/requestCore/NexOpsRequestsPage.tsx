@@ -157,6 +157,12 @@ interface NexOpsRequestsPageProps {
   focusedRequestId?: string;
   onOpenRequest?: (requestId: string) => void;
   onOpenQuote?: (quoteId: string) => void;
+  onStartQuoteFromRequest?: (intent: {
+    requestId: string;
+    clientId?: string;
+    propertyId?: string;
+    title: string;
+  }) => void;
   onReturnToRequestRoster?: () => void;
   onScheduleAssessment?: (jobId: string) => void;
   initialClientId?: string;
@@ -714,13 +720,35 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
   }
 
   async function runRequestAction(requestId: string, action: "archive" | "reopen" | "convert-to-quote" | "convert-to-job", scheduleAfterJob = false): Promise<void> {
+    if (action === "convert-to-quote") {
+      const request = requests.find((candidate) => candidate.id === requestId);
+      if (!request) {
+        setStatusMessage("Request could not be found.");
+        return;
+      }
+      if (!request.reviewedAt) {
+        setStatusMessage("Mark the request reviewed before building its quote.");
+        return;
+      }
+      if (request.convertedQuoteId) {
+        setStatusMessage("This request already has a quote.");
+        props.onOpenQuote?.(request.convertedQuoteId);
+        return;
+      }
+      props.onStartQuoteFromRequest?.({
+        requestId: request.id,
+        ...(request.selectedClientId ? { clientId: request.selectedClientId } : {}),
+        ...(request.selectedPropertyId ? { propertyId: request.selectedPropertyId } : {}),
+        title: request.subject
+      });
+      setStatusMessage("Add at least one line item before saving this quote.");
+      return;
+    }
     setActionBusy(`${action}-${requestId}`);
     setStatusMessage(action === "archive"
       ? "Archiving request..."
       : action === "reopen"
         ? "Reopening request..."
-        : action === "convert-to-quote"
-          ? "Converting request to quote..."
         : scheduleAfterJob ? "Preparing assessment scheduling..." : "Converting request to job...");
     try {
       const body = await fetch(`/api/crm/requests/${encodeURIComponent(requestId)}/${action}`, {
@@ -734,10 +762,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
       }
       await refresh();
       props.onCrmMutation?.();
-      if (body.quote?.id) {
-        setStatusMessage(`Request converted to quote ${body.quote.id}.`);
-        props.onOpenQuote?.(body.quote.id);
-      } else if (body.job?.id) {
+      if (body.job?.id) {
         setStatusMessage(`Assessment job ${body.job.id} is ready to place on the schedule.`);
         if (scheduleAfterJob) {
           props.onScheduleAssessment?.(body.job.id);

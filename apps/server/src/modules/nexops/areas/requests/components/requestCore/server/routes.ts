@@ -10,7 +10,6 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
     availableRequestFields,
     backfillLegacyLeads,
     convertRequestToJob,
-    convertRequestToQuote,
     createAndNotifyRequest,
     defaultTenantId,
     deps,
@@ -346,18 +345,12 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
         ? req.body.tenantId
         : defaultTenantId(env);
       await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "convertRequestToQuote" });
-      let request = await getRequestOrThrow(tenantId, requestId);
+      const request = await getRequestOrThrow(tenantId, requestId);
       if (request.convertedQuoteId) {
-        const quote = await repositoryForTenant().getQuote(tenantId, request.convertedQuoteId);
-        if (quote) {
-          res.json({ ok: true, alreadyConverted: true, request, quote });
-          return;
-        }
-        request = await repositoryForTenant().updateRequest(request.id, {
-          tenantId,
-          status: "new",
-          convertedQuoteId: undefined,
-          updatedAt: new Date().toISOString()
+        throw new RailError("This request already has a quote.", {
+          provider: "native",
+          op: "convertRequestToQuote",
+          status: 409
         });
       }
       if (request.status === "converted_to_job" || request.convertedJobId) {
@@ -381,26 +374,16 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
           status: 409
         });
       }
-      const converted = await convertRequestToQuote(repositoryForTenant(), request);
-      await eventBus.emit({
-        tenantId,
-        type: "quote.created",
-        payload: {
-          quoteId: converted.quote.id,
-          clientId: converted.quote.clientId,
-          ...(converted.quote.requestId ? { requestId: converted.quote.requestId } : {})
+      res.json({
+        ok: true,
+        request,
+        quoteBuilder: {
+          requestId: request.id,
+          ...(request.selectedClientId ? { clientId: request.selectedClientId } : {}),
+          ...(request.selectedPropertyId ? { propertyId: request.selectedPropertyId } : {}),
+          title: request.subject
         }
       });
-      await eventBus.emit({
-        tenantId,
-        type: "request.converted_to_quote",
-        payload: {
-          requestId: converted.request.id,
-          quoteId: converted.quote.id,
-          clientId: converted.quote.clientId
-        }
-      });
-      res.status(201).json({ ok: true, request: converted.request, quote: converted.quote, property: converted.property });
     } catch (error) {
       sendRouteError(res, error);
     }

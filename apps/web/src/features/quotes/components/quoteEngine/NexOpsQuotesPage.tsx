@@ -323,6 +323,7 @@ interface QuoteLineDraft {
 
 interface QuoteComposerDraft {
   editingQuoteId: string;
+  requestId: string;
   clientId: string;
   propertyId: string;
   templateId: string;
@@ -387,6 +388,13 @@ interface NexOpsQuotesPageProps {
   onCrmMutation?: () => void;
   focusedQuoteId?: string;
   initialClientId?: string;
+  requestIntent?: {
+    requestId: string;
+    clientId?: string;
+    propertyId?: string;
+    title: string;
+  } | null;
+  onRequestIntentHandled?: () => void;
   initialFilter?: QuoteFilter;
   onCreateClientRequested?: () => void;
   inlineClientCreateForm?: React.ReactNode;
@@ -911,6 +919,7 @@ function composerFromDefaults(
     : [];
   return {
     editingQuoteId: "",
+    requestId: "",
     clientId: client?.id ?? "",
     propertyId: property?.id ?? "",
     templateId: template?.id ?? "",
@@ -937,6 +946,7 @@ function composerFromDefaults(
 function composerFromQuote(quote: QuoteRecord, client: ClientOption | undefined): QuoteComposerDraft {
   return {
     editingQuoteId: quote.id,
+    requestId: quote.requestId ?? "",
     clientId: quote.clientId,
     propertyId: quote.propertyId ?? "",
     templateId: quote.templateId ?? "",
@@ -963,6 +973,7 @@ function composerFromQuote(quote: QuoteRecord, client: ClientOption | undefined)
 function quotePayload(composer: QuoteComposerDraft, tenantId: string) {
   return {
     tenantId,
+    ...(composer.requestId ? { requestId: composer.requestId } : {}),
     clientId: composer.clientId,
     ...(composer.propertyId ? { propertyId: composer.propertyId } : {}),
     ...(composer.templateId ? { templateId: composer.templateId } : {}),
@@ -1221,6 +1232,31 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
     setComposer((current) => current.editingQuoteId ? current : { ...current, clientId: props.initialClientId! });
     setWorkspaceView("builder");
   }, [props.initialClientId]);
+
+  useEffect(() => {
+    if (!props.requestIntent) {
+      return;
+    }
+    const intent = props.requestIntent;
+    const client = props.clients.find((candidate) => candidate.id === intent.clientId);
+    setComposer((current) => ({
+      ...current,
+      editingQuoteId: "",
+      requestId: intent.requestId,
+      clientId: intent.clientId ?? "",
+      propertyId: intent.propertyId ?? "",
+      title: intent.title,
+      deliveryMode: "draft",
+      deliveryTarget: client?.emails[0] ?? ""
+    }));
+    setQuoteBuilderMode("new");
+    setClientSelectionSaved(Boolean(intent.clientId && intent.propertyId));
+    setClientSelectionMode("existing");
+    setPropertySelectionMode("existing");
+    setWorkspaceView("builder");
+    props.onRequestIntentHandled?.();
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [props.requestIntent, props.clients, props.onRequestIntentHandled]);
 
   useEffect(() => {
     if (!props.inlineCreatedClientId) {

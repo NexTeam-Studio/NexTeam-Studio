@@ -145,11 +145,46 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
   app.post("/api/crm/quotes", async (req: Request, res: Response) => {
     try {
       const input = createQuoteRouteBodySchema.parse(req.body);
+      if (!input.items.length) {
+        throw new RailError("A quote needs at least one line item before it can be created.", { provider: "native", op: "createQuote", status: 400 });
+      }
       const access = await requireQuoteAccess(req, input.tenantId, "createQuote");
       const repository = repositoryForTenant();
       await assertQuotePropertyContext(repository, input.tenantId, input.clientId, input.propertyId);
+      const linkedRequest = input.requestId
+        ? await repository.getRequest(input.tenantId, input.requestId)
+        : undefined;
+      if (input.requestId) {
+        if (!linkedRequest) {
+          throw new RailError("The source request was not found.", { provider: "native", op: "createQuote", status: 404 });
+        }
+        if (!linkedRequest.reviewedAt) {
+          throw new RailError("Mark the request reviewed before creating its quote.", { provider: "native", op: "createQuote", status: 409 });
+        }
+        if (linkedRequest.convertedQuoteId || linkedRequest.status === "converted_to_quote" || linkedRequest.status === "converted_to_job" || linkedRequest.convertedJobId) {
+          throw new RailError("This request is already linked to a downstream record.", { provider: "native", op: "createQuote", status: 409 });
+        }
+        if (linkedRequest.selectedClientId && linkedRequest.selectedClientId !== input.clientId) {
+          throw new RailError("The quote client must match the selected request client.", { provider: "native", op: "createQuote", status: 409 });
+        }
+      }
       const provider = providerForTenant(input.tenantId);
       const quote = await provider.createQuote(await materializeQuoteRecord(repository, input));
+      if (linkedRequest) {
+        await repository.updateRequest(linkedRequest.id, {
+          tenantId: input.tenantId,
+          status: "converted_to_quote",
+          convertedQuoteId: quote.id,
+          selectedClientId: quote.clientId,
+          ...(quote.propertyId ? { selectedPropertyId: quote.propertyId } : {}),
+          updatedAt: new Date().toISOString()
+        });
+        await eventBus.emit({
+          tenantId: input.tenantId,
+          type: "request.converted_to_quote",
+          payload: { requestId: linkedRequest.id, quoteId: quote.id, clientId: quote.clientId }
+        });
+      }
       await eventBus.emit({
         tenantId: quote.tenantId,
         type: "quote.created",

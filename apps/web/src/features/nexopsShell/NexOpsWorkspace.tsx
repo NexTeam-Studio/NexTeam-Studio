@@ -115,6 +115,12 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [focusedRequestId, setFocusedRequestId] = useState(initialPathState.requestId ?? "");
   const [focusedQuoteId, setFocusedQuoteId] = useState("");
+  const [requestQuoteIntent, setRequestQuoteIntent] = useState<{
+    requestId: string;
+    clientId?: string;
+    propertyId?: string;
+    title: string;
+  } | null>(null);
   const [focusedJobId, setFocusedJobId] = useState("");
   const [focusedInvoiceId, setFocusedInvoiceId] = useState("");
   const [requestFilterIntent, setRequestFilterIntent] = useState<"all" | "new" | "archived" | "converted_to_quote" | "converted_to_job" | undefined>();
@@ -871,6 +877,13 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
             window.history.pushState({}, "", buildModulePath("quotes"));
             window.scrollTo({ top: 0, left: 0, behavior: "auto" });
           }}
+          onStartQuoteFromRequest={(intent) => {
+            clearWorkspaceTargets();
+            setRequestQuoteIntent(intent);
+            setActiveModule("quotes");
+            window.history.pushState({}, "", buildModulePath("quotes"));
+            window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+          }}
           onReturnToRequestRoster={() => {
             setFocusedRequestId("");
             window.history.pushState({}, "", buildModulePath("requests"));
@@ -900,6 +913,8 @@ function NexOpsWorkspaceContent(props: { auth: Auth | null; user: User; operator
           tenantUsers={tenantUsers}
           focusedQuoteId={focusedQuoteId}
           initialClientId={createClientContextId || undefined}
+          requestIntent={requestQuoteIntent}
+          onRequestIntentHandled={() => setRequestQuoteIntent(null)}
           initialFilter={quoteFilterIntent}
           inlineClientCreateForm={inlineQuoteClientCreateOpen ? <NexOpsCreateClientPanel
             tenantId={operatorContext.tenantId}
