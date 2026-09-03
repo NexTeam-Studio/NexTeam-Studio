@@ -589,6 +589,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
 
   function currentFieldValue(field: RequestFieldDefinition): string | boolean | string[] {
     const stored = fieldDraft[field.key];
+    if (["first_name", "company_name", "email", "phone"].includes(field.key)) console.info(`[request-client-contact-debug] render ${JSON.stringify({ key: field.key, stored })}`);
     if (stored !== undefined) {
       return stored;
     }
