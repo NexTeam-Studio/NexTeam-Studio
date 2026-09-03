@@ -184,6 +184,15 @@ function clientDisplayName(client: ClientOption): string {
   return person || client.name;
 }
 
+export function mergeClientChoices(
+  rosterClients: ClientOption[],
+  searchResults: ClientOption[]
+): ClientOption[] {
+  const unique = new Map<string, ClientOption>();
+  for (const client of [...rosterClients, ...searchResults]) unique.set(client.id, client);
+  return [...unique.values()];
+}
+
 export function requestClientFieldDefaults(
   fields: RequestFieldDefinition[],
   client: ClientOption
@@ -371,9 +380,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
   );
 
   const clientChoices = useMemo(() => {
-    const unique = new Map<string, ClientOption>();
-    for (const client of [...clientSearchResults, ...props.clients]) unique.set(client.id, client);
-    return [...unique.values()];
+    return mergeClientChoices(props.clients, clientSearchResults);
   }, [clientSearchResults, props.clients]);
 
   const existingProperties = useMemo(

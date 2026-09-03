@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { requestClientFieldDefaults } from "./NexOpsRequestsPage.tsx";
+import { mergeClientChoices, requestClientFieldDefaults } from "./NexOpsRequestsPage.tsx";
 
 const source = readFileSync(new URL("./NexOpsRequestsPage.tsx", import.meta.url), "utf8");
 
@@ -72,4 +72,24 @@ test("selecting an existing client prepopulates editable request contact fields"
     phones: ["555-0100"]
   });
   assert.deepEqual(defaults, { first_name: "Test", last_name: "Only", company_name: "", email: "chris1bata@gmail.com", phone: "555-0100" });
+});
+
+test("client search results retain contact data when a roster record has the same id", () => {
+  const choices = mergeClientChoices([{
+    id: "client_test",
+    name: "TEST ONLY — NO CUSTOMER DATA",
+    emails: [],
+    phones: []
+  }], [{
+    id: "client_test",
+    name: "TEST ONLY — NO CUSTOMER DATA",
+    emails: ["chris1bata@gmail.com"],
+    phones: ["555-0100"]
+  }]);
+  assert.deepEqual(choices, [{
+    id: "client_test",
+    name: "TEST ONLY — NO CUSTOMER DATA",
+    emails: ["chris1bata@gmail.com"],
+    phones: ["555-0100"]
+  }]);
 });
