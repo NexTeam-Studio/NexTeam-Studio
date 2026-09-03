@@ -609,7 +609,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
       if (!selectedForm) return;
       const defaults = requestClientFieldDefaults(selectedForm.fieldDefinitions, client);
       if (client.id === "client_ac0203c3-ac8b-415c-9495-f1cf1b6cf6f9") {
-        console.info("[request-client-contact-debug] writing defaults", { source, clientId: client.id, defaults });
+        console.info(`[request-client-contact-debug] writing defaults ${JSON.stringify({ source, clientId: client.id, defaults })}`);
       }
       setFieldDraft((current) => ({ ...current, ...defaults }));
     };
@@ -618,12 +618,12 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
     try {
       const canonicalClient = await fetchClientForRequestSelection(props.tenantId, clientId);
       if (clientId === "client_ac0203c3-ac8b-415c-9495-f1cf1b6cf6f9") {
-        console.info("[request-client-contact-debug] canonical client resolved", { clientId, emails: canonicalClient?.emails, phones: canonicalClient?.phones });
+        console.info(`[request-client-contact-debug] canonical client resolved ${JSON.stringify({ clientId, emails: canonicalClient?.emails, phones: canonicalClient?.phones })}`);
       }
       if (canonicalClient) applyClientDefaults(canonicalClient, "canonical");
     } catch {
       if (clientId === "client_ac0203c3-ac8b-415c-9495-f1cf1b6cf6f9") {
-        console.warn("[request-client-contact-debug] canonical client lookup failed", { clientId });
+        console.warn(`[request-client-contact-debug] canonical client lookup failed ${JSON.stringify({ clientId })}`);
       }
       // The roster result remains usable if the canonical contact read is unavailable.
     }
