@@ -36,10 +36,12 @@ export function createQuoteRouteSupport(input: {
     subject?: string | undefined;
     bodyText?: string | undefined;
     actorId: string;
+    publicOrigin?: string | undefined;
   }): Promise<{ quote: Quote; portalUrl: string; delivery: QuoteDeliveryRecord }> {
     const provider = input.providerForTenant(request.quote.tenantId);
     const portalToken = createPortalToken();
-    const portalUrl = portalUrlForQuote(request.quote, portalToken);
+    const portalPath = portalUrlForQuote(request.quote, portalToken);
+    const portalUrl = request.publicOrigin ? new URL(portalPath, request.publicOrigin).toString() : portalPath;
     const fallback = quoteDeliveryMessage(request.quote, request.mode === "mark_sent" ? "email" : request.mode, portalUrl);
     const variables = quoteTemplateVariables({ quote: request.quote, client: request.client, portalUrl });
     const rendered = resolveTemplateMessage({
@@ -60,7 +62,7 @@ export function createQuoteRouteSupport(input: {
     // portal path before appending the current one, so a client sees exactly
     // one actionable approval link.
     const stalePortalPath = new RegExp(
-      `/portal/quotes/${request.quote.id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\?tenantId=[^\\s&]+&token=[^\\s]+`,
+      `(?:https?:\\/\\/[^\\s/]+)?/portal/quotes/${request.quote.id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\?tenantId=[^\\s&]+&token=[^\\s]+`,
       "g"
     );
     const bodyWithoutStalePortal = requestedBody.replace(stalePortalPath, "").trim();

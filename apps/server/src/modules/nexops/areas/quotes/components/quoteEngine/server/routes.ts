@@ -233,7 +233,8 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
           mode: input.delivery.mode,
           target: input.delivery.target,
           note: input.delivery.note,
-          actorId: actorIdForAccess(access)
+          actorId: actorIdForAccess(access),
+          publicOrigin: publicOrigin(req)
         });
         res.status(201).json({ ok: true, quote: delivered.quote, portalUrl: delivered.portalUrl, delivery: delivered.delivery });
         return;
@@ -346,7 +347,8 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
         note: input.note,
         subject: input.subject,
         bodyText: input.bodyText,
-        actorId: actorIdForAccess(access)
+        actorId: actorIdForAccess(access),
+        publicOrigin: publicOrigin(req)
       });
       res.json({ ok: true, tenantId, actorRole: access.role, quote: delivered.quote, portalUrl: delivered.portalUrl, delivery: delivered.delivery });
     } catch (error) {
