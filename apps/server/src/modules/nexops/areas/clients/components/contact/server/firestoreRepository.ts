@@ -8,6 +8,13 @@ import { deleteTenantOwnedDocument, setTenantOwnedDocument } from "../../../../.
 export function createContactFirestoreRepository(db: Firestore) {
   const { listByTenant, listPageByTenant } = createTenantFirestoreReader(db);
   return {
+    async getClient(tenantId: string, clientId: string): Promise<Client | null> {
+      const snapshot = await db.collection("clients").doc(clientId).get();
+      if (!snapshot.exists) return null;
+      const client = clientSchema.parse(snapshot.data()) as Client;
+      return client.tenantId === tenantId ? client : null;
+    },
+
     async listClients(tenantId: string): Promise<Client[]> {
         return (await listByTenant("clients", tenantId, clientSchema)) as Client[];
       },

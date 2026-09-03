@@ -218,6 +218,16 @@ export function requestClientFieldDefaults(
   return defaults;
 }
 
+export async function fetchClientForRequestSelection(
+  tenantId: string,
+  clientId: string,
+  request: typeof fetch = fetch
+): Promise<ClientOption | null> {
+  const response = await request(`/api/crm/clients/${encodeURIComponent(clientId)}?tenantId=${encodeURIComponent(tenantId)}`);
+  const body = await response.json() as { ok: boolean; client?: ClientOption };
+  return body.ok && body.client ? body.client : null;
+}
+
 function requestStatusLabel(status: RequestStatus): string {
   switch (status) {
     case "converted_to_quote":
@@ -593,16 +603,20 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
     setFieldDraft((current) => ({ ...current, [fieldKey]: value }));
   }
 
-  function selectExistingClient(clientId: string): void {
+  async function selectExistingClient(clientId: string): Promise<void> {
     setSelectedClientId(clientId);
-    const client = clientChoices.find((candidate) => candidate.id === clientId);
-    if (!client || !selectedForm) {
-      return;
+    const applyClientDefaults = (client: ClientOption): void => {
+      if (!selectedForm) return;
+      setFieldDraft((current) => ({ ...current, ...requestClientFieldDefaults(selectedForm.fieldDefinitions, client) }));
+    };
+    const listedClient = clientChoices.find((candidate) => candidate.id === clientId);
+    if (listedClient) applyClientDefaults(listedClient);
+    try {
+      const canonicalClient = await fetchClientForRequestSelection(props.tenantId, clientId);
+      if (canonicalClient) applyClientDefaults(canonicalClient);
+    } catch {
+      // The roster result remains usable if the canonical contact read is unavailable.
     }
-    setFieldDraft((current) => ({
-      ...current,
-      ...requestClientFieldDefaults(selectedForm.fieldDefinitions, client)
-    }));
   }
 
   async function createRequest(event: React.FormEvent<HTMLFormElement>): Promise<void> {
@@ -817,7 +831,7 @@ export function NexOpsRequestsPage(props: NexOpsRequestsPageProps): React.ReactE
               <label className="nexops-field"><span>Request Form</span><select value={selectedForm?.id ?? ""} onChange={(event) => setSelectedFormId(event.target.value)}>{forms.map((form) => <option value={form.id} key={form.id}>{form.title}</option>)}</select></label>
               {officeMode === "existing_client" ? <>
                 <label className="nexops-field"><span>Find Existing Client</span><input value={clientSearch} placeholder="Search name or email" onChange={(event) => setClientSearch(event.target.value)} /></label>
-                <label className="nexops-field"><span>Existing Client</span><select value={selectedClientId} onChange={(event) => selectExistingClient(event.target.value)}><option value="">Select Client</option>{clientChoices.map((client) => <option value={client.id} key={client.id}>{clientDisplayName(client)}</option>)}</select></label>
+                <label className="nexops-field"><span>Existing Client</span><select value={selectedClientId} onChange={(event) => void selectExistingClient(event.target.value)}><option value="">Select Client</option>{clientChoices.map((client) => <option value={client.id} key={client.id}>{clientDisplayName(client)}</option>)}</select></label>
                 <label className="nexops-field"><span>Property Handling</span><select value={propertyMode} onChange={(event) => setPropertyMode(event.target.value as "existing_property" | "new_property")}><option value="existing_property">Use Existing Property</option><option value="new_property">Capture New Property</option></select></label>
                 {propertyMode === "existing_property" ? <label className="nexops-field"><span>Existing Property</span><select value={selectedPropertyId} onChange={(event) => setSelectedPropertyId(event.target.value)}><option value="">Select Property</option>{existingProperties.map((property) => <option value={property.id} key={property.id}>{property.siteName || property.label || property.address.street1}</option>)}</select></label> : null}
               </> : null}

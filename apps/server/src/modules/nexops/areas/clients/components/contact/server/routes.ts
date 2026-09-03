@@ -56,6 +56,25 @@ export function registerContactRoutes(context: CrmRouteContext): void {
     }
   });
 
+  app.get("/api/crm/clients/:id", async (req: Request, res: Response) => {
+    try {
+      const clientId = req.params.id;
+      if (!clientId) throw new RailError("Client id is required.", { provider: "native", op: "getClient", status: 400 });
+      const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim()
+        ? req.query.tenantId
+        : defaultTenantId(env);
+      await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: tenantId, op: "getClient" });
+      const repository = repositoryForTenant();
+      const client = repository.getClient
+        ? await repository.getClient(tenantId, clientId)
+        : (await repository.listClients(tenantId)).find((record) => record.id === clientId) ?? null;
+      if (!client) throw new RailError(`Client ${clientId} was not found.`, { provider: "native", op: "getClient", status: 404 });
+      res.json({ ok: true, client });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
   app.get("/api/crm/properties", async (req: Request, res: Response) => {
     try {
       const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim()

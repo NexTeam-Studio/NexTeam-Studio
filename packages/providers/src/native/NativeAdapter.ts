@@ -33,6 +33,7 @@ export interface NativeListPage<T> {
 
 export interface NativeCrmRepository {
   listClients(tenantId: string): Promise<Client[]>;
+  getClient?(tenantId: string, clientId: string): Promise<Client | null>;
   listClientsPage?(tenantId: string, input?: { limit?: number | undefined; cursor?: string | undefined }): Promise<NativeListPage<Client>>;
   searchClients?(tenantId: string, query: string): Promise<Client[]>;
   listProperties(tenantId: string): Promise<Property[]>;

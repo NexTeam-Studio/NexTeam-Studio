@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { mergeClientChoices, requestClientFieldDefaults } from "./NexOpsRequestsPage.tsx";
+import { fetchClientForRequestSelection, mergeClientChoices, requestClientFieldDefaults } from "./NexOpsRequestsPage.tsx";
 
 const source = readFileSync(new URL("./NexOpsRequestsPage.tsx", import.meta.url), "utf8");
 
@@ -92,4 +92,14 @@ test("client search results retain contact data when a roster record has the sam
     emails: ["chris1bata@gmail.com"],
     phones: ["555-0100"]
   }]);
+});
+
+test("selecting an existing client reads canonical contact data before populating the request", async () => {
+  const calls = [];
+  const client = await fetchClientForRequestSelection("aquatrace", "client_test", async (url) => {
+    calls.push(url);
+    return { json: async () => ({ ok: true, client: { id: "client_test", name: "TEST ONLY — NO CUSTOMER DATA", emails: ["chris1bata@gmail.com"], phones: ["555-0100"] } }) };
+  });
+  assert.deepEqual(calls, ["/api/crm/clients/client_test?tenantId=aquatrace"]);
+  assert.deepEqual(client, { id: "client_test", name: "TEST ONLY — NO CUSTOMER DATA", emails: ["chris1bata@gmail.com"], phones: ["555-0100"] });
 });
