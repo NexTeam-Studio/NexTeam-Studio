@@ -314,6 +314,10 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
       });
       const saved = await repository.updateQuote(existing.quote.id, {
         ...rebuilt,
+        // updateQuote merges the patch with the stored record. Explicitly
+        // clear an earlier payment bridge when the revised policy no longer
+        // requires either a deposit or card authorization.
+        deposit: rebuilt.approvalRules.requireDeposit || rebuilt.approvalRules.requireCardOnFile ? rebuilt.deposit : undefined,
         approvalId: undefined,
         sentAt: undefined,
         approvedAt: undefined,

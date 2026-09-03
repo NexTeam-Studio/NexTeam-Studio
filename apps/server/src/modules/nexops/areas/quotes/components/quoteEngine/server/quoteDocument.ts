@@ -42,6 +42,12 @@ function quoteSentAtValue(quote: Quote): string | undefined {
   return quote.sentAt ?? quote.delivery?.[0]?.sentAt;
 }
 
+export function portalTerms(terms: string | undefined, depositRequired: boolean): string | undefined {
+  if (!terms) return undefined;
+  if (depositRequired) return terms;
+  return terms.replace(/\s+and any required deposit steps are complete\.?/gi, ".");
+}
+
 export function renderQuotePortalHtml(
   quote: Quote,
   token: string,
@@ -50,14 +56,14 @@ export function renderQuotePortalHtml(
 ): string {
   const rows = quote.lineItems.map((item) =>
     `<tr>
-      <td>
+      <td data-label="Item">
         <strong>${escapeHtml(item.name)}</strong>
         <div class="muted">${escapeHtml(item.code)}</div>
         ${item.description ? `<div class="description">${escapeHtml(item.description)}</div>` : ""}
       </td>
-      <td>${item.quantity}</td>
-      <td>${money(item.unitPrice)}</td>
-      <td>${money(item.total)}</td>
+      <td data-label="Qty">${item.quantity}</td>
+      <td data-label="Unit">${money(item.unitPrice)}</td>
+      <td data-label="Total">${money(item.total)}</td>
     </tr>`
   ).join("");
   const blockedReason = options.approvalBlockedReason ?? null;
@@ -72,7 +78,8 @@ export function renderQuotePortalHtml(
       ? `${quote.approvalRules.depositValue ?? 0}% deposit`
       : `${money(quote.deposit.amount)} deposit`
     : "Deposit";
-  const terms = quote.terms ? `<section class="panel"><h3>Terms</h3><p>${escapeHtml(quote.terms).replace(/\n/g, "<br/>")}</p></section>` : "";
+  const termsCopy = portalTerms(quote.terms, depositRequired);
+  const terms = termsCopy ? `<section class="panel"><h3>Terms</h3><p>${escapeHtml(termsCopy).replace(/\n/g, "<br/>")}</p></section>` : "";
   const statusChips = [
     quote.number ? `<span>Quote ${escapeHtml(quote.number)}</span>` : "",
     `<span>${escapeHtml(portalStatusLabel(quote.status))}</span>`,
@@ -196,7 +203,7 @@ export function renderQuotePortalHtml(
                 </label>
               </div>
             </div>
-            <div class="summary" style="margin-top:18px;">
+            ${depositRequired || cardRequired ? `<div class="summary" style="margin-top:18px;">
               <label>${escapeHtml(depositLabel)}
                 <input name="cardholderName" ${disabledAttr} placeholder="Cardholder name${depositRequired ? "" : " (optional)"}" />
               </label>
@@ -212,7 +219,7 @@ export function renderQuotePortalHtml(
                   <span>Save this card on file for future approved work and billing.</span>
                 </label>
               </div>
-            </div>
+            </div>` : ""}
             <div class="actions">
               <button type="submit" ${disabledAttr}>Approve quote</button>
             </div>
@@ -424,6 +431,12 @@ export function renderQuotePortalHtml(
       .summary { grid-template-columns: 1fr; }
       .hero { padding: 24px 20px; }
       .content { padding: 20px; }
+      .quote-line-items thead { display: none; }
+      .quote-line-items, .quote-line-items tbody, .quote-line-items tr, .quote-line-items td { display: block; width: 100%; }
+      .quote-line-items tr { padding: 12px 0; border-bottom: 1px solid rgba(16,32,39,.08); }
+      .quote-line-items td { border: 0; padding: 6px 0; }
+      .quote-line-items td[data-label]:not(:first-child) { display: flex; justify-content: space-between; gap: 12px; color: #39545b; }
+      .quote-line-items td[data-label]:not(:first-child)::before { content: attr(data-label); font-weight: 700; color: #102027; }
     }
   </style>
 </head>
@@ -446,7 +459,7 @@ export function renderQuotePortalHtml(
           <section class="panel">
             <h2>${escapeHtml(clientDisplayName(client, quote.clientId))}</h2>
             <p class="muted">Quote review for ${escapeHtml(client?.company ?? clientDisplayName(client, "your service request"))}.</p>
-            <table>
+            <table class="quote-line-items">
               <thead>
                 <tr><th>Item</th><th>Qty</th><th>Unit</th><th>Total</th></tr>
               </thead>
