@@ -27,12 +27,16 @@ test("request routes create, update, convert, archive, and reopen while preservi
   const repository = new MemoryNativeCrmRepository();
   const adapter = new NativeAdapter(repository, "aquatrace");
   const sentEmails = [];
+  let rejectEmailSends = false;
   const commsRail = {
     tenantId: "aquatrace",
     readAdapters: new Map(),
     sendAdapter: {
       mailbox: "TRANSACTIONAL",
       async sendEmail(outbound) {
+        if (rejectEmailSends) {
+          throw new Error("Sender domain is not authorized");
+        }
         sentEmails.push(outbound);
         return { id: `sent_${sentEmails.length}` };
       }
@@ -139,6 +143,7 @@ test("request routes create, update, convert, archive, and reopen while preservi
     assert.equal((await archivePublicRequestResponse.json()).request.status, "archived");
     assert.ok((await repository.listClients("aquatrace")).some((client) => client.id === publicSubmissionBody.request.selectedClientId), "archiving a request preserves its linked client");
 
+    rejectEmailSends = true;
     const requestResponse = await fetch(`${base}/api/crm/requests`, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -167,8 +172,10 @@ test("request routes create, update, convert, archive, and reopen while preservi
       })
     });
     const requestBody = await requestResponse.json();
+    rejectEmailSends = false;
     assert.equal(requestBody.ok, true, requestBody.error);
     assert.equal(requestBody.request.clientName, "Logan Sears", "office Add New requests derive the required client name from first and last name");
+    assert.ok(requestBody.request.selectedClientId, "the request remains saved even when outbound notification delivery fails");
     assert.equal(requestBody.request.consent.marketing, true);
     assert.equal(requestBody.request.intake.fieldIndex.gate_code, "4421");
     assert.equal(requestBody.request.intake.fieldIndex.marketing_consent, true);

@@ -82,21 +82,32 @@ export function createRequestRouteSupport(input: {
         ...(linkedRequest.phone ? { phone: linkedRequest.phone } : {})
       }
     });
-    const notified = await notifyRequestCreated(linkedRequest, {
-      approvalQueue: input.deps.approvalQueue,
-      commsRail: input.deps.commsRail,
-      platformRepository: input.deps.platformRepository,
-      crmRepository: repository,
-      publicBaseUrl: input.env.NEXOPS_PUBLIC_BASE_URL?.trim() || undefined
-    });
-    if (notified.notifications && (
-      notified.notifications.adminNotifiedAt !== created.notifications?.adminNotifiedAt
-      || notified.notifications.clientConfirmationAt !== linkedRequest.notifications?.clientConfirmationAt
-    )) {
-      return repository.updateRequest(linkedRequest.id, {
+    try {
+      const notified = await notifyRequestCreated(linkedRequest, {
+        approvalQueue: input.deps.approvalQueue,
+        commsRail: input.deps.commsRail,
+        platformRepository: input.deps.platformRepository,
+        crmRepository: repository,
+        publicBaseUrl: input.env.NEXOPS_PUBLIC_BASE_URL?.trim() || undefined
+      });
+      if (notified.notifications && (
+        notified.notifications.adminNotifiedAt !== created.notifications?.adminNotifiedAt
+        || notified.notifications.clientConfirmationAt !== linkedRequest.notifications?.clientConfirmationAt
+      )) {
+        return repository.updateRequest(linkedRequest.id, {
+          tenantId: linkedRequest.tenantId,
+          notifications: notified.notifications,
+          updatedAt: notified.updatedAt
+        });
+      }
+    } catch (error) {
+      // A request is already durable before its optional outbound notifications
+      // run. A provider outage or sender-domain rejection must not tell staff
+      // that intake failed or make them submit a duplicate request.
+      console.error("Request notification delivery failed after request creation", {
+        requestId: linkedRequest.id,
         tenantId: linkedRequest.tenantId,
-        notifications: notified.notifications,
-        updatedAt: notified.updatedAt
+        error: error instanceof Error ? error.message : String(error)
       });
     }
     return linkedRequest;
