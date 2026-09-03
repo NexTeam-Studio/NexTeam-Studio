@@ -17,7 +17,7 @@ import { FirestoreNativeCrmRepository } from "../shared/persistence/nativeReposi
 import { archiveQuoteVersion, createPortalToken, ensureQuoteConfiguration, hashPortalToken, materializeQuoteRecord, portalQuoteApprovalInputSchema, portalQuoteChangeRequestInputSchema, portalUrlForQuote, quoteApprovalBlockedReason, quoteComposerInputSchema, quoteDeliveryMessage, quoteLocked, quoteRenewInputSchema, quoteTemplateInputSchema, syncExpiredQuote } from "../areas/quotes/components/quoteEngine/domain/quoteFoundation.js";
 import { crmSettingsPatchSchema } from "../areas/settings/components/tenantConfig/domain/crmSettingsPatchSchema.js";
 import { buildInvoiceDraftFromJobs, buildInvoiceDraftFromQuote, buildQuickPaymentRequestInvoice } from "../areas/invoices/components/invoiceStructure/domain/invoiceFoundation.js";
-import { availableRequestFields, backfillLegacyLeads, buildServiceRequest, convertRequestToJob, convertRequestToQuote, ensureRequestForms, notifyRequestCreated, publicFormSubmissionValues, renderPublicRequestForm, requestFormEmbedCode, requestFormSharePath, selectRequestFields, updateServiceRequestShape } from "../areas/requests/components/requestCore/server/requestFoundation.js";
+import { availableRequestFields, backfillLegacyLeads, buildServiceRequest, convertRequestToJob, convertRequestToQuote, ensureRequestForms, materializeRequestClient, notifyRequestCreated, publicFormSubmissionValues, renderPublicRequestForm, requestFormEmbedCode, requestFormSharePath, selectRequestFields, updateServiceRequestShape } from "../areas/requests/components/requestCore/server/requestFoundation.js";
 import { renderInvoicePdf, renderInvoicePortalHtml } from "../areas/invoices/components/invoiceStructure/server/invoiceDocument.js";
 import { renderQuotePdf, renderQuotePortalHtml } from "../areas/quotes/components/quoteEngine/server/quoteDocument.js";
 import { capturePaypalCheckoutOrder, createPaypalCheckoutOrder } from "../areas/invoices/components/paymentRails/server/paypal.js";
@@ -177,6 +177,7 @@ export function createCrmRouteContext(app: Express, deps: CrmRouteDeps) {
     lineItemSchema,
     createJobCostFactInputSchema,
     materializeQuoteRecord,
+    materializeRequestClient,
     nexDocsService,
     notifyRequestCreated,
     operationsHub,

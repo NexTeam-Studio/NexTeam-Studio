@@ -38,6 +38,7 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
     jobLifecycle,
     ledger,
     materializeQuoteRecord,
+    materializeRequestClient,
     portalHub,
     portalPathWithTenant,
     portalQuoteApprovalInputSchema,
@@ -102,6 +103,32 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
     };
   }
 
+  async function repairLegacyQuoteClient(tenantId: string, quote: Quote) {
+    if (!quote.requestId) {
+      return { quote, client: undefined };
+    }
+    const repository = repositoryForTenant();
+    const request = await repository.getRequest(tenantId, quote.requestId);
+    if (!request) {
+      return { quote, client: undefined };
+    }
+    const materialized = await materializeRequestClient(repository, request);
+    const repairedAt = new Date().toISOString();
+    const repaired = await repository.updateQuote(quote.id, {
+      tenantId,
+      clientId: materialized.client.id,
+      ...(materialized.property ? { propertyId: materialized.property.id } : {}),
+      updatedAt: repairedAt
+    });
+    await repository.updateRequest(request.id, {
+      tenantId,
+      selectedClientId: materialized.client.id,
+      ...(materialized.property ? { selectedPropertyId: materialized.property.id } : {}),
+      updatedAt: repairedAt
+    });
+    return { quote: repaired, client: materialized.client };
+  }
+
   app.get("/api/crm/quotes", async (req: Request, res: Response) => {
     try {
       const tenantId = typeof req.query.tenantId === "string" && req.query.tenantId.trim()
@@ -135,7 +162,10 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
         ? req.query.tenantId
         : defaultTenantId(env);
       const access = await requireQuoteAccess(req, tenantId, "getQuote");
-      const { quote, client } = await getQuoteAndClient(tenantId, quoteId);
+      const resolved = await getQuoteAndClient(tenantId, quoteId);
+      const repaired = resolved.client ? resolved : await repairLegacyQuoteClient(tenantId, resolved.quote);
+      const quote = repaired.quote;
+      const client = repaired.client;
       res.json({ ok: true, tenantId, actorRole: access.role, quote, client });
     } catch (error) {
       sendRouteError(res, error);
@@ -299,7 +329,10 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
       const input = quoteSendBodySchema.parse(req.body);
       const tenantId = input.tenantId ?? defaultTenantId(env);
       const access = await requireQuoteAccess(req, tenantId, "sendQuote");
-      const { quote, client } = await getQuoteAndClient(tenantId, quoteId);
+      const resolved = await getQuoteAndClient(tenantId, quoteId);
+      const repaired = resolved.client ? resolved : await repairLegacyQuoteClient(tenantId, resolved.quote);
+      const quote = repaired.quote;
+      const client = repaired.client;
       const settings = await repositoryForTenant().getCrmSettings(tenantId);
       if (["approved", "approved_internal", "archived", "declined", "expired"].includes(quote.status)) {
         throw new RailError("That quote cannot be sent in its current state.", { provider: "native", op: "sendQuote", status: 409 });
