@@ -33,6 +33,20 @@ Last updated: 2026-07-22
   report is advisory: an administrator explicitly decides whether to add an
   equivalent field to the global library.
 
+## Deferred: Assessment workflow
+
+- Add a first-class assessment lifecycle between request intake and the
+  quote/job decision. The internal request-detail action surface should offer
+  "Schedule Assessment" as an assessment workflow, rather than treating it
+  only as a shortcut that immediately creates a job.
+- An assessment needs its own status, assignee/scheduled visit, notes and
+  findings, outcome (quote, job, decline, or follow-up), and an auditable
+  conversion trail back to the original request and forward to its resulting
+  quote or job.
+- Communication triggers and templates for assessment scheduling, reminders,
+  completion, and next-step outcomes must use the same tenant-operational
+  sender/branding rail as requests, jobs, invoices, and receipts.
+
 ## Deferred: Tier 2 subcontractor access
 
 - A job-scoped external subcontractor tier is a locked fast-follow after the
