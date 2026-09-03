@@ -10,7 +10,7 @@ export interface TenantEmailContactBlock {
 export interface TenantEmailBranding {
   branding: TenantBranding | null;
   contact: TenantEmailContactBlock | null;
-  /** Tenant-controlled sender. The transport remains responsible for verification. */
+  /** Tenant setting retained for contact metadata; it never controls the transport sender. */
   senderEmail?: string | undefined;
 }
 
@@ -77,14 +77,38 @@ export class TenantBrandingEmailSendAdapter implements EmailSendProvider {
   async sendEmail(message: OutboundEmail): Promise<SendReceipt> {
     const tenant = await this.resolveBranding(message.tenantId);
     const displayName = tenant.branding?.displayName?.trim() || "NexOps";
+    const from = senderName(this.senderEmail, displayName);
+    const { from: _workflowFrom, ...messageWithoutFrom } = message;
     return this.delegate.sendEmail({
-      ...message,
+      ...messageWithoutFrom,
       bodyHtml: message.bodyHtml
         ? appendContactBlock(message.bodyHtml, tenant.branding, tenant.contact)
         : renderTenantBrandedEmail({ bodyText: message.bodyText, ...tenant }),
-      // A tenant sender deliberately wins over workflow-local and deployment
-      // defaults. This is the one shared boundary for every transactional email.
-      from: senderName(tenant.senderEmail || message.from || this.senderEmail, displayName)
+      // Tenant operational email keeps the tenant-facing display name, but the
+      // verified platform sender always owns the actual From address.
+      ...(from ? { from } : {})
+    });
+  }
+}
+
+/**
+ * Platform-security mail deliberately bypasses all tenant data. It shares the
+ * verified transport with operational email, but its visible identity is fixed
+ * to NexTeam for password setup, account verification, and security notices.
+ */
+export class PlatformSecurityEmailSendAdapter implements EmailSendProvider {
+  readonly mailbox: string;
+
+  constructor(private readonly delegate: EmailSendProvider, private readonly senderEmail?: string | undefined) {
+    this.mailbox = delegate.mailbox;
+  }
+
+  async sendEmail(message: OutboundEmail): Promise<SendReceipt> {
+    const from = senderName(this.senderEmail, "NexTeam");
+    const { from: _workflowFrom, ...messageWithoutFrom } = message;
+    return this.delegate.sendEmail({
+      ...messageWithoutFrom,
+      ...(from ? { from } : {})
     });
   }
 }

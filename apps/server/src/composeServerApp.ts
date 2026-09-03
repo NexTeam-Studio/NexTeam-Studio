@@ -36,7 +36,7 @@ import { FirestoreMediaRepository, MemoryMediaRepository, type MediaRepository }
 import { registerNativeMediaRoutes } from "./fielddocs/nativeMediaRoutes.js";
 import { CommsApprovalExecutor } from "./comms/approvalExecutor.js";
 import { createCommsRailFromEnv } from "./comms/gmailRegistry.js";
-import { TenantBrandingEmailSendAdapter } from "./comms/tenantBrandingEmail.js";
+import { PlatformSecurityEmailSendAdapter, TenantBrandingEmailSendAdapter } from "./comms/tenantBrandingEmail.js";
 import { ContentApprovalExecutor } from "./content/approvalExecutor.js";
 import { registerNexReachRoutes } from "./content/nexreachRoutes.js";
 import { NexReachService } from "./content/nexreachService.js";
@@ -119,6 +119,9 @@ const nativeCrmRepository = adminDb ? new FirestoreNativeCrmRepository(adminDb) 
 const fieldDocsService = new FieldDocsService({ mediaRepository, crmRepository: nativeCrmRepository });
 const nativeCrmProvider = new NativeAdapter(nativeCrmRepository, runtimeTenantId);
 const platformRepository = adminDb ? new FirestorePlatformRepository(adminDb) : new InMemoryPlatformRepository();
+const platformSecurityAdapter = commsRail.sendAdapter
+  ? new PlatformSecurityEmailSendAdapter(commsRail.sendAdapter, commsRail.senderEmail)
+  : null;
 if (commsRail.sendAdapter) {
   const transactionalAdapter = commsRail.sendAdapter;
   commsRail.sendAdapter = new TenantBrandingEmailSendAdapter(transactionalAdapter, async (tenantId) => {
@@ -139,6 +142,8 @@ if (commsRail.sendAdapter) {
         address: addressText,
         website: profile.website
       } : profile?.website ? { website: profile.website } : null,
+      // This setting is contact metadata only. The operational rail selects
+      // the verified platform sender address below.
       senderEmail: settings.operatingProfile.communicationIdentity.senderEmail
     };
   }, commsRail.senderEmail);
@@ -447,8 +452,8 @@ registerPlatformRoutes(app, {
   repository: platformRepository,
   crmRepository: nativeCrmRepository,
   storage: platformStorage,
-  ownerInviteSender: getAdminAuth()
-    ? createOwnerInviteSender({ auth: getAdminAuth()!, email: commsRail.sendAdapter, continueUrl: ownerInviteContinueUrl(process.env.PUBLIC_BASE_URL?.trim() || "http://127.0.0.1:4175") })
+    ownerInviteSender: getAdminAuth()
+      ? createOwnerInviteSender({ auth: getAdminAuth()!, email: platformSecurityAdapter, continueUrl: ownerInviteContinueUrl(process.env.PUBLIC_BASE_URL?.trim() || "http://127.0.0.1:4175") })
     : undefined,
   stripeConnect: {
     createExpressAccount: createStripeConnectExpressAccount,
