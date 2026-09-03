@@ -56,3 +56,15 @@ test("shared tenant reader applies a supplied cursor before reading the next pag
   assert.deepEqual(db.operations.at(-1), ["startAfter", "client_250"]);
   assert.ok(db.operations.some((operation) => operation[0] === "limit" && operation[1] === 10));
 });
+
+test("shared tenant reader methods work when destructured from their source object", async () => {
+  const db = pagedFirestore();
+  const { listByTenant, listPageByTenant } = createTenantFirestoreReader(db);
+  const schema = z.object({ id: z.string() });
+
+  assert.deepEqual(await listByTenant("clients", "tenant_1", schema), [{ id: "client_251" }]);
+  assert.deepEqual(await listPageByTenant("clients", "tenant_1", schema, { limit: 1 }), {
+    records: [{ id: "client_251" }],
+    nextCursor: "client_251"
+  });
+});

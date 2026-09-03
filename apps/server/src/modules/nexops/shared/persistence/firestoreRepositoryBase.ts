@@ -26,34 +26,35 @@ export function asDocumentData(value: object): DocumentData {
 }
 
 export function createTenantFirestoreReader(db: Firestore) {
-  return {
-    async listPageByTenant<T>(
-      collectionName: NativeCollectionName,
-      tenantId: string,
-      schema: ZodSchema<T>,
-      input: { limit?: number | undefined; cursor?: string | undefined } = {}
-    ): Promise<TenantListPage<T>> {
-      const limit = Math.min(Math.max(input.limit ?? DEFAULT_FIRESTORE_READ_LIMIT, 1), DEFAULT_FIRESTORE_READ_LIMIT);
-      let query = boundedTenantQuery(db, collectionName, tenantId, { limit }).orderBy(FieldPath.documentId());
-      if (input.cursor) {
-        query = query.startAfter(input.cursor);
-      }
-      const snapshot = await query.get();
-      recordFirestoreRead({
-        collection: collectionName,
-        operation: "tenant-list-page",
-        tenantId,
-        returnedDocumentCount: snapshot.docs.length,
-        limit,
-        filters: ["tenantId"]
-      });
-      return {
-        records: snapshot.docs.map((doc) => schema.parse(doc.data())),
-        nextCursor: snapshot.docs.length === limit ? snapshot.docs.at(-1)?.id : undefined
-      };
-    },
-    async listByTenant<T>(collectionName: NativeCollectionName, tenantId: string, schema: ZodSchema<T>): Promise<T[]> {
-      return (await this.listPageByTenant(collectionName, tenantId, schema)).records;
+  // Repository factories deliberately destructure these helpers. Keep both
+  // closure-bound so callers can never lose an object-method `this` binding.
+  const listPageByTenant = async <T>(
+    collectionName: NativeCollectionName,
+    tenantId: string,
+    schema: ZodSchema<T>,
+    input: { limit?: number | undefined; cursor?: string | undefined } = {}
+  ): Promise<TenantListPage<T>> => {
+    const limit = Math.min(Math.max(input.limit ?? DEFAULT_FIRESTORE_READ_LIMIT, 1), DEFAULT_FIRESTORE_READ_LIMIT);
+    let query = boundedTenantQuery(db, collectionName, tenantId, { limit }).orderBy(FieldPath.documentId());
+    if (input.cursor) {
+      query = query.startAfter(input.cursor);
     }
+    const snapshot = await query.get();
+    recordFirestoreRead({
+      collection: collectionName,
+      operation: "tenant-list-page",
+      tenantId,
+      returnedDocumentCount: snapshot.docs.length,
+      limit,
+      filters: ["tenantId"]
+    });
+    return {
+      records: snapshot.docs.map((doc) => schema.parse(doc.data())),
+      nextCursor: snapshot.docs.length === limit ? snapshot.docs.at(-1)?.id : undefined
+    };
   };
+  const listByTenant = async <T>(collectionName: NativeCollectionName, tenantId: string, schema: ZodSchema<T>): Promise<T[]> => {
+    return (await listPageByTenant(collectionName, tenantId, schema)).records;
+  };
+  return { listPageByTenant, listByTenant };
 }
