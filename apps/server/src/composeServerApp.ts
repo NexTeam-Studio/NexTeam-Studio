@@ -91,6 +91,10 @@ import { registerSplinterRelayRoutes } from "./splinter/routes.js";
 
 const app = express();
 const runtimeTenantId = configuredTenantId(process.env, "serverBootstrap");
+// Transactional email must use an absolute, durable image URL. Storage refs
+// remain private implementation details; this public route is the stable
+// tenant branding seam for email clients.
+const publicEmailBaseUrl = process.env.PUBLIC_BASE_URL?.trim().replace(/\/$/, "");
 const commsRail = createCommsRailFromEnv(process.env);
 const adminDb = getAdminDb();
 assertTenantRuntimePersistence(process.env, Boolean(adminDb));
@@ -134,8 +138,17 @@ if (commsRail.sendAdapter) {
     const addressText = address && typeof address === "object"
       ? Object.values(address).filter((value): value is string => typeof value === "string" && Boolean(value.trim())).join(", ")
       : undefined;
+    const emailBranding = branding?.logo?.storageRef && !branding.logo.url && publicEmailBaseUrl
+      ? {
+          ...branding,
+          logo: {
+            ...branding.logo,
+            url: `${publicEmailBaseUrl}/api/public/tenant-branding/logo?tenantId=${encodeURIComponent(tenantId)}&v=${encodeURIComponent(branding.logo.updatedAt ?? "current")}`
+          }
+        }
+      : branding;
     return {
-      branding,
+      branding: emailBranding,
       contact: profile?.primaryContact ? {
         email: profile.primaryContact.email,
         phone: profile.primaryContact.phone,
