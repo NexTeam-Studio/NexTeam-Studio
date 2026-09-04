@@ -25,7 +25,7 @@ async function startApp() {
   });
   const address = server.address();
   assert.equal(typeof address, "object");
-  return { server, base: `http://127.0.0.1:${address.port}` };
+  return { server, base: `http://127.0.0.1:${address.port}`, repository };
 }
 
 async function createRequest(base, form) {
@@ -66,7 +66,7 @@ async function reviewRequest(base, requestId) {
 }
 
 test("request conversion opens a builder and only marks the request converted after a line-item quote is saved", async () => {
-  const { server, base } = await startApp();
+  const { server, base, repository } = await startApp();
   try {
     const formsResponse = await fetch(`${base}/api/crm/request-forms?tenantId=tenant_demo`);
     const forms = await formsResponse.json();
@@ -88,6 +88,8 @@ test("request conversion opens a builder and only marks the request converted af
     assert.equal(builder.status, 200);
     const builderBody = await builder.json();
     assert.equal(builderBody.quoteBuilder.requestId, request.id);
+    assert.ok(builderBody.quoteBuilder.clientId);
+    assert.ok(builderBody.quoteBuilder.propertyId);
     const quotesResponse = await fetch(`${base}/api/crm/quotes?tenantId=tenant_demo`);
     const quotesBody = await quotesResponse.json();
     assert.equal(quotesResponse.status, 200);
@@ -98,8 +100,8 @@ test("request conversion opens a builder and only marks the request converted af
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         tenantId: "tenant_demo",
-        clientId: request.selectedClientId,
-        propertyId: request.selectedPropertyId,
+        clientId: builderBody.quoteBuilder.clientId,
+        propertyId: builderBody.quoteBuilder.propertyId,
         requestId: request.id,
         title: request.subject,
         items: [{ kind: "custom", name: "Leak Detection", quantity: 1, unitPrice: 595, taxable: false }],
@@ -113,8 +115,21 @@ test("request conversion opens a builder and only marks the request converted af
     const convertedQuote = quotesAfterSaveBody.quotes.find((quote) => quote.id === savedBody.quote.id);
     assert.equal(convertedQuote?.status, "draft");
     assert.equal(convertedQuote?.requestId, request.id);
-    assert.equal(convertedQuote?.clientId, request.selectedClientId);
+    assert.equal(convertedQuote?.clientId, builderBody.quoteBuilder.clientId);
     assert.equal(convertedQuote?.lineItems.length, 1);
+
+    // Quotes created before client materialization was introduced must repair
+    // from their source request before the roster renders them.
+    await repository.updateQuote(savedBody.quote.id, {
+      tenantId: "tenant_demo",
+      clientId: "client_missing_legacy",
+      propertyId: undefined
+    });
+    const repairedRosterResponse = await fetch(`${base}/api/crm/quotes?tenantId=tenant_demo`);
+    const repairedRoster = await repairedRosterResponse.json();
+    const repairedQuote = repairedRoster.quotes.find((quote) => quote.id === savedBody.quote.id);
+    assert.equal(repairedQuote?.clientId, builderBody.quoteBuilder.clientId);
+    assert.equal(repairedQuote?.propertyId, builderBody.quoteBuilder.propertyId);
 
     const retry = await fetch(`${base}/api/crm/requests/${request.id}/convert-to-quote`, {
       method: "POST",

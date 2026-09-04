@@ -14,7 +14,7 @@ function quoteEmailContent(bodyText: string, portalUrl: string): string {
     .map((paragraph) => `<p style="margin:0 0 18px;white-space:pre-line;">${escapeHtml(paragraph)}</p>`)
     .join("");
   const escapedUrl = escapeHtml(portalUrl);
-  return `<div data-nexteam-tenant-content="true">${paragraphs}<p style="margin:28px 0;text-align:center;"><a href="${escapedUrl}" style="display:inline-block;background:#08776f;color:#ffffff;text-decoration:none;border-radius:7px;padding:14px 22px;font-weight:700;">Review quote</a></p><p style="margin:20px 0 0;font-size:12px;line-height:1.5;color:#5f6d75;">If the button does not work, copy and paste this link into your browser:<br /><a href="${escapedUrl}" style="color:#08776f;word-break:break-all;">${escapedUrl}</a></p></div>`;
+  return `<div data-nexteam-tenant-content="true">${paragraphs}<p style="margin:28px 0;text-align:center;"><a href="${escapedUrl}" style="display:inline-block;background-color:#25d238;background-image:linear-gradient(135deg,#d4ff20 0%,#25d238 100%);color:#08151d;text-decoration:none;border-radius:999px;padding:14px 22px;font-weight:800;">Review quote</a></p><p style="margin:20px 0 0;font-size:12px;line-height:1.5;color:#5f6d75;">If the button does not work, copy and paste this link into your browser:<br /><a href="${escapedUrl}" style="color:#25d238;font-weight:700;word-break:break-all;">${escapedUrl}</a></p></div>`;
 }
 
 export function createQuoteRouteSupport(input: {

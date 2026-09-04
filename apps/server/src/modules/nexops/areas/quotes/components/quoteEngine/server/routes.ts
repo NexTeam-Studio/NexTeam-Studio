@@ -181,7 +181,14 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
       });
       const quotes: Quote[] = [];
       for (const quote of numbered) {
-        quotes.push(await syncExpiredQuote(repository, quote));
+        const synced = await syncExpiredQuote(repository, quote);
+        // Older request-to-quote conversions could leave the quote's client
+        // reference empty even though the request captured complete contact
+        // and property data. Normalize those records during roster reads so
+        // the list and its detail card agree immediately.
+        const resolved = await getQuoteAndClient(tenantId, synced.id);
+        const repaired = resolved.client ? resolved : await repairLegacyQuoteClient(tenantId, synced);
+        quotes.push(repaired.quote);
       }
       res.json({ ok: true, tenantId, actorRole: access.role, quotes });
     } catch (error) {
