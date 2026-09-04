@@ -1094,6 +1094,13 @@ function defaultQuoteSendDraft(
   portalUrl: string | undefined,
   mode: Exclude<DeliveryMode, "draft"> = "email"
 ): SendDraft {
+  // A resend belongs to the recipient that successfully received this quote,
+  // even if an older quote has since lost (or never had) a client link.
+  // Prefer that auditable delivery history over a mutable client roster entry.
+  const previousTarget = [...(quote.delivery ?? [])]
+    .reverse()
+    .find((delivery) => delivery.mode === mode && Boolean(delivery.target?.trim()))
+    ?.target?.trim();
   const rendered = resolveTemplateDraft({
     templates: settings?.communicationTemplates ?? [],
     category: "quote_send",
@@ -1121,7 +1128,7 @@ function defaultQuoteSendDraft(
   });
   return {
     mode,
-    target: mode === "sms" ? (client?.phones[0] ?? "") : (client?.emails[0] ?? ""),
+    target: previousTarget ?? (mode === "sms" ? (client?.phones[0] ?? "") : (client?.emails[0] ?? "")),
     subject: mode === "sms" ? "" : rendered.subject,
     bodyText: rendered.bodyText,
     note: ""

@@ -23,6 +23,13 @@ export function createQuoteRouteSupport(input: {
   eventBus: EventBus;
   commsRail?: CommsRail | undefined;
 }) {
+  function latestDeliveryTarget(quote: Quote, mode: "email" | "sms"): string | undefined {
+    return [...(quote.delivery ?? [])]
+      .reverse()
+      .find((delivery) => delivery.mode === mode && Boolean(delivery.target?.trim()))
+      ?.target?.trim();
+  }
+
   async function getQuoteAndClient(tenantId: string, quoteId: string): Promise<{ provider: NativeAdapter; quote: Quote; client?: Client }> {
     const provider = input.providerForTenant(tenantId);
     const repository = input.repositoryForTenant();
@@ -95,14 +102,14 @@ export function createQuoteRouteSupport(input: {
       ...(request.note ? { note: request.note } : {})
     };
     if (request.mode === "email") {
-      const target = request.target?.trim() || request.client?.emails[0];
+      const target = request.target?.trim() || latestDeliveryTarget(request.quote, "email") || request.client?.emails[0];
       if (!target) throw new RailError("An email destination is required to send this quote.", { provider: "native", op: "sendQuoteEmail", status: 400 });
       if (!input.commsRail?.sendAdapter) throw new RailError("Email delivery is not configured for this tenant.", { provider: "native", op: "sendQuoteEmail", status: 501 });
       const receipt = await input.commsRail.sendAdapter.sendEmail({ tenantId: request.quote.tenantId, mailbox: input.commsRail.sendAdapter.mailbox, to: [target], subject, bodyText, ...(bodyHtml ? { bodyHtml } : {}) });
       delivery.target = target;
       delivery.receiptId = receipt.id;
     } else if (request.mode === "sms") {
-      const target = request.target?.trim() || request.client?.phones[0];
+      const target = request.target?.trim() || latestDeliveryTarget(request.quote, "sms") || request.client?.phones[0];
       if (!target) throw new RailError("A phone number is required to text this quote.", { provider: "native", op: "sendQuoteSms", status: 400 });
       if (!input.commsRail?.sendSms) throw new RailError("SMS delivery is not configured for this tenant.", { provider: "native", op: "sendQuoteSms", status: 501 });
       const receipt = await input.commsRail.sendSms({ tenantId: request.quote.tenantId, to: target, body: bodyText });
