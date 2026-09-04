@@ -2,7 +2,7 @@ import type { NexiTool, Tenant } from "@nexteam/core";
 import type { CrmToolContext } from "../../../../../runtime/nexiToolRuntime.js";
 import { createRequestToolInputSchema, getRequestDetailInputSchema, listRequestsInputSchema } from "./toolSchemas.js";
 import { normalizedPhone, parseRequestAddress } from "../../../../../../../shared/addressLocation/requestAddressTools.js";
-import { availableRequestFields, buildServiceRequest, defaultRequestForms, ensureRequestForms, notifyRequestCreated } from "./requestFoundation.js";
+import { availableRequestFields, buildServiceRequest, createRequestWithClientMaterialization, defaultRequestForms, ensureRequestForms, notifyRequestCreated } from "./requestFoundation.js";
 import { findRequestFieldLabel, mergedCreateRequestInput, requestFieldText, requestMatchesQuery, requestQueryValue, requestSource } from "./toolSupport.js";
 
 export function createRequestCoreNexiTools(context: CrmToolContext, includeWrites: boolean): NexiTool[] {
@@ -121,19 +121,19 @@ export function createRequestCoreNexiTools(context: CrmToolContext, includeWrite
             formSlug: defaultForm.slug,
             fieldValues
           });
-          const created = await options.requestRepository.createRequest(built);
-          const notified = await notifyRequestCreated(created, {
+          const linkedRequest = await createRequestWithClientMaterialization(options.requestRepository, built);
+          const notified = await notifyRequestCreated(linkedRequest, {
             approvalQueue,
             commsRail: options.commsRail,
             platformRepository: options.platformRepository
           });
           const request = notified.notifications
-            ? await options.requestRepository.updateRequest(created.id, {
-              tenantId: created.tenantId,
+            ? await options.requestRepository.updateRequest(linkedRequest.id, {
+              tenantId: linkedRequest.tenantId,
               notifications: notified.notifications,
               updatedAt: notified.updatedAt
             })
-            : created;
+            : linkedRequest;
           return {
             result: { request, needsClarification: null },
             sources: [requestSource(request.id, `Native request ${request.clientName}`)]

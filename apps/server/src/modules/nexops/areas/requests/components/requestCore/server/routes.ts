@@ -13,6 +13,7 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
     createAndNotifyRequest,
     defaultTenantId,
     deps,
+    ensureRequestClientMaterialization,
     ensureRequestForms,
     env,
     eventBus,
@@ -163,7 +164,12 @@ export function registerRequestCoreRoutes(context: CrmRouteContext): void {
         : defaultTenantId(env);
       await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN", "TECHNICIAN"], { requestedTenantId: tenantId, op: "getRequest" });
       await ensureRequestForms(repositoryForTenant(), tenantId);
-      const requests = (await repositoryForTenant().listRequests(tenantId)).filter((request) => !request.deletedAt);
+      const repository = repositoryForTenant();
+      const requests = await Promise.all(
+        (await repository.listRequests(tenantId))
+          .filter((request) => !request.deletedAt)
+          .map((request) => ensureRequestClientMaterialization(repository, request))
+      );
       res.json({ ok: true, requests });
     } catch (error) {
       sendRouteError(res, error);

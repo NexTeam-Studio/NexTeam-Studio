@@ -11,7 +11,7 @@ import { actorIdForAccess, requireTenantRole } from "../auth/accessContext.js";
 import { configuredTenantId } from "../core/tenantConfig.js";
 import type { CommsRail } from "../comms/gmailRegistry.js";
 import type { PlatformRepository } from "../platform/repository.js";
-import { buildServiceRequest, notifyRequestCreated } from "../crm/requestFoundation.js";
+import { buildServiceRequest, createRequestWithClientMaterialization, notifyRequestCreated } from "../crm/requestFoundation.js";
 import { buildOperatorUiTheme, defaultOperatorUiTheme } from "./appearance.js";
 import { generatePoolLeakSite } from "./generator.js";
 import { leadSubmissionSchema, operatorUiThemeInputSchema } from "./schemas.js";
@@ -305,19 +305,19 @@ export function registerSitesRoutes(app: Express, deps: SitesRouteDeps): void {
             { key: "issue_summary", value: parsed.message }
           ]
         });
-        const created = await deps.crmRepository.createRequest(built);
-        const notified = await notifyRequestCreated(created, {
+        const linkedRequest = await createRequestWithClientMaterialization(deps.crmRepository, built);
+        const notified = await notifyRequestCreated(linkedRequest, {
           approvalQueue: deps.approvalQueue,
           commsRail: deps.commsRail,
           platformRepository: deps.platformRepository
         });
         request = notified.notifications
-          ? await deps.crmRepository.updateRequest(created.id, {
-            tenantId: created.tenantId,
+          ? await deps.crmRepository.updateRequest(linkedRequest.id, {
+            tenantId: linkedRequest.tenantId,
             notifications: notified.notifications,
             updatedAt: notified.updatedAt
           })
-          : created;
+          : linkedRequest;
       }
 
       res.status(201).json({ ok: true, lead, request, event: "lead.received", approval, outboundQueuedOnly: true });

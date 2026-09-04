@@ -16,8 +16,20 @@ export function createContactFirestoreRepository(db: Firestore) {
     },
 
     async listClients(tenantId: string): Promise<Client[]> {
-        return (await listByTenant("clients", tenantId, clientSchema)) as Client[];
-      },
+      // Client matching is a correctness path, not a roster page. The default
+      // Firestore read page is intentionally capped, but stopping there makes
+      // later clients invisible to exact email/phone matching and can create
+      // duplicates. Read every tenant page when callers request the complete
+      // directory; the UI continues to use listClientsPage for bounded views.
+      const clients: Client[] = [];
+      let cursor: string | undefined;
+      do {
+        const page = await listPageByTenant("clients", tenantId, clientSchema, { cursor });
+        clients.push(...page.records as Client[]);
+        cursor = page.nextCursor;
+      } while (cursor);
+      return clients;
+    },
 
     async listClientsPage(tenantId: string, input: { limit?: number | undefined; cursor?: string | undefined } = {}) {
       return listPageByTenant("clients", tenantId, clientSchema, input);

@@ -909,6 +909,49 @@ export async function materializeRequestClient(repository: NativeCrmRepository, 
   return { client, property };
 }
 
+/**
+ * Every durable request must point to a durable client, and to its matching
+ * property when a service address is present. Keep this in the request
+ * foundation so office intake, public forms, Nexi, site leads, and backfills
+ * cannot accidentally create an unlinked request through a side path.
+ */
+export async function createRequestWithClientMaterialization(
+  repository: NativeCrmRepository,
+  request: ServiceRequest
+): Promise<ServiceRequest> {
+  const created = await repository.createRequest(request);
+  const materialized = await materializeRequestClient(repository, created);
+  return repository.updateRequest(created.id, {
+    tenantId: created.tenantId,
+    selectedClientId: materialized.client.id,
+    ...(materialized.property ? { selectedPropertyId: materialized.property.id } : {}),
+    updatedAt: now()
+  });
+}
+
+/** Repair historical requests written before every intake origin used the
+ * creation invariant. This is idempotent: already-linked client/property
+ * records are returned unchanged. */
+export async function ensureRequestClientMaterialization(
+  repository: NativeCrmRepository,
+  request: ServiceRequest
+): Promise<ServiceRequest> {
+  const linkedClient = await resolveExistingClient(repository, request);
+  const linkedProperty = linkedClient
+    ? await resolveExistingProperty(repository, request, linkedClient.id)
+    : null;
+  if (linkedClient && (!request.propertyAddress || linkedProperty)) {
+    return request;
+  }
+  const materialized = await materializeRequestClient(repository, request);
+  return repository.updateRequest(request.id, {
+    tenantId: request.tenantId,
+    selectedClientId: materialized.client.id,
+    ...(materialized.property ? { selectedPropertyId: materialized.property.id } : {}),
+    updatedAt: now()
+  });
+}
+
 export async function materializeRequestCaptureContext(
   repository: NativeCrmRepository,
   request: ServiceRequest,
@@ -1238,7 +1281,7 @@ export async function backfillLegacyLeads(input: {
       continue;
     }
     const built = await createRequestFromLead(input.repository, lead);
-    const saved = await input.repository.createRequest(built);
+    const saved = await createRequestWithClientMaterialization(input.repository, built);
     const notified = await notifyRequestCreated(saved, input.automation);
     if (notified !== saved) {
       await input.repository.updateRequest(saved.id, { tenantId: saved.tenantId, notifications: notified.notifications, updatedAt: notified.updatedAt });

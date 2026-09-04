@@ -9,6 +9,7 @@ import {
   InMemoryApprovalQueueRepository,
   InMemoryEventBus
 } from "@nexteam/core";
+import { MemoryNativeCrmRepository } from "@nexteam/providers";
 import { generatePoolLeakSite } from "../dist/sites/generator.js";
 import { generatePressureWashingSite } from "../dist/sites/generator.js";
 import { createSitesNexiTools } from "../dist/sites/nexiTools.js";
@@ -86,6 +87,7 @@ test("M8 publishes only an owner-approved, unchanged reviewed site through the F
   const app = express();
   app.use(express.json());
   const repository = new InMemorySitesRepository();
+  const crmRepository = new MemoryNativeCrmRepository();
   const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
   const assetRoot = await mkdtemp(path.join(os.tmpdir(), "nexteam-sites-publish-"));
   const published = [];
@@ -108,6 +110,7 @@ test("M8 publishes only an owner-approved, unchanged reviewed site through the F
   }
   registerSitesRoutes(app, {
     repository,
+    crmRepository,
     approvalQueue,
     siteAssetRoot: assetRoot,
     sitePublisher: {
@@ -161,10 +164,12 @@ test("M8 lead form creates lead, event, and approval-queued owner notification o
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
   const repository = new InMemorySitesRepository();
+  const crmRepository = new MemoryNativeCrmRepository();
   const approvalQueue = new ApprovalQueueService(new InMemoryApprovalQueueRepository());
   const eventBus = new InMemoryEventBus();
   registerSitesRoutes(app, {
     repository,
+    crmRepository,
     approvalQueue,
     eventBus,
     env: { TENANT_ID: "aquatrace", NEXI_FIREBASE_AUTH_REQUIRED: "false" }
@@ -212,6 +217,8 @@ test("M8 lead form creates lead, event, and approval-queued owner notification o
     assert.equal(leadResult.approval.kind, "email");
     assert.equal(leadResult.approval.execute.service, "sites");
     assert.equal(leadResult.approval.execute.op, "notifyOwnerOfLead");
+    assert.ok(leadResult.request.selectedClientId, "site intake links the request to a saved client");
+    assert.ok((await crmRepository.listClients("aquatrace")).some((client) => client.id === leadResult.request.selectedClientId), "site intake persists the client");
     assert.equal(leadResult.approval.execute.args.noOutboundSend, true);
 
     const leadsResponse = await fetch(`${baseUrl}/api/sites/aquatrace/leads?tenantId=aquatrace`);

@@ -344,6 +344,10 @@ test("local Nexi request tools clarify missing intake data, then create and reca
   assert.equal(secondTurn.toolRuns[0].name, "createRequest");
   assert.match(secondTurn.answer, /created the request/i);
   assert.equal((await repository.listRequests("aquatrace")).length, 1);
+  const nexiCreatedRequest = (await repository.listRequests("aquatrace"))[0];
+  assert.ok(nexiCreatedRequest.selectedClientId, "Nexi intake links every created request to a saved client");
+  assert.ok((await repository.listClients("aquatrace")).some((client) => client.id === nexiCreatedRequest.selectedClientId), "Nexi-created requests persist the client record");
+  assert.ok((await repository.listProperties("aquatrace")).some((property) => property.clientId === nexiCreatedRequest.selectedClientId), "Nexi-created requests persist the service property");
 
   const recallTurn = await runExplicitLocalToolLoop({
     tenant: tenant(),

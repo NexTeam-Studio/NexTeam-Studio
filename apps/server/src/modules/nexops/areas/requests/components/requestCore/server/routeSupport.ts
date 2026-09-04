@@ -2,7 +2,7 @@ import { RailError, type EventBus, type RequestForm, type ServiceRequest } from 
 import type { NativeCrmRepository } from "@nexteam/providers";
 import type { z } from "zod";
 import type { CrmRouteDeps } from "../../../../../shared/runtime/routeComposition.js";
-import { buildServiceRequest, materializeRequestClient, notifyRequestCreated, requestFormEmbedCode, requestFormSharePath, type RequestBuildInput } from "./requestFoundation.js";
+import { buildServiceRequest, createRequestWithClientMaterialization, notifyRequestCreated, requestFormEmbedCode, requestFormSharePath, type RequestBuildInput } from "./requestFoundation.js";
 import type { createRequestBodySchema } from "./routeSchemas.js";
 
 export function sanitizeFieldVisibility(visibility?: {
@@ -63,14 +63,7 @@ export function createRequestRouteSupport(input: {
         ...(sanitizeFieldVisibility(field.visibility) ? { visibility: sanitizeFieldVisibility(field.visibility) } : {})
       }))
     });
-    const created = await repository.createRequest(built);
-    const materialized = await materializeRequestClient(repository, created);
-    const linkedRequest = await repository.updateRequest(created.id, {
-      tenantId: created.tenantId,
-      selectedClientId: materialized.client.id,
-      ...(materialized.property ? { selectedPropertyId: materialized.property.id } : {}),
-      updatedAt: new Date().toISOString()
-    });
+    const linkedRequest = await createRequestWithClientMaterialization(repository, built);
     await input.eventBus.emit({
       tenantId: linkedRequest.tenantId,
       type: "request.created",
@@ -91,7 +84,7 @@ export function createRequestRouteSupport(input: {
         publicBaseUrl: input.env.NEXOPS_PUBLIC_BASE_URL?.trim() || undefined
       });
       if (notified.notifications && (
-        notified.notifications.adminNotifiedAt !== created.notifications?.adminNotifiedAt
+        notified.notifications.adminNotifiedAt !== linkedRequest.notifications?.adminNotifiedAt
         || notified.notifications.clientConfirmationAt !== linkedRequest.notifications?.clientConfirmationAt
       )) {
         return repository.updateRequest(linkedRequest.id, {
