@@ -747,7 +747,11 @@ function clientLookupQueryFromText(text: string): string {
   const whereaboutsMatch = normalized.match(/\b(?:where\s+(?:does|is)|where's)\s+(.+?)\s+(?:live|located|stay|reside)\b/i);
   const whatIsFieldMatch = normalized.match(/\bwhat(?:'s|\s+is)\s+(.+?)\s+(?:phone(?:\s+number)?|telephone|mobile|cell|call|text|number|address|street|road|drive|lane|avenue|court|trail|way|circle|boulevard|highway|zip|postal|e-?mail(?:\s+address)?)\b/i);
   const possessiveMatch = normalized.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})'?\s+(?:client|customer|job|jobs)\b/);
-  const candidate = deleteMatch?.[1] ?? lookupMatch?.[1] ?? clientFirstMatch?.[1] ?? forEntityMatch?.[1] ?? whereaboutsMatch?.[1] ?? whatIsFieldMatch?.[1] ?? possessiveMatch?.[1] ?? currentEntityFromText(text);
+  // Status questions are commonly phrased as "where do we stand with Laura
+  // Wicker?". Preserve the trailing person even when a mobile keyboard or
+  // voice dictation inserts punctuation after "with".
+  const statusEntityMatch = normalized.match(/\b(?:with|for)\s*[:?,.-]*\s*([A-Za-z][A-Za-z' -]*?)\s*$/i);
+  const candidate = deleteMatch?.[1] ?? lookupMatch?.[1] ?? clientFirstMatch?.[1] ?? forEntityMatch?.[1] ?? whereaboutsMatch?.[1] ?? whatIsFieldMatch?.[1] ?? possessiveMatch?.[1] ?? statusEntityMatch?.[1] ?? currentEntityFromText(text);
   return candidate
     .replace(/\b([A-Za-z][A-Za-z' -]*)'s\b/g, "$1")
     .replace(/[’']+$/g, "")
@@ -760,6 +764,12 @@ function clientLookupQueryFromText(text: string): string {
     .replace(/\b(?:the|a|an)\b/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function looksLikeClientWorkflowStatusQuestion(text: string): boolean {
+  const lower = text.toLowerCase();
+  return /\b(?:status|update|progress|next\s+step|where\s+(?:do|are|did)\s+(?:we|i)\s+(?:stand|at))\b/.test(lower)
+    && Boolean(clientLookupQueryFromText(text));
 }
 
 function preferConversationClientEntity(candidate: string, messages: GatewayMessage[]): string {
@@ -1270,6 +1280,16 @@ async function normalizeToolInput(
       // "I may need to call them".
       record.q = preferConversationClientEntity(parsedQuery, messages);
     } else if (typeof record.q !== "string" || !record.q.trim()) {
+      record.q = "";
+    }
+  }
+  if (toolName === "listRequests" || toolName === "listQuotes") {
+    const query = clientLookupQueryFromText(userText)
+      || entityQueryFromText(userText)
+      || entityQueryFromMessages(messages, { skipLatest: true });
+    if (query) {
+      record.q = query;
+    } else if (typeof record.q !== "string") {
       record.q = "";
     }
   }
@@ -2993,6 +3013,12 @@ function deterministicToolNames(
   if (looksLikeSavedClientEditRequest(userText, messages) && toolsByName.has("updateClient")) {
     return ["updateClient"];
   }
+  // A workflow-status question is not a request for the contact record. A
+  // person can have live intake or quote work before a formal client record
+  // exists, so check both operational rails before the client directory.
+  if (looksLikeClientWorkflowStatusQuestion(userText)) {
+    return uniqueToolNames(["listRequests", "listQuotes"], toolsByName);
+  }
   // Client-detail questions must win before generic cross-rail job matching.
   // A name plus a phone, address, email, or property question refers to the
   // client record unless the user explicitly asks about a job.
@@ -4153,6 +4179,10 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
         && !/\b(?:site\s+contact|property|job\s+site)\b/i.test(currentUserText)))
     && Boolean(clientDetailQuery)
   );
+  // Operational status is a source-bound fact too. Resolve it directly so a
+  // client-directory miss cannot hide a request or quote that already exists.
+  const deterministicWorkflowStatusRead = looksLikeClientWorkflowStatusQuestion(currentUserText)
+    && (toolsByName.has("listRequests") || toolsByName.has("listQuotes"));
   const reusableRuns = claudeFirstRouting
     ? []
     : reusableCachedToolRuns({
@@ -4167,7 +4197,7 @@ export async function runNexiToolLoop(request: ToolLoopRequest): Promise<ToolLoo
           requestorOrigin: request.requestorOrigin
         }
       });
-  const deterministicRuns = claudeFirstRouting && !approvalTransition && !deterministicClientDetailRead
+  const deterministicRuns = claudeFirstRouting && !approvalTransition && !deterministicClientDetailRead && !deterministicWorkflowStatusRead
     ? []
     : reusableRuns.length > 0
       ? reusableRuns
