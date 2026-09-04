@@ -291,9 +291,7 @@ export function NexOpsCaptureWorkspace(props: NexOpsCaptureWorkspaceProps): Reac
           ref={captureInputRef}
           className="sr-only"
           type="file"
-          accept="image/*"
           multiple
-          capture="environment"
           onChange={(event) => {
             void onUploadCapturePhotos(event.target.files);
             event.currentTarget.value = "";

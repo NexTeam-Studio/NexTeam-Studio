@@ -722,10 +722,10 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
               <div><p className="eyebrow">Branding</p><h3>Company Logo</h3><span>Appears in new client emails, NexPortal, and branded document surfaces.</span></div>
               {tenantLogoSrc ? <img src={tenantLogoSrc} alt={`${props.tenantName} logo`} style={{ maxHeight: 72, maxWidth: 220, objectFit: "contain" }} /> : null}
             </div>
-            <input ref={logoInputRef} type="file" accept="image/png,image/jpeg,image/webp" style={{ display: "none" }} onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void uploadTenantLogo(file); }} />
+            <input ref={logoInputRef} type="file" style={{ display: "none" }} onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void uploadTenantLogo(file); }} />
             <div className="nexops-inline-actions">
-              <button type="button" onClick={() => logoInputRef.current?.click()} disabled={busy === "upload-logo"}>{busy === "upload-logo" ? "Uploading..." : tenantLogoSrc ? "Replace Logo" : "Upload Logo"}</button>
-              <small>PNG, JPEG, or WebP; maximum 5 MB.</small>
+              <button type="button" onClick={() => logoInputRef.current?.click()} disabled={busy === "upload-logo"}>{busy === "upload-logo" ? "Uploading..." : tenantLogoSrc ? "Replace from Files / Drive" : "Upload from Files / Drive"}</button>
+              <small>Browse device files, Drive, Dropbox, or a photo folder. PNG, JPEG, or WebP; maximum 5 MB.</small>
             </div>
           </section>
           {settings ? (

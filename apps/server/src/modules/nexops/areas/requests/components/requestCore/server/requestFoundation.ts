@@ -1274,7 +1274,7 @@ function fieldInput(field: IntakeFieldDefinition): string {
   }
   if (field.type === "multi_image") {
     const maxItems = field.maxItems ?? 10;
-    return `<label class="request-form-field${layout} request-form-upload${field.prominent ? " prominent" : ""}" data-upload-field="${name}" data-max-items="${maxItems}"><span>${label}${field.required ? " *" : ""}</span><input type="file" accept="image/*" multiple data-upload-input /><input type="hidden" name="${name}" value="[]" /><small data-upload-status>0/${maxItems}</small><div class="request-form-upload-list" data-upload-list></div>${help}</label>`;
+    return `<label class="request-form-field${layout} request-form-upload${field.prominent ? " prominent" : ""}" data-upload-field="${name}" data-max-items="${maxItems}"><span>${label}${field.required ? " *" : ""}</span><input type="file" multiple data-upload-input /><small>Choose images from device files, Drive, Dropbox, or photos.</small><input type="hidden" name="${name}" value="[]" /><small data-upload-status>0/${maxItems}</small><div class="request-form-upload-list" data-upload-list></div>${help}</label>`;
   }
   const type = field.type === "email" || field.type === "number" ? field.type : "text";
   return `<label class="request-form-field${layout}${field.prominent ? " prominent" : ""}"><span>${label}${field.required ? " *" : ""}</span><input type="${type}" name="${name}"${field.required ? " required" : ""}${placeholder} />${help}</label>`;

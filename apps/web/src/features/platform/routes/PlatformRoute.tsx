@@ -102,8 +102,8 @@ function PlatformProfileCompletion({ onCompleted }: { onCompleted: () => void })
       <p>Access to NexCommand is limited until your profile photo is saved.</p>
       <form onSubmit={(event) => void completeProfile(event)}>
         <label htmlFor="platform-profile-photo">Profile photo</label>
-        <input id="platform-profile-photo" type="file" accept="image/png,image/jpeg,image/webp" aria-describedby="platform-profile-photo-help" onChange={(event) => setProfilePhoto(event.target.files?.[0] ?? null)} required />
-        <p className="platform-profile-photo-help" id="platform-profile-photo-help">Choose a PNG, JPEG, or WebP image up to 5 MB.</p>
+        <input id="platform-profile-photo" type="file" aria-describedby="platform-profile-photo-help" onChange={(event) => setProfilePhoto(event.target.files?.[0] ?? null)} required />
+        <p className="platform-profile-photo-help" id="platform-profile-photo-help">Browse device files, Drive, Dropbox, or photos. Choose a PNG, JPEG, or WebP image up to 5 MB.</p>
         <button type="submit" disabled={status === "saving"}>{status === "saving" ? "Saving…" : "Complete profile"}</button>
       </form>
       {status === "error" && <p role="alert">We could not complete your profile. Please try again.</p>}
