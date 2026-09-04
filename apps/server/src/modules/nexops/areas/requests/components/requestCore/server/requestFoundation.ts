@@ -545,6 +545,16 @@ export function requestFieldValuesFromInput(input: RequestBuildInput): IntakeFie
   return built;
 }
 
+function clientMatchesRequestContact(client: Client, request: ServiceRequest): boolean {
+  const email = normalizeEmail(request.email);
+  const phone = normalizePhone(request.phone);
+  if (!email && !phone) {
+    return true;
+  }
+  const values = clientSearchValues(client);
+  return Boolean(email && values.emails.includes(email)) || Boolean(phone && values.phones.includes(phone));
+}
+
 function requestValidationMessage(input: RequestBuildInput, fieldIndex: IntakeSnapshot["fieldIndex"]): string | null {
   const clientName = valueAsString(fieldIndex, "client_name");
   const email = valueAsString(fieldIndex, "email");
@@ -940,10 +950,21 @@ export async function ensureRequestClientMaterialization(
   const linkedProperty = linkedClient
     ? await resolveExistingProperty(repository, request, linkedClient.id)
     : null;
-  if (linkedClient && (!request.propertyAddress || linkedProperty)) {
+  if (linkedClient && clientMatchesRequestContact(linkedClient, request) && (!request.propertyAddress || linkedProperty)) {
     return request;
   }
-  const materialized = await materializeRequestClient(repository, request);
+  // A legacy request can carry a placeholder or otherwise incorrect client
+  // id. Do not preserve it just because that document exists; re-resolve from
+  // the request's exact contact data so the customer record remains canonical.
+  const repairCandidate = linkedClient && !clientMatchesRequestContact(linkedClient, request)
+    ? {
+      ...request,
+      selectedClientId: undefined,
+      selectedPropertyId: undefined,
+      match: { ...request.match, matchedClientId: undefined, matchedPropertyId: undefined, matchedBy: "none", reviewRequired: true }
+    }
+    : request;
+  const materialized = await materializeRequestClient(repository, repairCandidate);
   return repository.updateRequest(request.id, {
     tenantId: request.tenantId,
     selectedClientId: materialized.client.id,
