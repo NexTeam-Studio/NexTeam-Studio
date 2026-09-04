@@ -961,7 +961,7 @@ export async function ensureRequestClientMaterialization(
       ...request,
       selectedClientId: undefined,
       selectedPropertyId: undefined,
-      match: { ...request.match, matchedClientId: undefined, matchedPropertyId: undefined, matchedBy: "none", reviewRequired: true }
+      match: { ...request.match, matchedClientId: undefined, matchedPropertyId: undefined, matchedBy: "none" as const, reviewRequired: true }
     }
     : request;
   const materialized = await materializeRequestClient(repository, repairCandidate);
