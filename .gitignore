@@ -21,4 +21,6 @@ docs/internal/clawdia/reference/**/*.txt
 !receipts/**/*.json
 /receipts/nexi/
 /tmp/
+nexteam-build-sha.txt
+/runtime/
 

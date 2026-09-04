@@ -41,6 +41,14 @@ test("manual invoice catalog picker creates a detached custom snapshot", async (
   assert.deepEqual(snapshot("invoice_line_manual"), { id: "invoice_line_manual", code: "LEAK", name: "Leak detection", description: "Saved scope", quantity: 2, unitPrice: 125, total: 250, source: "custom" });
 });
 
+test("manual job catalog selection creates a detached custom snapshot before approval", async () => {
+  const source = await readFile(new URL("../src/modules/nexops/areas/jobs/components/jobCore/server/toolSupport.ts", import.meta.url), "utf8");
+  assert.match(source, /if \(catalogItem\) return catalogSelectionSnapshot\(\{/);
+  assert.match(source, /code: catalogItem\.code, name: catalogItem\.name/);
+  assert.doesNotMatch(source, /catalogItemId:\s*catalogItem\.id/);
+  assert.match(source, /lineItems,\s*createdBy: "nexi"/);
+});
+
 test("quote template catalog line materializes after its catalog item is deleted", async () => {
   const template = { id: "template_1", tenantId, name: "Template", defaultLineItems: [{ ...snapshot(), source: "catalog", catalogItemId: catalog.id, catalogCode: catalog.code }], defaultApprovalRules: { requireSignature: false, requireDeposit: false, requireCardOnFile: false }, createdAt: "2026-08-30T00:00:00.000Z", updatedAt: "2026-08-30T00:00:00.000Z" };
   const quote = await materializeQuoteRecord(quoteRepository([], [template]), { tenantId, clientId: "client_1", title: "Quote", templateId: template.id, items: [] });

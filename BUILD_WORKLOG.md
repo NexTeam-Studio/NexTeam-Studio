@@ -2,6 +2,11 @@
 
 Living handoff file for Claude/Nova/Atlas-style daily coordination. Update this file on each meaningful build pass, test pass, receipt, or owner decision so the next session can catch up without reconstructing context from chat.
 
+## Build-Time Estimate — 2026-09-02
+
+- Owner-approved cumulative estimate: **700 hours** of NexTeam/NexOps build work as of September 2, 2026.
+- This is a planning estimate, not a time-clock total: it carries forward the earlier approximately 500-hour estimate and the agreed daily-average estimate since July 10, 2026.
+
 ## 2026-07-11 - NexTeam brand assets and New Client proof screen
 
 ### Owner Decisions Applied
