@@ -1684,6 +1684,33 @@ export function registerPlatformRoutes(app: Express, deps: PlatformRouteDeps): v
     }
   });
 
+  // Tenant owners manage their own logo from NexOps Settings. The file remains
+  // private in storage; client email and portal surfaces use the stable public
+  // branding endpoint instead of a direct storage URL.
+  app.post("/api/platform/tenants/:tenantId/branding/logo", express.raw({ type: [...profilePhotoContentTypes], limit: PROFILE_PHOTO_MAX_BYTES }), async (req: Request, res: Response) => {
+    try {
+      const tenantId = requiredTenantId(req.params.tenantId);
+      const access = await requireTenantRole(req, env, ["OWNER", "OFFICE_ADMIN"], { requestedTenantId: tenantId, op: "tenantBrandingLogoUpload" });
+      if (!deps.storage) throw new RailError("Firebase Storage is not configured for tenant logos.", { provider: "firebase", op: "tenantBrandingLogoUpload", status: 503 });
+      const image = profilePhotoType(req.header("content-type"), req.body);
+      const tenant = await loadTenantFromPlatform(deps.repository, tenantId, env);
+      const now = new Date().toISOString();
+      const storageRef = await deps.storage.writeImage(`tenant-branding/${encodeURIComponent(tenantId)}/logo.${image.extension}`, req.body as Buffer, image.contentType);
+      const branding = await deps.repository.saveTenantBranding({
+        ...(await deps.repository.getTenantBranding(tenantId) ?? defaultTenantBranding(tenant)),
+        tenantId,
+        displayName: tenant.name,
+        logo: { storageRef, mimeType: image.contentType, alt: tenant.name, updatedAt: now },
+        source: "manual",
+        updatedAt: now,
+        updatedBy: actorIdForAccess(access)
+      });
+      res.status(201).json({ ok: true, tenantId, branding, logoUrl: `/api/public/tenant-branding/logo?tenantId=${encodeURIComponent(tenantId)}&v=${encodeURIComponent(now)}` });
+    } catch (error) {
+      sendRouteError(res, error);
+    }
+  });
+
   app.get("/api/platform/tenants/:tenantId/users", async (req: Request, res: Response) => {
     try {
       const tenantId = req.params.tenantId;

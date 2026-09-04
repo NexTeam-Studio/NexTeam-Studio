@@ -89,7 +89,7 @@ import { FirestoreWorkRegistry, SplinterWorkSelector } from "./splinter/workRegi
 import { SplinterJobService } from "./splinter/service.js";
 import { registerSplinterRelayRoutes } from "./splinter/routes.js";
 
-const app = express();
+const app: express.Express = express();
 const runtimeTenantId = configuredTenantId(process.env, "serverBootstrap");
 // Transactional email must use an absolute, durable image URL. Storage refs
 // remain private implementation details; this public route is the stable

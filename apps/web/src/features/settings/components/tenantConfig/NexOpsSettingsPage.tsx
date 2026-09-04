@@ -183,6 +183,16 @@ interface CrmSettingsMutationResponse {
   error?: string;
 }
 
+interface TenantBrandingRecord {
+  logo?: { storageRef?: string; url?: string; updatedAt?: string; alt?: string };
+}
+
+interface TenantBrandingResponse {
+  ok: boolean;
+  branding?: TenantBrandingRecord;
+  error?: string;
+}
+
 interface NexOpsSettingsPageProps {
   tenantId: string;
   tenantName: string;
@@ -254,6 +264,7 @@ function defaultPropertyAssetDefinition(): PropertyAssetDefinition {
 
 export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactElement {
   const [settings, setSettings] = useState<CrmSettingsRecord | null>(null);
+  const [tenantBranding, setTenantBranding] = useState<TenantBrandingRecord | null>(null);
   const [statusMessage, setStatusMessage] = useState("Loading settings...");
   const [busy, setBusy] = useState("");
   const [catalogSearch, setCatalogSearch] = useState("");
@@ -265,6 +276,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
   const [templateDefaults, setTemplateDefaults] = useState<CommunicationTemplateRecord[]>([]);
   const [templatePreviewChannel, setTemplatePreviewChannel] = useState<"email" | "sms">("email");
   const catalogSectionRef = useRef<HTMLElement | null>(null);
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
   const [activeSettingsArea, setActiveSettingsArea] = useState<SettingsAreaId | null>(() => settingsAreaFromPath(window.location.pathname));
   const [expandedSettingsSection, setExpandedSettingsSection] = useState<SettingsSectionId | null>(null);
 
@@ -328,8 +340,10 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
 
   async function refresh(): Promise<void> {
     try {
-      const body = await fetch(`/api/crm/settings?tenantId=${encodeURIComponent(props.tenantId)}`)
-        .then((response) => response.json() as Promise<CrmSettingsResponse>);
+      const [body, brandingBody] = await Promise.all([
+        fetch(`/api/crm/settings?tenantId=${encodeURIComponent(props.tenantId)}`).then((response) => response.json() as Promise<CrmSettingsResponse>),
+        fetch(`/api/platform/tenants/${encodeURIComponent(props.tenantId)}/branding`).then((response) => response.json() as Promise<TenantBrandingResponse>).catch(() => ({ ok: false } as TenantBrandingResponse))
+      ]);
       if (!body.ok || !body.settings) {
         setSettings(null);
         setStatusMessage(body.error ?? "Settings are unavailable right now.");
@@ -465,6 +479,7 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
       }).then((response) => response.json() as Promise<CrmSettingsMutationResponse>);
       if (!body.ok || !body.settings) { setStatusMessage(body.error ?? "Workspace settings could not be saved."); return; }
       setSettings(body.settings);
+      if (brandingBody.ok && brandingBody.branding) setTenantBranding(brandingBody.branding);
       setStatusMessage("Workspace settings saved.");
       props.onCrmMutation?.();
     } catch { setStatusMessage("Workspace settings save failed."); } finally { setBusy(""); }
@@ -509,6 +524,33 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
       props.onCrmMutation?.();
     } catch {
       setStatusMessage("Template reset failed.");
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function uploadTenantLogo(file: File): Promise<void> {
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024) {
+      setStatusMessage("Choose a PNG, JPEG, or WebP logo smaller than 5 MB.");
+      return;
+    }
+    setBusy("upload-logo");
+    setStatusMessage("Uploading company logo...");
+    try {
+      const body = await fetch(`/api/platform/tenants/${encodeURIComponent(props.tenantId)}/branding/logo`, {
+        method: "POST",
+        headers: { "content-type": file.type },
+        body: file
+      }).then((response) => response.json() as Promise<TenantBrandingResponse>);
+      if (!body.ok || !body.branding) {
+        setStatusMessage(body.error ?? "Company logo could not be uploaded.");
+        return;
+      }
+      setTenantBranding(body.branding);
+      setStatusMessage("Company logo saved. New client emails and portal pages will use it.");
+      props.onCrmMutation?.();
+    } catch {
+      setStatusMessage("Company logo could not be uploaded.");
     } finally {
       setBusy("");
     }
@@ -575,8 +617,11 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
     } : current);
   }
 
-  const activeUsers = props.tenantUsers.filter((user) => user.active);
   const selectedSettingsArea = SETTINGS_AREAS.find((area) => area.id === activeSettingsArea) ?? null;
+  const tenantLogoSrc = tenantBranding?.logo?.url
+    ?? (tenantBranding?.logo?.storageRef
+      ? `/api/public/tenant-branding/logo?tenantId=${encodeURIComponent(props.tenantId)}&v=${encodeURIComponent(tenantBranding.logo.updatedAt ?? "current")}`
+      : "");
   if (!selectedSettingsArea) {
     return (
       <section className="nexops-module-page tenant-config-page nexops-settings-landing">
@@ -634,29 +679,6 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
         className="module-hero-card--quote"
       />
 
-      <div className="nexops-density-inline-facts">
-        <article>
-          <h3>Tenant</h3>
-          <p>{props.tenantName}</p>
-          <small>{props.tenantId}</small>
-        </article>
-        <article>
-          <h3>Viewer Role</h3>
-          <p>{props.role}</p>
-          <small>Catalog and template edits stay owner/admin scoped.</small>
-        </article>
-        <article>
-          <h3>Team</h3>
-          <p>{activeUsers.length} active</p>
-          <small>{props.tenantUsers.length} total tenant users</small>
-        </article>
-        <article>
-          <h3>Status</h3>
-          <p>{statusMessage}</p>
-          <small>Changes here feed pickers, sends, and downstream records.</small>
-        </article>
-      </div>
-
       <div className="nexops-two-column">
         {activeSettingsArea === "products-services" ? <article className="nexops-module-card" ref={catalogSectionRef} id="products-services">
           <div className="nexops-page-heading">
@@ -695,6 +717,17 @@ export function NexOpsSettingsPage(props: NexOpsSettingsPageProps): React.ReactE
               {busy === "save-defaults" ? "Saving..." : "Save Company Settings"}
             </button>
           </div>
+          <section className="nexops-quote-template-editor" aria-label="Company logo">
+            <div className="nexops-quote-section-head">
+              <div><p className="eyebrow">Branding</p><h3>Company Logo</h3><span>Appears in new client emails, NexPortal, and branded document surfaces.</span></div>
+              {tenantLogoSrc ? <img src={tenantLogoSrc} alt={`${props.tenantName} logo`} style={{ maxHeight: 72, maxWidth: 220, objectFit: "contain" }} /> : null}
+            </div>
+            <input ref={logoInputRef} type="file" accept="image/png,image/jpeg,image/webp" style={{ display: "none" }} onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void uploadTenantLogo(file); }} />
+            <div className="nexops-inline-actions">
+              <button type="button" onClick={() => logoInputRef.current?.click()} disabled={busy === "upload-logo"}>{busy === "upload-logo" ? "Uploading..." : tenantLogoSrc ? "Replace Logo" : "Upload Logo"}</button>
+              <small>PNG, JPEG, or WebP; maximum 5 MB.</small>
+            </div>
+          </section>
           {settings ? (
             <div className="nexops-quote-template-editor">
               <label className="nexops-field">
