@@ -7,6 +7,7 @@ import { FirestoreApprovalQueueRepository } from "../src/approval/firestoreRepos
 import { setTenantOwnedDocument } from "../src/core/tenantOwnedWrite.ts";
 import { FirestoreMediaRepository } from "../src/fielddocs/mediaRepository.ts";
 import { createQuoteFirestoreRepository } from "../src/modules/nexops/areas/quotes/components/quoteEngine/server/firestoreRepository.ts";
+import { createRequestFirestoreRepository } from "../src/modules/nexops/areas/requests/components/requestCore/server/firestoreRepository.ts";
 import { FirestorePlatformRepository } from "../src/platform/repository.ts";
 
 const SHOULD_RUN = process.env.RUN_ADMIN_TENANT_ISOLATION_EMULATOR_TESTS === "1";
@@ -22,6 +23,8 @@ if (!SHOULD_RUN) {
     seam: `seam-${suffix}`,
     approval: `approval-${suffix}`,
     quote: `quote-${suffix}`,
+    quoteTransaction: `quote-transaction-${suffix}`,
+    request: `request-${suffix}`,
     user: `user-${suffix}`,
     folder: `folder-${suffix}`
   };
@@ -39,6 +42,8 @@ if (!SHOULD_RUN) {
       db.collection("tenantOwnedProbe").doc(ids.seam).delete(),
       db.collection("approvalQueue").doc(ids.approval).delete(),
       db.collection("quotes").doc(ids.quote).delete(),
+      db.collection("quotes").doc(ids.quoteTransaction).delete(),
+      db.collection("requests").doc(ids.request).delete(),
       db.collection("tenantUsers").doc(ids.user).delete(),
       db.collection("nexDocsFolders").doc(ids.folder).delete()
     ]);
@@ -96,6 +101,50 @@ if (!SHOULD_RUN) {
     await assert.rejects(() => repository.createQuote({ ...quote, tenantId: tenantA, title: "Blocked" }), /belongs to another tenant/i);
     await assert.rejects(() => repository.updateQuote(ids.quote, { tenantId: tenantA, title: "Blocked" }), /belongs to another tenant/i);
     assert.equal((await db.collection("quotes").doc(ids.quote).get()).data()?.tenantId, tenantB);
+  });
+
+  test("Firestore request conversion atomically writes a quote and its request link", async () => {
+    const repository = createRequestFirestoreRepository(db);
+    const timestamp = "2026-09-04T02:00:00.000Z";
+    const request = {
+      id: ids.request,
+      tenantId: tenantA,
+      source: "office_new_client",
+      status: "new",
+      subject: "Leak detection",
+      clientName: "Transaction Test",
+      narrative: "Verify the builder conversion transaction.",
+      consent: { email: true, sms: false, marketing: false },
+      intake: { fieldValues: [], fieldIndex: {} },
+      match: { matchedBy: "none", reviewRequired: false },
+      createdAt: timestamp,
+      updatedAt: timestamp
+    };
+    const quote = {
+      id: ids.quoteTransaction,
+      tenantId: tenantA,
+      clientId: `client-${suffix}`,
+      requestId: ids.request,
+      status: "draft",
+      title: "Leak detection",
+      lineItems: [{ id: `line-${suffix}`, code: "LEAK", name: "Leak Detection", quantity: 1, unitPrice: 595, total: 595, taxable: false, source: "custom" }],
+      totals: { subtotal: 595, tax: 0, total: 595 },
+      approvalRules: { requireSignature: false, requireDeposit: false, requireCardOnFile: false },
+      createdAt: timestamp,
+      updatedAt: timestamp
+    };
+    await repository.createRequest(request);
+    const converted = await repository.createQuoteAndMarkRequestConverted({
+      quote,
+      requestId: ids.request,
+      tenantId: tenantA,
+      clientId: quote.clientId
+    });
+    assert.equal(converted.quote.id, ids.quoteTransaction);
+    assert.equal(converted.request.convertedQuoteId, ids.quoteTransaction);
+    assert.equal(converted.request.status, "converted_to_quote");
+    assert.equal((await db.collection("quotes").doc(ids.quoteTransaction).get()).exists, true);
+    assert.equal((await db.collection("requests").doc(ids.request).get()).data()?.convertedQuoteId, ids.quoteTransaction);
   });
 
   test("Platform Admin repository rejects a tenant user ID owned by another tenant", async () => {

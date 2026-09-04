@@ -247,19 +247,34 @@ export function registerQuoteEngineRoutes(context: CrmRouteContext): void {
         }
       }
       const provider = providerForTenant(input.tenantId);
-      const quote = await provider.createQuote(await materializeQuoteRecord(repository, {
+      const quoteRecord = await materializeQuoteRecord(repository, {
         ...input,
         ...(propertyId ? { propertyId } : {})
-      }));
+      });
+      // The line-item quote builder is the real request-to-quote conversion
+      // path. Persist the quote and its request linkage together so no quote
+      // can be returned while its source request remains unconverted.
+      let quote: Quote;
       if (linkedRequest) {
-        await repository.updateRequest(linkedRequest.id, {
-          tenantId: input.tenantId,
-          status: "converted_to_quote",
-          convertedQuoteId: quote.id,
-          selectedClientId: quote.clientId,
-          ...(quote.propertyId ? { selectedPropertyId: quote.propertyId } : {}),
-          updatedAt: new Date().toISOString()
-        });
+        try {
+          quote = (await repository.createQuoteAndMarkRequestConverted({
+            quote: quoteRecord,
+            requestId: linkedRequest.id,
+            tenantId: input.tenantId,
+            clientId: quoteRecord.clientId,
+            ...(quoteRecord.propertyId ? { propertyId: quoteRecord.propertyId } : {})
+          })).quote;
+        } catch {
+          throw new RailError("Conversion incomplete — repair required. No quote or request update was committed.", {
+            provider: "native",
+            op: "createQuoteFromRequest",
+            status: 409
+          });
+        }
+      } else {
+        quote = await provider.createQuote(quoteRecord);
+      }
+      if (linkedRequest) {
         await eventBus.emit({
           tenantId: input.tenantId,
           type: "request.converted_to_quote",

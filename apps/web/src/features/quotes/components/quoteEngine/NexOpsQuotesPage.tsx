@@ -1160,6 +1160,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
   const [selectedQuoteClient, setSelectedQuoteClient] = useState<ClientOption | null>(null);
   const [rosterContexts, setRosterContexts] = useState<Record<string, { client?: ClientOption; property?: PropertyOption }>>({});
   const [statusMessage, setStatusMessage] = useState("Loading quotes...");
+  const [conversionIncomplete, setConversionIncomplete] = useState(false);
   const [busy, setBusy] = useState("");
   const [portalLinks, setPortalLinks] = useState<Record<string, string>>({});
   const [renewalDays, setRenewalDays] = useState(30);
@@ -1719,6 +1720,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
       return;
     }
     setBusy("save-quote");
+    setConversionIncomplete(false);
     setStatusMessage(composer.editingQuoteId ? "Saving quote changes..." : "Creating quote...");
     try {
       const body = await fetch(composer.editingQuoteId ? `/api/crm/quotes/${encodeURIComponent(composer.editingQuoteId)}` : "/api/crm/quotes", {
@@ -1727,6 +1729,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
         body: JSON.stringify(quotePayload(composer, props.tenantId))
       }).then((response) => response.json() as Promise<QuoteMutationResponse>);
       if (!body.ok || !body.quote) {
+        setConversionIncomplete(Boolean(composer.requestId && body.error?.includes("Conversion incomplete — repair required")));
         setStatusMessage(body.error ?? "Quote save failed.");
         return;
       }
@@ -1740,7 +1743,8 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
       props.onCrmMutation?.();
       resetComposer(composer.templateId);
     } catch {
-      setStatusMessage("Quote save failed.");
+      setConversionIncomplete(Boolean(composer.requestId));
+      setStatusMessage(composer.requestId ? "Conversion incomplete — repair required. The source request was not changed." : "Quote save failed.");
     } finally {
       setBusy("");
     }
@@ -1933,7 +1937,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
         primaryAction={workspaceView === "builder" ? <button className="nexops-hero-primary-button nexops-quote-back-to-roster" type="button" onClick={() => { setWorkspaceView("roster"); setQuoteBuilderMode(null); }}>← Quotes</button> : <button className="nexops-hero-primary-button" type="button" onClick={openBuilder} disabled={Boolean(busy)}>+ New Quote</button>}
         metrics={undefined}
       >
-      {workspaceView === "roster" ? <NexOpsRosterSurface ariaLabel="Search and filter quotes" searchTitle="Search Quotes" resultNoun="Quote" resultCount={filteredQuotes.length} search={<label className="nexops-quote-roster-search"><span className="sr-only">Search quotes</span><input placeholder="Search quotes" value={quoteSearch} onChange={(event) => setQuoteSearch(event.target.value)} /></label>} filter={<button className="nexops-jobs-filter-pill nexops-quote-filter-trigger" type="button" aria-expanded={quoteRosterFilterOpen} aria-controls="quote-status-filter-options" onClick={() => setQuoteRosterFilterOpen((current) => !current)}><span className="nexops-quote-filter-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M4 7h16" /><path d="M7 12h10" /><path d="M10 17h4" /></svg></span><span className="nexops-quote-filter-label">Filter</span>{quoteRosterFilters.length ? <small>{filteredQuotes.length}</small> : null}</button>} filterOptions={quoteRosterFilterOpen ? <div className="nexops-quote-filter-options" id="quote-status-filter-options" aria-label="Quote status filters">{QUOTE_ROSTER_FILTERS.map((filter) => { const selected = quoteRosterFilters.includes(filter.value); return <button key={filter.value} type="button" role="checkbox" aria-checked={selected} className={`nexops-jobs-filter-pill${selected ? " active" : ""}`} onClick={() => setQuoteRosterFilters((current) => selected ? current.filter((value) => value !== filter.value) : [...current, filter.value])}><span className="nexops-quote-filter-check" aria-hidden="true">{selected ? "✓" : ""}</span><span>{filter.label}</span><small>{quoteRosterCounts[filter.value]}</small></button>; })}</div> : undefined} empty={!filteredQuotes.length ? <div className="nexops-quote-filtered-empty"><h2>No Quotes Match This View Yet</h2><p>Adjust the selected statuses or search terms to see quotes here.</p></div> : undefined}>
+      {workspaceView === "roster" ? <NexOpsRosterSurface ariaLabel="Search and filter quotes" searchTitle="Search Quotes" resultNoun="Quote" resultCount={filteredQuotes.length} showResults search={<label className="nexops-quote-roster-search"><span className="sr-only">Search quotes</span><input placeholder="Search quotes" value={quoteSearch} onChange={(event) => setQuoteSearch(event.target.value)} /></label>} filter={<button className="nexops-jobs-filter-pill nexops-quote-filter-trigger" type="button" aria-expanded={quoteRosterFilterOpen} aria-controls="quote-status-filter-options" onClick={() => setQuoteRosterFilterOpen((current) => !current)}><span className="nexops-quote-filter-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M4 7h16" /><path d="M7 12h10" /><path d="M10 17h4" /></svg></span><span className="nexops-quote-filter-label">Filter</span>{quoteRosterFilters.length ? <small>{filteredQuotes.length}</small> : null}</button>} filterOptions={quoteRosterFilterOpen ? <div className="nexops-quote-filter-options" id="quote-status-filter-options" aria-label="Quote status filters">{QUOTE_ROSTER_FILTERS.map((filter) => { const selected = quoteRosterFilters.includes(filter.value); return <button key={filter.value} type="button" role="checkbox" aria-checked={selected} className={`nexops-jobs-filter-pill${selected ? " active" : ""}`} onClick={() => setQuoteRosterFilters((current) => selected ? current.filter((value) => value !== filter.value) : [...current, filter.value])}><span className="nexops-quote-filter-check" aria-hidden="true">{selected ? "✓" : ""}</span><span>{filter.label}</span><small>{quoteRosterCounts[filter.value]}</small></button>; })}</div> : undefined} empty={!filteredQuotes.length ? <div className="nexops-quote-filtered-empty"><h2>No Quotes Match This View Yet</h2><p>Adjust the selected statuses or search terms to see quotes here.</p></div> : undefined}>
           {filteredQuotes.map((quote) => {
             const rosterContext = rosterContexts[quote.id];
             const client = props.clients.find((candidate) => candidate.id === quote.clientId) ?? rosterContext?.client;
@@ -2149,6 +2153,7 @@ export function NexOpsQuotesPage(props: NexOpsQuotesPageProps): React.ReactEleme
 
             <section className="nexops-quote-final-action">
               <p className="nexops-quote-save-status" role="status" aria-live="polite">{statusMessage}</p>
+              {conversionIncomplete ? <p className="nexops-quote-save-status" role="alert">Conversion incomplete — repair required. The quote and request were left unchanged.</p> : null}
               <button className="nexops-hero-primary-button" type="button" onClick={() => void saveQuote()} disabled={Boolean(busy) || !canSaveComposer(composer)}>{busy === "save-quote" ? "Saving..." : "Review & Send"}</button>
             </section>
             </> : null}

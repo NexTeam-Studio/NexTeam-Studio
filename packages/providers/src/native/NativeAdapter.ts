@@ -63,6 +63,13 @@ export interface NativeCrmRepository {
   upsertJob(job: Job): Promise<Job>;
   createJobIfAbsent(job: Job): Promise<{ job: Job; created: boolean }>;
   createQuote(quote: Quote): Promise<Quote>;
+  createQuoteAndMarkRequestConverted(input: {
+    quote: Quote;
+    requestId: string;
+    tenantId: string;
+    clientId: string;
+    propertyId?: string | undefined;
+  }): Promise<{ quote: Quote; request: ServiceRequest }>;
   createInvoice(invoice: Invoice): Promise<Invoice>;
   claimQuoteJobConversion(tenantId: string, quoteId: string, jobId: string): Promise<{ quote: Quote; claimed: boolean }>;
   updateQuote(id: string, patch: TenantOwnedPatch<Quote>): Promise<Quote>;
@@ -879,6 +886,34 @@ export class MemoryNativeCrmRepository implements NativeCrmRepository {
   async createQuote(quote: Quote): Promise<Quote> {
     this.records.quotes.push(quote);
     return quote;
+  }
+
+  async createQuoteAndMarkRequestConverted(input: {
+    quote: Quote;
+    requestId: string;
+    tenantId: string;
+    clientId: string;
+    propertyId?: string | undefined;
+  }): Promise<{ quote: Quote; request: ServiceRequest }> {
+    const requestIndex = this.records.requests.findIndex((request) => request.id === input.requestId && request.tenantId === input.tenantId);
+    if (requestIndex === -1) {
+      throw new RailError(`Native request ${input.requestId} was not found.`, { provider: "native", op: "convertRequestToQuote", status: 404 });
+    }
+    const existing = this.records.requests[requestIndex];
+    if (!existing) {
+      throw new RailError(`Native request ${input.requestId} was not found.`, { provider: "native", op: "convertRequestToQuote", status: 404 });
+    }
+    const nextRequest: ServiceRequest = {
+      ...existing,
+      status: "converted_to_quote",
+      convertedQuoteId: input.quote.id,
+      selectedClientId: input.clientId,
+      ...(input.propertyId ? { selectedPropertyId: input.propertyId } : {}),
+      updatedAt: input.quote.updatedAt ?? existing.updatedAt
+    };
+    this.records.quotes.push(input.quote);
+    this.records.requests[requestIndex] = nextRequest;
+    return { quote: input.quote, request: nextRequest };
   }
 
   async claimQuoteJobConversion(tenantId: string, quoteId: string, jobId: string): Promise<{ quote: Quote; claimed: boolean }> {
